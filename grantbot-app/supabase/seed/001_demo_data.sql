@@ -200,3 +200,25 @@ insert into public.outcomes (
     'Compliance checklist catches 92% of missing attachments.',
     now() - interval '40 days'
   );
+
+insert into public.activity_logs (
+  organization_id,
+  proposal_id,
+  user_id,
+  action,
+  metadata
+) values
+  (
+    '8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001',
+    '0bdc3ad4-8c1a-4e63-9dc8-4fdd8ba4d301',
+    'a8006bc4-02ce-4154-a29d-ebb25f87c5aa',
+    'proposal_created',
+    '{"seed": true}'
+  ),
+  (
+    '8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001',
+    '0bdc3ad4-8c1a-4e63-9dc8-4fdd8ba4d301',
+    'a8006bc4-02ce-4154-a29d-ebb25f87c5aa',
+    'section_updated',
+    '{"sectionTitle": "Needs Statement"}'
+  );

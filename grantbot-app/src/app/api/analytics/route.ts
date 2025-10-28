@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { resolveOrgId } from "@/lib/org";
-import { fetchOrganization, fetchOutcomes, fetchProposals } from "@/lib/data-service";
-import type { Database } from "@/types/database";
+import { fetchOrganization, fetchOutcomes, fetchProposals, fetchActivityLogs } from "@/lib/data-service";
+import { createRouteSupabase } from "@/lib/supabase-server";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const supabase = await createRouteSupabase();
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -16,10 +14,11 @@ export async function GET(request: NextRequest) {
     }
 
     const orgId = resolveOrgId(request.nextUrl.searchParams.get("orgId"));
-    const [organization, proposals, outcomes] = await Promise.all([
+    const [organization, proposals, outcomes, activity] = await Promise.all([
       fetchOrganization(supabase, orgId),
       fetchProposals(supabase, orgId),
       fetchOutcomes(supabase, orgId),
+      fetchActivityLogs(supabase, orgId),
     ]);
 
     const submissions = outcomes.filter((outcome) => outcome.status !== "lost").length;
@@ -65,7 +64,12 @@ export async function GET(request: NextRequest) {
           : "Recorded insight",
       }));
 
-    return NextResponse.json({ funnel, winRateTrend: winRateTrend.slice(-7), boardInsights });
+    return NextResponse.json({
+      funnel,
+      winRateTrend: winRateTrend.slice(-7),
+      boardInsights,
+      activity,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },

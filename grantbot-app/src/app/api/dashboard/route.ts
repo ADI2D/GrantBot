@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { resolveOrgId } from "@/lib/org";
 import {
   fetchOpportunities,
@@ -10,7 +8,7 @@ import {
   type OutcomeRecord,
 } from "@/lib/data-service";
 import type { DashboardResponse } from "@/types/api";
-import type { Database } from "@/types/database";
+import { createRouteSupabase } from "@/lib/supabase-server";
 
 function buildKpis(
   proposals: DashboardResponse["proposals"],
@@ -71,7 +69,7 @@ function buildTasks(proposals: DashboardResponse["proposals"]): DashboardRespons
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const supabase = await createRouteSupabase();
     const {
       data: { session },
     } = await supabase.auth.getSession();

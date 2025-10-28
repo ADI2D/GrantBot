@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { Sparkles, RefreshCw, Share2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,9 @@ import { PageLoader, PageError, EmptyState } from "@/components/ui/page-state";
 import { useWorkspaceData } from "@/hooks/use-api";
 
 export default function WorkspacePage() {
-  const { data, isLoading, error } = useWorkspaceData();
+  const params = useSearchParams();
+  const initialProposalId = params.get("proposalId") ?? undefined;
+  const { data, isLoading, error } = useWorkspaceData(initialProposalId);
   const queryClient = useQueryClient();
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [draftContent, setDraftContent] = useState("");
@@ -56,7 +59,7 @@ export default function WorkspacePage() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["workspace"] });
+      queryClient.invalidateQueries({ queryKey: ["workspace"], exact: false });
     },
   });
 
@@ -70,7 +73,23 @@ export default function WorkspacePage() {
       if (!response.ok) throw new Error(await response.text());
       return response.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["workspace"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["workspace"], exact: false }),
+  });
+
+  const regenerateMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/proposals/${proposal?.id}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sectionId: activeSection?.id }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      return response.json() as Promise<{ content: string }>;
+    },
+    onSuccess: (result) => {
+      setDraftContent(result.content);
+      queryClient.invalidateQueries({ queryKey: ["workspace"], exact: false });
+    },
   });
 
   if (isLoading) return <PageLoader label="Loading workspace" />;
@@ -83,9 +102,7 @@ export default function WorkspacePage() {
   };
 
   const handleRegenerate = () => {
-    const refreshed = `AI refreshed draft (${new Date().toLocaleTimeString()}):\n\n${draftContent}`;
-    setDraftContent(refreshed);
-    sectionMutation.mutate(refreshed);
+    regenerateMutation.mutate();
   };
 
   const handleComplianceStatus = (sectionIndex: number, itemIndex: number, status: string) => {
@@ -184,9 +201,10 @@ export default function WorkspacePage() {
                                     ? "bg-blue-100 text-blue-700"
                                     : "bg-slate-100 text-slate-500"
                                 }`}
-                                onClick={() =>
-                                  handleComplianceStatus(sectionIndex, itemIndex, option.value)
-                                }
+                              onClick={() =>
+                                handleComplianceStatus(sectionIndex, itemIndex, option.value)
+                              }
+                              disabled={complianceMutation.isLoading}
                               >
                                 {option.label}
                               </button>

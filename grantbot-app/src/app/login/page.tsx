@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { LoginForm } from "@/components/auth/login-form";
 
 export default async function LoginPage() {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
   const {
     data: { session },
   } = await supabase.auth.getSession();

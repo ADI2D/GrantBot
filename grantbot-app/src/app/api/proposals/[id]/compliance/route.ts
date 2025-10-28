@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import type { Database } from "@/types/database";
+import { createRouteSupabase } from "@/lib/supabase-server";
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const supabase = await createRouteSupabase();
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -21,6 +19,22 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     if (error) {
       throw error;
+    }
+
+    const { data: proposalRecord } = await supabase
+      .from("proposals")
+      .select("organization_id")
+      .eq("id", params.id)
+      .single();
+
+    if (proposalRecord) {
+      await supabase.from("activity_logs").insert({
+        organization_id: proposalRecord.organization_id,
+        proposal_id: params.id,
+        user_id: session.user.id,
+        action: "compliance_updated",
+        metadata: { items: payload.compliance },
+      });
     }
 
     return NextResponse.json({ success: true });

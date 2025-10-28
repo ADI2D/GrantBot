@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { fetchProposalSections } from "@/lib/data-service";
-import type { Database } from "@/types/database";
+import { createRouteSupabase } from "@/lib/supabase-server";
 
-function getProposalId(path: string) {
-  const segments = path.split("/");
-  return segments[segments.length - 2];
-}
-
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const supabase = await createRouteSupabase();
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -19,8 +12,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const proposalId = getProposalId(request.nextUrl.pathname);
-    const sections = await fetchProposalSections(supabase, proposalId);
+    const sections = await fetchProposalSections(supabase, params.id);
     return NextResponse.json({ sections });
   } catch (error) {
     return NextResponse.json(
@@ -30,9 +22,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function PATCH(request: NextRequest) {
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const supabase = await createRouteSupabase();
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -45,17 +37,32 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Missing sectionId" }, { status: 400 });
     }
 
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from("proposal_sections")
       .update({ content, updated_at: new Date().toISOString() })
       .eq("id", sectionId);
 
-    if (error) {
-      throw error;
+    if (updateError) {
+      throw updateError;
     }
 
-    const proposalId = getProposalId(request.nextUrl.pathname);
-    const sections = await fetchProposalSections(supabase, proposalId);
+    const { data: proposalRecord } = await supabase
+      .from("proposals")
+      .select("organization_id")
+      .eq("id", params.id)
+      .single();
+
+    if (proposalRecord) {
+      await supabase.from("activity_logs").insert({
+        organization_id: proposalRecord.organization_id,
+        proposal_id: params.id,
+        user_id: session.user.id,
+        action: "section_updated",
+        metadata: { sectionId },
+      });
+    }
+
+    const sections = await fetchProposalSections(supabase, params.id);
     return NextResponse.json({ sections });
   } catch (error) {
     return NextResponse.json(

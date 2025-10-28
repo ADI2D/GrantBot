@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { PageLoader, PageError, EmptyState } from "@/components/ui/page-state";
 import { useAnalyticsData } from "@/hooks/use-api";
 
@@ -13,7 +14,7 @@ export default function AnalyticsPage() {
   if (isLoading) return <PageLoader label="Loading analytics" />;
   if (error || !data) return <PageError message={error?.message || "Unable to load analytics"} />;
 
-  const { funnel, winRateTrend, boardInsights } = data;
+  const { funnel, winRateTrend, boardInsights, activity } = data;
 
   return (
     <div className="space-y-8">
@@ -97,6 +98,34 @@ export default function AnalyticsPage() {
             <div key={insight.title} className="rounded-2xl border border-slate-100 p-4">
               <p className="text-sm font-semibold text-slate-900">{insight.title}</p>
               <p className="mt-2 text-xs text-slate-500">{insight.description}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase text-slate-500">Activity</p>
+            <h2 className="text-lg font-semibold text-slate-900">Latest workspace updates</h2>
+          </div>
+        </div>
+        <div className="mt-4 space-y-3 text-sm text-slate-600">
+          {activity.length === 0 && (
+            <EmptyState
+              title="No activity yet"
+              description="As teams collaborate, edits and submissions will appear here."
+            />
+          )}
+          {activity.map((log) => (
+            <div
+              key={log.id}
+              className="rounded-2xl border border-slate-100 bg-white px-4 py-3"
+            >
+              <p className="font-semibold text-slate-900">{log.action.replaceAll("_", " ")}</p>
+              <p className="text-xs text-slate-500">
+                {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+              </p>
             </div>
           ))}
         </div>

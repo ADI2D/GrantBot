@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { Target, Filter, AlertTriangle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,11 +11,42 @@ import { Input } from "@/components/ui/input";
 import { PageLoader, PageError, EmptyState } from "@/components/ui/page-state";
 import { useOpportunitiesData } from "@/hooks/use-api";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
+import { useOrg } from "@/hooks/use-org";
 
 const filters = ["Food Security", "Health", "Youth", "Emergency", "Arts"];
 
 export default function OpportunitiesPage() {
   const { data, isLoading, error } = useOpportunitiesData();
+  const { currentOrgId } = useOrg();
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const createProposal = useMutation({
+    mutationFn: async (opportunityId: string) => {
+      const response = await fetch(`/api/proposals?orgId=${currentOrgId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ opportunityId }),
+      });
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      return response.json();
+    },
+    onSuccess: (result: { proposal: { id: string } }) => {
+      setFeedback("Proposal created—opening workspace");
+      queryClient.invalidateQueries({ queryKey: ["proposals"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["workspace"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["billing"], exact: false });
+      router.push(`/workspace?proposalId=${result.proposal.id}`);
+    },
+    onError: (mutationError: unknown) => {
+      const message = mutationError instanceof Error ? mutationError.message : "Unable to create proposal";
+      setFeedback(message);
+    },
+  });
 
   if (isLoading) return <PageLoader label="Loading opportunities" />;
   if (error || !data) return <PageError message={error?.message || "Unable to load opportunities"} />;
@@ -58,6 +92,7 @@ export default function OpportunitiesPage() {
           <Input placeholder="Search funder, keyword, geography" className="w-full max-w-md" />
           <Badge tone="info">CSV import ready</Badge>
         </div>
+        {feedback && <p className="mt-4 text-sm text-slate-500">{feedback}</p>}
       </Card>
 
       <div className="grid gap-5">
@@ -80,7 +115,13 @@ export default function OpportunitiesPage() {
               </div>
               <div className="flex items-center gap-3">
                 <Button variant="secondary">Preview RFP</Button>
-                <Button>Draft proposal</Button>
+                <Button
+                  onClick={() => createProposal.mutate(opportunity.id)}
+                  disabled={createProposal.isLoading}
+                  className="gap-2"
+                >
+                  {createProposal.isLoading ? "Creating..." : "Draft proposal"}
+                </Button>
               </div>
             </div>
             {opportunity.complianceNotes && (

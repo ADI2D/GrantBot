@@ -67,6 +67,7 @@ export type OrganizationProfileResponse = {
     annualBudget: number | null;
     onboardingCompletion: number;
     documents: DocumentMeta[];
+    planId: string;
   };
 };
 
@@ -94,6 +95,7 @@ export type AnalyticsResponse = {
   funnel: { label: string; value: number; target: number }[];
   winRateTrend: number[];
   boardInsights: LearningInsight[];
+  activity: ActivityLog[];
 };
 
 export type ChecklistResponse = {
@@ -102,4 +104,12 @@ export type ChecklistResponse = {
     items: { label: string; status: string }[];
   }[];
   completion: number;
+};
+
+export type ActivityLog = {
+  id: string;
+  proposalId: string | null;
+  action: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
 };

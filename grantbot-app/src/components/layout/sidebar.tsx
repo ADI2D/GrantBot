@@ -10,6 +10,7 @@ import {
   Target,
   BarChart3,
   FileText,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ const navItems = [
   { label: "Workspace", href: "/workspace", icon: Layers },
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "Checklists", href: "/checklists", icon: ClipboardList },
+  { label: "Billing", href: "/billing", icon: CreditCard },
 ];
 
 export function Sidebar() {
@@ -43,7 +45,7 @@ export function Sidebar() {
       <nav className="flex flex-1 flex-col gap-1 text-sm font-medium">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname.endsWith(item.href);
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link
               key={item.href}
