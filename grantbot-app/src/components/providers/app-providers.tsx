@@ -1,9 +1,10 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactNode, useState } from "react";
+import { useState } from "react";
 import { SessionContextProvider, type Session } from "@supabase/auth-helpers-react";
-import { createClientBrowser } from "@/lib/supabase-browser";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import type { Database } from "@/types/database";
 
 export function AppProviders({
   children,
@@ -13,7 +14,7 @@ export function AppProviders({
   initialSession: Session | null;
 }) {
   const [queryClient] = useState(() => new QueryClient());
-  const [supabase] = useState(() => createClientBrowser());
+  const [supabase] = useState(() => createClientComponentClient<Database>());
 
   return (
     <SessionContextProvider supabaseClient={supabase} initialSession={initialSession}>
