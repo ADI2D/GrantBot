@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Opportunity, Proposal, DocumentMeta } from "@/types/api";
+import type { Opportunity, Proposal, DocumentMeta, ActivityLog } from "@/types/api";
 import type { Database } from "@/types/database";
 
 type ComplianceSection = {
@@ -25,10 +25,15 @@ export async function fetchOrganization(client: Client, orgId: string) {
       "id, name, mission, impact_summary, differentiator, annual_budget, onboarding_completion, document_metadata, plan_id",
     )
     .eq("id", orgId)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
   if (error) {
     throw new Error(`Failed to load organization: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error("Organization not found.");
   }
 
   const documents: DocumentMeta[] = Array.isArray(data.document_metadata)
@@ -158,4 +163,25 @@ export async function fetchOutcomes(client: Client, orgId: string): Promise<Outc
   }
 
   return (data ?? []) as OutcomeRecord[];
+}
+
+export async function fetchActivityLogs(client: Client, orgId: string): Promise<ActivityLog[]> {
+  const { data, error } = await client
+    .from("activity_logs")
+    .select("id, proposal_id, action, metadata, created_at")
+    .eq("organization_id", orgId)
+    .order("created_at", { ascending: false })
+    .limit(25);
+
+  if (error) {
+    throw new Error(`Failed to load activity logs: ${error.message}`);
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    proposalId: row.proposal_id,
+    action: row.action,
+    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    createdAt: row.created_at ?? new Date().toISOString(),
+  }));
 }
