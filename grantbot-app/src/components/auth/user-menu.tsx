@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useSession } from "@supabase/auth-helpers-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export function UserMenu() {
   const session = useSession();
-  const supabase = useSupabaseClient();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
 
   if (!session?.user) return null;
@@ -15,8 +16,14 @@ export function UserMenu() {
   const initials = session.user.email?.slice(0, 2).toUpperCase() ?? "US";
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/login";
+    try {
+      await fetch("/api/auth/signout", { method: "POST" });
+    } catch (error) {
+      console.error("Sign out failed", error);
+    } finally {
+      router.push("/login");
+      router.refresh();
+    }
   };
 
   return (

@@ -33,6 +33,9 @@ export function LoginForm() {
   };
 
   const handleReset = async () => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem("grantbot-reset-email", email);
+    }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });

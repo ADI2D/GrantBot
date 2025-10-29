@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
-  const code = searchParams.get("code");
+  const rawParams = searchParams;
+  const code = rawParams.get("code");
+  const emailParam = rawParams.get("email");
   const supabase = createClientComponentClient();
   const router = useRouter();
 
@@ -24,17 +26,42 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const exchangeCode = async () => {
       if (!code) return;
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      if (error) {
+      try {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          throw error;
+        }
+        setStatus("ready");
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Unable to validate reset link.";
+        const storedEmail =
+          typeof window !== "undefined"
+            ? window.sessionStorage.getItem("grantbot-reset-email")
+            : null;
+
+        if (message.includes("code verifier")) {
+          const fallback = await supabase.auth.verifyOtp({
+            type: "recovery",
+            token: code,
+            email: emailParam ?? storedEmail ?? undefined,
+          });
+          if (!fallback.error) {
+            if (typeof window !== "undefined") {
+              window.sessionStorage.removeItem("grantbot-reset-email");
+            }
+            setStatus("ready");
+            setMessage(null);
+            return;
+          }
+        }
         setStatus("error");
-        setMessage(error.message);
-        return;
+        setMessage(message || "Unable to validate reset link.");
       }
-      setStatus("ready");
     };
 
     void exchangeCode();
-  }, [code, supabase]);
+  }, [code, emailParam, supabase]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

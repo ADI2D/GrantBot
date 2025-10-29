@@ -10,10 +10,22 @@
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
-const [, , orgId, adminEmail, subscriberEmail, adminPasswordArg, subscriberPasswordArg] = process.argv;
+const [
+  ,
+  ,
+  orgId,
+  adminEmail,
+  subscriberEmail,
+  adminPasswordArg,
+  subscriberPasswordArg,
+  supportEmail,
+  supportPasswordArg,
+] = process.argv;
 
 if (!orgId || !adminEmail || !subscriberEmail) {
-  console.error("Usage: node --env-file .env.local scripts/seed-users.mjs <org-id> <admin-email> <subscriber-email> [admin-password] [subscriber-password]");
+  console.error(
+    "Usage: node --env-file .env.local scripts/seed-users.mjs <org-id> <admin-email> <subscriber-email> [admin-password] [subscriber-password] [support-email] [support-password]",
+  );
   process.exit(1);
 }
 
@@ -109,17 +121,52 @@ async function ensureMembership(userId, role) {
   return inserted.id;
 }
 
+async function ensureAdminRole(userId, role) {
+  const { data } = await supabase
+    .from("admin_users")
+    .select("user_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (data?.user_id) {
+    console.log(`Admin role already set for ${userId}`);
+    return data.user_id;
+  }
+
+  const { error } = await supabase.from("admin_users").insert({
+    user_id: userId,
+    role,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  console.log(`Assigned admin role ${role} to ${userId}`);
+  return userId;
+}
+
 (async () => {
   try {
     const adminUser = await ensureUser(adminEmail, adminPasswordArg, {
       user_metadata: { role: "owner" },
     });
     await ensureMembership(adminUser.id, "owner");
+    await ensureAdminRole(adminUser.id, "super_admin");
 
     const subscriberUser = await ensureUser(subscriberEmail, subscriberPasswordArg, {
       user_metadata: { role: "member" },
     });
     await ensureMembership(subscriberUser.id, "member");
+    await ensureAdminRole(subscriberUser.id, "read_only");
+
+    if (supportEmail) {
+      const supportUser = await ensureUser(supportEmail, supportPasswordArg, {
+        user_metadata: { role: "support" },
+      });
+      await ensureAdminRole(supportUser.id, "support");
+      console.log(`Support user ready: ${supportEmail}`);
+    }
 
     console.log("Seeding complete.");
   } catch (error) {

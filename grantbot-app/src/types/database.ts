@@ -73,6 +73,42 @@ export type Database = {
           recorded_at: string | null;
         };
       };
+      admin_users: {
+        Row: {
+          user_id: string;
+          role: "super_admin" | "support" | "developer" | "read_only";
+          created_at: string | null;
+        };
+      };
+      admin_audit_logs: {
+        Row: {
+          id: number;
+          actor_user_id: string | null;
+          actor_role: "super_admin" | "support" | "developer" | "read_only" | null;
+          action: string;
+          target_type: string | null;
+          target_id: string | null;
+          metadata: unknown;
+          ip_address: string | null;
+          user_agent: string | null;
+          created_at: string | null;
+        };
+      };
+      billing_payments: {
+        Row: {
+          id: number;
+          organization_id: string;
+          stripe_invoice_id: string;
+          stripe_customer_id: string;
+          amount: number | null;
+          currency: string | null;
+          status: string | null;
+          due_date: string | null;
+          paid_at: string | null;
+          metadata: unknown;
+          created_at: string | null;
+        };
+      };
     };
   };
 };

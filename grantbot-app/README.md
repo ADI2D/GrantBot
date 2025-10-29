@@ -36,6 +36,8 @@ STRIPE_SECRET_KEY=
 psql \"$SUPABASE_URL\" <<'SQL'
 \\i supabase/migrations/20241024_initial.sql
 \\i supabase/seed/001_demo_data.sql
+\\i supabase/migrations/20241026_org_members_read.sql
+\\i supabase/migrations/20241027_admin_roles_and_audit.sql
 SQL
 ```
 Set `SUPABASE_SERVICE_ROLE_KEY` so API routes can proxy secure reads, while browser code relies on the anon key.
