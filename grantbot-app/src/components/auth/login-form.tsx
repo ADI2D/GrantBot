@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 export function LoginForm() {
   const supabase = useSupabaseClient();
   const router = useRouter();
-  const [mode, setMode] = useState<"password" | "magic" | "signup">("password");
+  const [mode, setMode] = useState<"password" | "magic" | "signup" | "reset">("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -24,9 +24,20 @@ export function LoginForm() {
   };
 
   const handleMagicLink = async () => {
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: `${window.location.origin}/dashboard` } });
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+    });
     if (error) throw error;
     setMessage("Magic link sent. Check your inbox.");
+  };
+
+  const handleReset = async () => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw error;
+    setMessage("Password reset email sent. Check your inbox.");
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -38,6 +49,8 @@ export function LoginForm() {
         await handlePasswordSignIn();
       } else if (mode === "magic") {
         await handleMagicLink();
+      } else if (mode === "reset") {
+        await handleReset();
       } else {
         if (password !== confirmPassword) {
           throw new Error("Passwords do not match");
@@ -81,6 +94,7 @@ export function LoginForm() {
           { label: "Password", value: "password" },
           { label: "Magic Link", value: "magic" },
           { label: "Create Account", value: "signup" },
+          { label: "Reset Password", value: "reset" },
         ].map((option) => (
           <button
             key={option.value}
@@ -88,7 +102,10 @@ export function LoginForm() {
             className={`flex-1 rounded-full px-4 py-1.5 ${
               mode === option.value ? "bg-slate-900 text-white" : "text-slate-500"
             }`}
-            onClick={() => setMode(option.value as typeof mode)}
+            onClick={() => {
+              setMessage(null);
+              setMode(option.value as typeof mode);
+            }}
           >
             {option.label}
           </button>
@@ -100,7 +117,7 @@ export function LoginForm() {
           <label className="text-sm font-medium text-slate-700">Email</label>
           <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
         </div>
-        {mode !== "magic" && (
+        {(mode === "password" || mode === "signup") && (
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Password</label>
             <Input
@@ -140,7 +157,9 @@ export function LoginForm() {
               ? "Sign in"
               : mode === "magic"
                 ? "Send magic link"
-                : "Create account"}
+                : mode === "signup"
+                  ? "Create account"
+                  : "Send reset email"}
         </Button>
       </form>
     </div>

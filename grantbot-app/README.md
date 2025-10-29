@@ -58,11 +58,19 @@ Set `SUPABASE_SERVICE_ROLE_KEY` so API routes can proxy secure reads, while brow
      npm run seed:stripe -- c9634d01-978e-40e6-b257-a6711db5b0da growth
      ```
   3. The script attaches `pm_card_visa`, pays the invoice, and polls Supabase until the webhook writes to `billing_payments`. If it times out, confirm the `stripe listen` process is running.
+- Create seed users (owner + member) for a workspace:
+  ```bash
+  npm run seed:users -- <organization-id> <admin-email> <subscriber-email> [admin-password] [subscriber-password]
+  # example
+  npm run seed:users -- c9634d01-978e-40e6-b257-a6711db5b0da admin@example.com user@example.com
+  ```
+  The script creates the auth users (if they do not already exist), marks emails as confirmed, and inserts memberships with `owner` / `member` roles. Temporary passwords are printed to the console when not supplied—ask users to reset after first login.
 
 ### Troubleshooting
 - **Webhook signature errors:** ensure `STRIPE_WEBHOOK_SECRET` in `.env.local` matches the secret shown when you run `stripe listen` (or from the Stripe dashboard if using a hosted endpoint). Restart `npm run dev` after updating the env file.
 - **Invoice records missing:** confirm the listener is running and that the org has `stripe_customer_id` populated. Use the Supabase dashboard (SQL editor) to query `select * from billing_payments order by created_at desc;` and verify the webhook inserted a row.
 - **Migration conflicts:** if `supabase db push` reports existing policies/tables, mark the migration as applied (`supabase migration repair --status applied --version 20241024_initial`) or run the SQL manually via the dashboard.
+- **Password reset links:** `npm run seed:users` preps accounts, and users can request a reset from the login form. Supabase emails redirect to `/reset-password`, where they can choose a new password. Ensure `resetPasswordForEmail` redirect URLs in Supabase match your deployed domain.
 
 ## Project Map
 ```
