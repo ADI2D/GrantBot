@@ -1,8 +1,8 @@
-export function formatCurrency(value?: number | null) {
+export function formatCurrency(value?: number | null, currency: string = "USD") {
   if (value === null || value === undefined) return "--";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
     maximumFractionDigits: 0,
   }).format(value);
 }

@@ -113,3 +113,35 @@ export type ActivityLog = {
   metadata: Record<string, unknown>;
   createdAt: string;
 };
+
+export type BillingResponse = {
+  planId: string;
+  planLimit: number;
+  planPrice: number;
+  proposalsThisMonth: number;
+  submissionsThisQuarter: number;
+  nextReset: string;
+  usageStatus: {
+    usageRatio: number;
+    remaining: number;
+    status: "ok" | "warning" | "limit";
+  };
+  stripeCustomerLinked: boolean;
+  upcomingInvoice?: {
+    amount: number;
+    date: string;
+  } | null;
+  lastPayment?: {
+    amount: number;
+    date: string;
+  } | null;
+  invoices: {
+    id: string;
+    amount: number;
+    currency: string;
+    status: string;
+    dueDate: string | null;
+    paidAt: string | null;
+    createdAt: string | null;
+  }[];
+};

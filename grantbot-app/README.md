@@ -40,6 +40,30 @@ SQL
 ```
 Set `SUPABASE_SERVICE_ROLE_KEY` so API routes can proxy secure reads, while browser code relies on the anon key.
 
+### Billing Setup
+- Create a Stripe test account and generate a customer record for your organization.
+- Copy the **Publishable** and **Secret** keys into `STRIPE_PUBLISHABLE_KEY` and `STRIPE_SECRET_KEY`.
+- Create three recurring products/prices (Starter, Growth, Impact) and paste the price IDs into `STRIPE_PRICE_*`.
+- Add the Stripe customer ID to `organizations.stripe_customer_id` for the org you're testing. Once linked, the “Manage billing” button opens Stripe Billing and the usage cards display invoice information.
+- Webhook events (`invoice.*`, `customer.subscription.updated`, etc.) populate the `billing_payments` table. Run `supabase/migrations/20241026_billing_payments.sql` (or `supabase db push`) and set `STRIPE_WEBHOOK_SECRET` so the webhook endpoint can verify signatures.
+- To seed Stripe test data locally:
+  1. Start webhook forwarding in another terminal:
+     ```bash
+     stripe listen --forward-to http://localhost:3000/api/stripe/webhook
+     ```
+  2. Run the helper script to create a customer, subscription, and paid invoice (defaults to the starter plan):
+     ```bash
+     npm run seed:stripe -- <organization-id> [plan-id]
+     # example
+     npm run seed:stripe -- c9634d01-978e-40e6-b257-a6711db5b0da growth
+     ```
+  3. The script attaches `pm_card_visa`, pays the invoice, and polls Supabase until the webhook writes to `billing_payments`. If it times out, confirm the `stripe listen` process is running.
+
+### Troubleshooting
+- **Webhook signature errors:** ensure `STRIPE_WEBHOOK_SECRET` in `.env.local` matches the secret shown when you run `stripe listen` (or from the Stripe dashboard if using a hosted endpoint). Restart `npm run dev` after updating the env file.
+- **Invoice records missing:** confirm the listener is running and that the org has `stripe_customer_id` populated. Use the Supabase dashboard (SQL editor) to query `select * from billing_payments order by created_at desc;` and verify the webhook inserted a row.
+- **Migration conflicts:** if `supabase db push` reports existing policies/tables, mark the migration as applied (`supabase migration repair --status applied --version 20241024_initial`) or run the SQL manually via the dashboard.
+
 ## Project Map
 ```
 src/
@@ -76,7 +100,10 @@ app/api/*                   # Route handlers that proxy to Supabase
 - `npm run lint` – lint source files
 
 ## Next Steps
-1. Wire Supabase auth + org membership selection inside the UI.
-2. Add write mutations (onboarding form, proposal updates, compliance checklist edits).
-3. Integrate AI drafting/compliance services per PRD Section 5.
-4. Layer in billing, quotas, and analytics instrumentation (Stripe + PostHog/Segment).
+1. Fix the dashboard/login loop by aligning org resolution with memberships and removing the service-client auto-provision.
+2. Persist org selection and gate onboarding/dashboard routes once the intake flow is complete.
+3. Ship write mutations for onboarding, opportunity, proposal, and checklist updates (Supabase + UI forms).
+4. Implement the AI drafting/compliance flows (OpenAI integration, content persistence, UX polish).
+5. Wire analytics tracking (PostHog/Segment or preferred stack) per the 90-day roadmap.
+6. Harden Stripe integration for production (real price IDs/keys, webhook verification in deployed envs, invoice download links).
+7. Add automated test coverage (unit + E2E) and document deployment/runbooks.

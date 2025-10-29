@@ -4,15 +4,10 @@ import type {
   ChecklistResponse,
   DashboardResponse,
   OrganizationProfileResponse,
+  BillingResponse,
   WorkspaceResponse,
 } from "@/types/api";
 import { useOrg } from "@/hooks/use-org";
-type BillingResponse = {
-  planId: string;
-  proposalsThisMonth: number;
-  submissionsThisQuarter: number;
-  nextReset: string;
-};
 
 async function fetcher<T>(url: string) {
   const response = await fetch(url, { cache: "no-store" });

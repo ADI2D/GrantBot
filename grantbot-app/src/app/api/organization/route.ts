@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const organization = await fetchOrganization(supabase, orgId);
     return NextResponse.json({ organization });
   } catch (error) {
+    console.error("[organization][GET][error]", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },
