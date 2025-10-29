@@ -50,7 +50,7 @@ async function resolveOrganizationId(customerId: string, fallbackOrgId?: string 
 async function syncSubscription(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string;
   const priceId = subscription.items.data[0]?.price?.id ?? null;
-  const planId = getPlanFromPrice(priceId);
+  const planId = await getPlanFromPrice(priceId);
   if (!customerId || !planId) return;
 
   const { data, error } = await supabaseAdmin

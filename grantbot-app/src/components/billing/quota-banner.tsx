@@ -5,20 +5,20 @@ import { AlertTriangle, Zap } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { plans } from "@/lib/plans";
 import { computeQuotaStatus } from "@/lib/quota";
 
 export function QuotaBanner({
-  planId,
+  planName,
+  planLimit,
   proposalsThisMonth,
 }: {
-  planId: string;
+  planName: string;
+  planLimit: number;
   proposalsThisMonth: number;
 }) {
-  const plan = plans.find((p) => p.id === planId) ?? plans[0];
   const quota = useMemo(
-    () => computeQuotaStatus(plan.maxProposalsPerMonth, proposalsThisMonth),
-    [plan, proposalsThisMonth],
+    () => computeQuotaStatus(planLimit, proposalsThisMonth),
+    [planLimit, proposalsThisMonth],
   );
 
   const toneMap = {
@@ -38,9 +38,9 @@ export function QuotaBanner({
           <Zap className="h-5 w-5 text-amber-500" />
         )}
         <div>
-          <p className="text-sm font-semibold text-slate-900">{plan.name} plan usage</p>
+          <p className="text-sm font-semibold text-slate-900">{planName} plan usage</p>
           <p className="text-xs text-slate-500">
-            {proposalsThisMonth}/{plan.maxProposalsPerMonth} proposals this month. {tone.label}.
+            {proposalsThisMonth}/{planLimit} proposals this month. {tone.label}.
           </p>
         </div>
       </div>

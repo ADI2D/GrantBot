@@ -45,7 +45,7 @@ Set `SUPABASE_SERVICE_ROLE_KEY` so API routes can proxy secure reads, while brow
 ### Billing Setup
 - Create a Stripe test account and generate a customer record for your organization.
 - Copy the **Publishable** and **Secret** keys into `STRIPE_PUBLISHABLE_KEY` and `STRIPE_SECRET_KEY`.
-- Create three recurring products/prices (Starter, Growth, Impact) and paste the price IDs into `STRIPE_PRICE_*`.
+- Create recurring products/prices in Stripe and record the price IDs in the `pricing_plans` table (via admin pricing settings or Supabase console).
 - Add the Stripe customer ID to `organizations.stripe_customer_id` for the org you're testing. Once linked, the “Manage billing” button opens Stripe Billing and the usage cards display invoice information.
 - Webhook events (`invoice.*`, `customer.subscription.updated`, etc.) populate the `billing_payments` table. Run `supabase/migrations/20241026_billing_payments.sql` (or `supabase db push`) and set `STRIPE_WEBHOOK_SECRET` so the webhook endpoint can verify signatures.
 - To seed Stripe test data locally:

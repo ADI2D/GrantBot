@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { resolveOrgId } from "@/lib/org";
 import { createRouteSupabase } from "@/lib/supabase-server";
-import { plans } from "@/lib/plans";
 import { computeQuotaStatus } from "@/lib/quota";
 import { getServiceSupabaseClient } from "@/lib/supabase-client";
 
@@ -48,9 +47,29 @@ export async function GET(request: NextRequest) {
       .single();
 
     const planId = org?.plan_id ?? "starter";
-    const activePlan = plans.find((plan) => plan.id === planId) ?? plans[0];
+    const adminClient = getServiceSupabaseClient();
+    const { data: planRow } = await adminClient
+      .from("pricing_plans")
+      .select("id, name, monthly_price_cents, max_proposals_per_month, stripe_price_id")
+      .eq("id", planId)
+      .maybeSingle();
+
+    const { data: planOptions } = await adminClient
+      .from("pricing_plans")
+      .select("id, name, monthly_price_cents, max_proposals_per_month, description")
+      .eq("active", true)
+      .order("monthly_price_cents", { ascending: true });
+
+    const activePlan =
+      planRow ?? {
+        id: "starter",
+        name: "Starter",
+        monthly_price_cents: 24900,
+        max_proposals_per_month: 2,
+        stripe_price_id: null,
+      };
     const usageStatus = computeQuotaStatus(
-      activePlan.maxProposalsPerMonth,
+      activePlan.max_proposals_per_month,
       proposalsThisMonth ?? 0,
     );
     const nextReset = new Date(
@@ -114,9 +133,11 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      planId,
-      planLimit: activePlan.maxProposalsPerMonth,
-      planPrice: activePlan.price,
+      planId: activePlan.id,
+      planName: activePlan.name,
+      planLimit: activePlan.max_proposals_per_month,
+      planPriceCents: activePlan.monthly_price_cents,
+      planStripePriceId: activePlan.stripe_price_id,
       proposalsThisMonth: proposalsThisMonth ?? 0,
       submissionsThisQuarter: submissionsThisQuarter ?? 0,
       nextReset,
@@ -133,6 +154,14 @@ export async function GET(request: NextRequest) {
         createdAt: row.created_at,
       })),
       lastPayment,
+      availablePlans:
+        planOptions?.map((plan) => ({
+          id: plan.id,
+          name: plan.name,
+          description: plan.description,
+          monthlyPriceCents: plan.monthly_price_cents,
+          maxProposalsPerMonth: plan.max_proposals_per_month,
+        })) ?? [],
     });
   } catch (error) {
     return NextResponse.json(
@@ -155,13 +184,21 @@ export async function PATCH(request: NextRequest) {
 
     const orgId = resolveOrgId(request.nextUrl.searchParams.get("orgId"));
     const { planId } = await request.json();
+    if (!planId) {
+      return NextResponse.json({ error: "planId is required" }, { status: 400 });
+    }
 
-    const targetPlan = plans.find((plan) => plan.id === planId);
+    const adminClient = getServiceSupabaseClient();
+    const { data: targetPlan } = await adminClient
+      .from("pricing_plans")
+      .select("id")
+      .eq("id", planId)
+      .maybeSingle();
+
     if (!targetPlan) {
       return NextResponse.json({ error: "Unknown plan" }, { status: 400 });
     }
 
-    const adminClient = getServiceSupabaseClient();
     const { error } = await adminClient
       .from("organizations")
       .update({ plan_id: targetPlan.id })

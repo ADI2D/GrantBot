@@ -22,7 +22,11 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {billing && (
-        <QuotaBanner planId={billing.planId ?? organization.planId} proposalsThisMonth={billing.proposalsThisMonth} />
+        <QuotaBanner
+          planName={billing.planName}
+          planLimit={billing.planLimit}
+          proposalsThisMonth={billing.proposalsThisMonth}
+        />
       )}
       <section className="grid gap-6 rounded-3xl border border-slate-100 bg-gradient-to-br from-white via-blue-50/70 to-slate-50 p-6 shadow-sm lg:grid-cols-[2fr,1fr]">
         <div>

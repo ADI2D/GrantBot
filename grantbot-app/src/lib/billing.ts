@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
-import { plans } from "@/lib/plans";
+import { getPricingPlan, listPricingPlans } from "@/lib/pricing-plans";
 
 export async function getBillingSummary(client: SupabaseClient<Database>, orgId: string) {
   const firstDayOfMonth = new Date();
@@ -20,7 +20,21 @@ export async function getBillingSummary(client: SupabaseClient<Database>, orgId:
     .single();
 
   const planId = org?.plan_id ?? "starter";
-  const plan = plans.find((p) => p.id === planId) ?? plans[0];
+  let plan = await getPricingPlan(planId);
+
+  if (!plan) {
+    const allPlans = await listPricingPlans();
+    plan = allPlans[0] ?? {
+      id: "starter",
+      name: "Starter",
+      monthlyPriceCents: 24900,
+      maxProposalsPerMonth: 2,
+      description: null,
+      stripeProductId: null,
+      stripePriceId: null,
+      active: true,
+    };
+  }
 
   return {
     planId,

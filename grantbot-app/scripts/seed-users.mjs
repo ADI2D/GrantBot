@@ -168,6 +168,19 @@ async function ensureAdminRole(userId, role) {
       console.log(`Support user ready: ${supportEmail}`);
     }
 
+    const { error: auditInsertError } = await supabase.from("admin_audit_logs").insert({
+      actor_user_id: adminUser.id,
+      actor_role: "super_admin",
+      action: "seed:account_initialized",
+      target_type: "organization",
+      target_id: orgId,
+      metadata: { script: "seed-users" },
+    });
+
+    if (auditInsertError) {
+      console.warn("Failed to seed audit log:", auditInsertError.message);
+    }
+
     console.log("Seeding complete.");
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);

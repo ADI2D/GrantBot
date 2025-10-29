@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteSupabase } from "@/lib/supabase-server";
-import { plans } from "@/lib/plans";
 import { getServiceSupabaseClient } from "@/lib/supabase-client";
 
 export async function POST(request: NextRequest) {
@@ -33,12 +32,22 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const { data: defaultPlan } = await adminClient
+      .from("pricing_plans")
+      .select("id")
+      .eq("active", true)
+      .order("monthly_price_cents", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const defaultPlanId = defaultPlan?.id ?? "starter";
+
     const { data: organization, error: orgError } = await adminClient
       .from("organizations")
       .insert({
         name: organizationName ?? "New Organization",
         onboarding_completion: 0,
-        plan_id: plans[0].id,
+        plan_id: defaultPlanId,
         created_by: session.user.id,
       })
       .select()

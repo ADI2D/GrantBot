@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { Sparkles, RefreshCw, Share2 } from "lucide-react";
+import { Sparkles, RefreshCw, Share2, ShieldAlert } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,8 @@ import { useWorkspaceData } from "@/hooks/use-api";
 export default function WorkspacePage() {
   const params = useSearchParams();
   const initialProposalId = params.get("proposalId") ?? undefined;
+  const impersonated = params.get("impersonated") === "1";
+  const impersonatedOrgId = params.get("orgId");
   const { data, isLoading, error } = useWorkspaceData(initialProposalId);
   const queryClient = useQueryClient();
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
@@ -121,6 +123,22 @@ export default function WorkspacePage() {
 
   return (
     <div className="space-y-8">
+      {impersonated && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-300 bg-white text-amber-600">
+              <ShieldAlert className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-semibold">Admin impersonation active</p>
+              <p className="text-xs text-amber-600/80">
+                You are viewing the workspace as organization {impersonatedOrgId ?? "unknown"}. All actions are
+                attributed to your admin account and recorded in the audit log.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-blue-600">AI workspace</p>

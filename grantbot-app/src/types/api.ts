@@ -116,8 +116,10 @@ export type ActivityLog = {
 
 export type BillingResponse = {
   planId: string;
+  planName: string;
   planLimit: number;
-  planPrice: number;
+  planPriceCents: number;
+  planStripePriceId: string | null;
   proposalsThisMonth: number;
   submissionsThisQuarter: number;
   nextReset: string;
@@ -143,5 +145,12 @@ export type BillingResponse = {
     dueDate: string | null;
     paidAt: string | null;
     createdAt: string | null;
+  }[];
+  availablePlans: {
+    id: string;
+    name: string;
+    description: string | null;
+    monthlyPriceCents: number;
+    maxProposalsPerMonth: number;
   }[];
 };

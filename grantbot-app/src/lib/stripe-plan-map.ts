@@ -1,17 +1,40 @@
-const entries: [string, string | undefined][] = [
-  [process.env.STRIPE_PRICE_STARTER ?? "", "starter"],
-  [process.env.STRIPE_PRICE_GROWTH ?? "", "growth"],
-  [process.env.STRIPE_PRICE_IMPACT ?? "", "impact"],
-];
+import { getServiceSupabaseClient } from "@/lib/supabase-client";
 
-const pricePlanMap: Record<string, string> = entries.reduce((acc, [priceId, planId]) => {
-  if (priceId && planId) {
-    acc[priceId] = planId;
+const CACHE_TTL_MS = 5 * 60 * 1000;
+let cache: Map<string, string> | null = null;
+let lastFetched = 0;
+
+async function refreshCache() {
+  const supabase = getServiceSupabaseClient();
+  const { data, error } = await supabase
+    .from("pricing_plans")
+    .select("id, stripe_price_id")
+    .not("stripe_price_id", "is", null);
+
+  if (error) {
+    throw new Error(error.message);
   }
-  return acc;
-}, {} as Record<string, string>);
 
-export function getPlanFromPrice(priceId?: string | null) {
+  cache = new Map();
+  (data ?? []).forEach((plan) => {
+    if (plan.stripe_price_id) {
+      cache?.set(plan.stripe_price_id, plan.id);
+    }
+  });
+  lastFetched = Date.now();
+}
+
+export async function getPlanFromPrice(priceId?: string | null) {
   if (!priceId) return null;
-  return pricePlanMap[priceId] ?? null;
+
+  if (!cache || Date.now() - lastFetched > CACHE_TTL_MS) {
+    await refreshCache();
+  }
+
+  return cache?.get(priceId) ?? null;
+}
+
+export function invalidatePricePlanCache() {
+  cache = null;
+  lastFetched = 0;
 }

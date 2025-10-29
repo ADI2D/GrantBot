@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { plans } from "@/lib/plans";
 import { formatCurrency } from "@/lib/format";
 import { useBillingData } from "@/hooks/use-api";
 import { useOrg } from "@/hooks/use-org";
@@ -64,7 +63,16 @@ export default function BillingPage() {
   if (isLoading) return <PageLoader label="Loading billing" />;
   if (error || !data) return <PageError message={error?.message || "Unable to load billing"} />;
 
-  const activePlan = plans.find((plan) => plan.id === data.planId) ?? plans[0];
+  const plans = data.availablePlans;
+  const activePlan =
+    plans.find((plan) => plan.id === data.planId) ??
+    plans[0] ?? {
+      id: "starter",
+      name: "Starter",
+      description: "GrantBot starter plan",
+      monthlyPriceCents: 24900,
+      maxProposalsPerMonth: 2,
+    };
   const usagePercent = Math.min(Math.round(data.usageStatus.usageRatio * 100), 100);
   const resetDate = new Date(data.nextReset);
 
@@ -87,7 +95,10 @@ export default function BillingPage() {
           <div>
             <p className="text-xs uppercase text-slate-500">Current plan</p>
             <h2 className="text-lg font-semibold text-slate-900">{activePlan.name}</h2>
-            <p className="text-sm text-slate-500">{activePlan.description}</p>
+            <p className="text-sm text-slate-500">{activePlan.description ?? "GrantBot starter plan"}</p>
+            <p className="mt-2 text-xs text-slate-500">
+              {formatCurrency(data.planPriceCents / 100)} / month • Stripe price {data.planStripePriceId ?? "n/a"}
+            </p>
           </div>
           <Badge tone={data.proposalsThisMonth >= data.planLimit ? "warning" : "info"}>
             {data.proposalsThisMonth}/{data.planLimit} proposals this month
@@ -136,7 +147,7 @@ export default function BillingPage() {
           {data.upcomingInvoice ? (
             <>
               <p className="mt-3 text-3xl font-semibold text-slate-900">
-                ${data.upcomingInvoice.amount}
+                {formatCurrency(data.upcomingInvoice.amount)}
               </p>
               <p className="text-sm text-slate-500">
                 Bills on {new Date(data.upcomingInvoice.date).toLocaleDateString()}
@@ -153,7 +164,7 @@ export default function BillingPage() {
           {data.lastPayment ? (
             <>
               <p className="mt-3 text-3xl font-semibold text-slate-900">
-                ${data.lastPayment.amount}
+                {formatCurrency(data.lastPayment.amount)}
               </p>
               <p className="text-sm text-slate-500">
                 Paid on {new Date(data.lastPayment.date).toLocaleDateString()}
@@ -168,39 +179,33 @@ export default function BillingPage() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
-        {plans.map((plan) => (
-          <Card
-            key={plan.id}
-            className={`p-5 space-y-3 ${plan.id === activePlan.id ? "border-blue-200" : ""}`}
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-xs uppercase text-slate-500">
-                {plan.id === activePlan.id ? "Active" : "Available"}
+        {plans.map((plan) => {
+          const isActive = plan.id === activePlan.id;
+          return (
+            <Card key={plan.id} className={`p-5 space-y-3 ${isActive ? "border-blue-200" : ""}`}>
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase text-slate-500">{isActive ? "Active" : "Available"}</p>
+                <Badge tone={isActive ? "info" : "neutral"}>
+                  {plan.maxProposalsPerMonth} proposals / mo
+                </Badge>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900">{plan.name}</h3>
+              <p className="text-3xl font-bold text-slate-900">
+                {formatCurrency(plan.monthlyPriceCents / 100)}
+                <span className="text-base font-normal text-slate-500">/mo</span>
               </p>
-              <Badge tone={plan.id === activePlan.id ? "info" : "neutral"}>
-                {plan.maxProposalsPerMonth} proposals / mo
-              </Badge>
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900">{plan.name}</h3>
-            <p className="text-3xl font-bold text-slate-900">
-              ${plan.price}
-              <span className="text-base font-normal text-slate-500">/mo</span>
-            </p>
-            <p className="text-sm text-slate-600">{plan.description}</p>
-            <Button
-              variant={plan.id === activePlan.id ? "secondary" : "ghost"}
-              className="mt-2 w-full"
-              disabled={plan.id === activePlan.id || planMutation.isLoading}
-              onClick={() => planMutation.mutate(plan.id)}
-            >
-              {plan.id === activePlan.id
-                ? "Current plan"
-                : planMutation.isLoading
-                  ? "Updating..."
-                  : "Switch plan"}
-            </Button>
-          </Card>
-        ))}
+              <p className="text-sm text-slate-600">{plan.description ?? ""}</p>
+              <Button
+                variant={isActive ? "secondary" : "ghost"}
+                className="mt-2 w-full"
+                disabled={isActive || planMutation.isLoading}
+                onClick={() => planMutation.mutate(plan.id)}
+              >
+                {isActive ? "Current plan" : planMutation.isLoading ? "Updating..." : "Switch plan"}
+              </Button>
+            </Card>
+          );
+        })}
       </section>
 
       {!data.stripeCustomerLinked && (

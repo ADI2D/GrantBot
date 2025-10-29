@@ -11,7 +11,7 @@
  *   - STRIPE_SECRET_KEY
  *   - SUPABASE_URL
  *   - SUPABASE_SERVICE_ROLE_KEY
- *   - STRIPE_PRICE_STARTER / STRIPE_PRICE_GROWTH / STRIPE_PRICE_IMPACT
+ *   - pricing_plans table populated with stripe_price_id values
  *   - Webhook relay running (`stripe listen --forward-to http://localhost:3000/api/stripe/webhook`)
  */
 
@@ -29,9 +29,6 @@ const requiredEnvs = [
   "STRIPE_SECRET_KEY",
   "SUPABASE_URL",
   "SUPABASE_SERVICE_ROLE_KEY",
-  "STRIPE_PRICE_STARTER",
-  "STRIPE_PRICE_GROWTH",
-  "STRIPE_PRICE_IMPACT",
 ];
 
 const missing = requiredEnvs.filter((key) => !process.env[key]);
@@ -43,19 +40,19 @@ if (missing.length) {
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" });
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-const planPriceMap = {
-  starter: process.env.STRIPE_PRICE_STARTER,
-  growth: process.env.STRIPE_PRICE_GROWTH,
-  impact: process.env.STRIPE_PRICE_IMPACT,
-};
-
 const targetPlan = (planIdArg ?? "starter").toLowerCase();
-const priceId = planPriceMap[targetPlan];
+const { data: planRow, error: planError } = await supabase
+  .from("pricing_plans")
+  .select("stripe_price_id")
+  .eq("id", targetPlan)
+  .maybeSingle();
 
-if (!priceId) {
-  console.error(`Unknown plan "${planIdArg ?? "starter"}". Use starter, growth, or impact.`);
+if (planError || !planRow?.stripe_price_id) {
+  console.error(`Plan "${targetPlan}" missing stripe_price_id. Populate pricing_plans before seeding.`);
   process.exit(1);
 }
+
+const priceId = planRow.stripe_price_id;
 
 console.log(`Seeding Stripe for org ${orgId} with plan ${targetPlan} (${priceId})`);
 
