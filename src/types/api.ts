@@ -13,6 +13,7 @@ export type Opportunity = {
   alignmentScore: number | null;
   status: string;
   complianceNotes: string | null;
+  applicationUrl?: string | null;
 };
 
 export type Proposal = {

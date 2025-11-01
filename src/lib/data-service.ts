@@ -57,7 +57,7 @@ export async function fetchOpportunities(client: Client, orgId: string): Promise
   const { data, error } = await client
     .from("opportunities")
     .select(
-      "id, name, focus_area, amount, deadline, alignment_score, status, compliance_notes",
+      "id, name, focus_area, amount, deadline, alignment_score, status, compliance_notes, application_url",
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .order("deadline", { ascending: true });
@@ -75,6 +75,7 @@ export async function fetchOpportunities(client: Client, orgId: string): Promise
     alignmentScore: item.alignment_score,
     status: item.status,
     complianceNotes: item.compliance_notes,
+    applicationUrl: item.application_url,
   }));
 }
 

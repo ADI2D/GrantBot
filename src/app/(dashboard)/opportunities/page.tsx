@@ -172,7 +172,16 @@ export default function OpportunitiesPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Button variant="secondary">Preview RFP</Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    // Open the opportunity's application URL in a new tab
+                    const url = opportunity.applicationUrl || `https://www.grants.gov/search-grants.html`;
+                    window.open(url, '_blank');
+                  }}
+                >
+                  Preview RFP
+                </Button>
                 <Button
                   onClick={() => createProposal.mutate(opportunity.id)}
                   disabled={createProposal.isPending}
