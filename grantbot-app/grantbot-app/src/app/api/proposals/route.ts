@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
         .from("opportunities")
         .select("id, name")
         .eq("id", opportunityId)
-        .eq("organization_id", orgId)
-        .single();
+        .or(`organization_id.eq.${orgId},organization_id.is.null`)
+        .maybeSingle();
       if (opportunityRecord) {
         opportunityName = opportunityRecord.name ?? opportunityName;
       }
@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ proposal: newProposal });
   } catch (error) {
+    console.error("[proposals][POST] Error creating proposal:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },

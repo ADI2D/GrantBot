@@ -60,6 +60,8 @@ export async function fetchOpportunities(client: Client, orgId: string): Promise
       "id, name, focus_area, amount, deadline, alignment_score, status, compliance_notes, application_url",
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
+    .neq("status", "closed") // Filter out closed opportunities
+    .gte("deadline", new Date().toISOString().split("T")[0]) // Filter out past deadlines (only future dates)
     .order("deadline", { ascending: true });
 
   if (error) {

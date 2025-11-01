@@ -55,6 +55,20 @@ export default function OpportunitiesPage() {
 
   // Filter and search opportunities
   const filteredOpportunities = data.opportunities.filter((opp) => {
+    // Filter out closed opportunities
+    if (opp.status === "closed") {
+      return false;
+    }
+
+    // Filter out opportunities with past deadlines
+    if (opp.deadline) {
+      const deadline = new Date(opp.deadline);
+      const now = new Date();
+      if (deadline < now) {
+        return false;
+      }
+    }
+
     // Apply focus area filter
     if (selectedFilter && opp.focusArea !== selectedFilter) {
       return false;

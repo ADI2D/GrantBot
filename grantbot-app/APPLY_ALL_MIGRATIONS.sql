@@ -137,6 +137,81 @@ CREATE INDEX IF NOT EXISTS idx_sync_logs_source
 CREATE INDEX IF NOT EXISTS idx_sync_logs_recent
   ON sync_logs(started_at DESC);
 
+-- 7. Fix Grants.gov URL format
+-- ============================================================================
+-- Update application URLs from old format to new format
+-- Old: https://www.grants.gov/web/grants/view-opportunity.html?oppId=312633
+-- New: https://www.grants.gov/search-results-detail/312633
+
+UPDATE opportunities
+SET application_url = REGEXP_REPLACE(
+  application_url,
+  'https://www\.grants\.gov/web/grants/view-opportunity\.html\?oppId=(\d+)',
+  'https://www.grants.gov/search-results-detail/\1'
+)
+WHERE application_url LIKE '%grants.gov/web/grants/view-opportunity.html%';
+
+-- 8. Fix opportunities RLS policy to allow public opportunities
+-- ============================================================================
+-- Allow authenticated users to read public opportunities (organization_id IS NULL)
+-- These are opportunities synced from external sources that aren't tied to a specific org
+
+-- Drop the existing restrictive policies
+DROP POLICY IF EXISTS "members read opportunities" ON opportunities;
+DROP POLICY IF EXISTS "members manage opportunities" ON opportunities;
+
+-- Create separate policies for read and write operations
+
+-- Allow members to read their org's opportunities OR public opportunities
+DROP POLICY IF EXISTS "members read org and public opportunities" ON opportunities;
+CREATE POLICY "members read org and public opportunities"
+  ON opportunities FOR SELECT
+  USING (
+    -- Public opportunities (synced from external sources)
+    organization_id IS NULL
+    OR
+    -- Org-specific opportunities
+    EXISTS (
+      SELECT 1 FROM org_members m
+      WHERE m.organization_id = opportunities.organization_id
+        AND m.user_id = auth.uid()
+    )
+  );
+
+-- Allow members to manage only their org's opportunities (not public ones)
+DROP POLICY IF EXISTS "members manage org opportunities" ON opportunities;
+CREATE POLICY "members manage org opportunities"
+  ON opportunities FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM org_members m
+      WHERE m.organization_id = opportunities.organization_id
+        AND m.user_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "members update org opportunities" ON opportunities;
+CREATE POLICY "members update org opportunities"
+  ON opportunities FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM org_members m
+      WHERE m.organization_id = opportunities.organization_id
+        AND m.user_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "members delete org opportunities" ON opportunities;
+CREATE POLICY "members delete org opportunities"
+  ON opportunities FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM org_members m
+      WHERE m.organization_id = opportunities.organization_id
+        AND m.user_id = auth.uid()
+    )
+  );
+
 -- ============================================================================
 -- VERIFICATION
 -- ============================================================================
@@ -162,6 +237,12 @@ WHERE tablename IN ('proposals', 'proposal_comments', 'connector_sync_state', 's
   AND indexname LIKE 'idx_%'
 ORDER BY tablename, indexname;
 
+-- Check opportunities RLS policies
+SELECT schemaname, tablename, policyname, permissive, roles, cmd
+FROM pg_policies
+WHERE tablename = 'opportunities'
+ORDER BY policyname;
+
 -- ============================================================================
 -- SUCCESS!
 -- All migrations have been applied. You can now use:
@@ -169,4 +250,5 @@ ORDER BY tablename, indexname;
 -- - External reviewer comments on shared proposals
 -- - Archive/unarchive proposals
 -- - Connector health monitoring and sync logs
+-- - Public opportunities synced from external sources (grants.gov, etc.)
 -- ============================================================================

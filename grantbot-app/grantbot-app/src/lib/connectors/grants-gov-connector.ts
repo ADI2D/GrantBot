@@ -59,7 +59,7 @@ export class GrantsGovConnector extends BaseConnector {
       // Full refresh: Use XML Extract to get ALL active opportunities
       if (!since) {
         console.log(`[${this.source}] Full refresh: Fetching XML Extract (all active opportunities)`);
-        console.log(`[${this.source}] URL: ${this.XML_EXTRACT_URL}`);
+        console.log(`[${this.source}] Page: ${this.XML_EXTRACT_PAGE}`);
         return await this.fetchXMLExtract();
       }
 
@@ -372,8 +372,32 @@ export class GrantsGovConnector extends BaseConnector {
 
       console.log(`[${this.source}] Sample opportunity keys:`, Object.keys(opportunities[0]));
 
+      // Filter to only ACTIVE opportunities (not archived, with future or no deadline)
+      const now = new Date();
+      const activeOpportunities = opportunities.filter((opp) => {
+        // Skip if already archived
+        if (opp.ArchiveDate) {
+          const archiveDate = this.parseGrantsGovDate(opp.ArchiveDate);
+          if (archiveDate && archiveDate < now) {
+            return false; // Archived in the past
+          }
+        }
+
+        // Skip if deadline has passed
+        if (opp.CloseDate) {
+          const closeDate = this.parseGrantsGovDate(opp.CloseDate);
+          if (closeDate && closeDate < now) {
+            return false; // Deadline passed
+          }
+        }
+
+        return true; // Active opportunity
+      });
+
+      console.log(`[${this.source}] Filtered to ${activeOpportunities.length} active opportunities (${opportunities.length - activeOpportunities.length} archived/closed)`);
+
       // Convert XML Extract format to RawGrant format
-      return opportunities.map((opp) => {
+      return activeOpportunities.map((opp) => {
         const oppId = opp.OpportunityID || opp.OpportunityNumber;
         const closeDate = this.parseGrantsGovDate(opp.CloseDate);
         const postDate = this.parseGrantsGovDate(opp.PostDate);
@@ -426,26 +450,26 @@ export class GrantsGovConnector extends BaseConnector {
    * Normalize grant data to canonical schema
    */
   normalize(raw: RawGrant): CanonicalOpportunity {
-    const title = raw.title || "";
-    const link = raw.link || raw.guid;
-    const description = raw.description || "";
-    const pubDate = raw.pubDate;
+    const title = (raw.title as string) || "";
+    const link = (raw.link || raw.guid) as string;
+    const description = (raw.description as string) || "";
+    const pubDate = raw.pubDate as string;
 
     // Extract opportunity ID from link or GUID
     const oppIdMatch = String(link).match(/oppId=(\d+)/);
-    const opportunityID = oppIdMatch ? oppIdMatch[1] : raw.guid || `gen_${Date.now()}`;
+    const opportunityID = oppIdMatch ? oppIdMatch[1] : (raw.guid as string) || `gen_${Date.now()}`;
 
     // Parse title: "Agency Name - Grant Title"
     const titleParts = String(title).split(" - ");
-    const agencyName = titleParts.length > 1 ? titleParts[0] : raw.agency;
-    const grantTitle = titleParts.length > 1 ? titleParts.slice(1).join(" - ") : raw.programName || title;
+    const agencyName = titleParts.length > 1 ? titleParts[0] : (raw.agency as string);
+    const grantTitle = titleParts.length > 1 ? titleParts.slice(1).join(" - ") : (raw.programName as string) || title;
 
     // Get focus area
-    const focusArea = raw.focusArea || this.mapTitleToFocusArea(String(grantTitle + " " + description));
+    const focusArea = (raw.focusArea as string) || this.mapTitleToFocusArea(String(grantTitle + " " + description));
 
     // Get amount and deadline
-    const amount = this.parseNumber(raw.estimatedAward);
-    const deadline = this.parseDate(raw.deadline);
+    const amount = this.parseNumber(raw.estimatedAward as string | number | null);
+    const deadline = this.parseDate(raw.deadline as string | null);
 
     return {
       source: this.source,
@@ -454,7 +478,7 @@ export class GrantsGovConnector extends BaseConnector {
       focus_area: focusArea,
       amount,
       deadline,
-      status: this.determineStatus(raw.deadline),
+      status: this.determineStatus(raw.deadline as string | undefined),
       funder_name: this.cleanText(agencyName),
       eligibility_requirements: undefined,
       application_url: String(link),

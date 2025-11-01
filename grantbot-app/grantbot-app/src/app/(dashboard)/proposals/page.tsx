@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FilePen, FileText } from "lucide-react";
+import { Download, FilePen, FileText, Trash2, Archive, ArchiveX } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +8,13 @@ import { Progress } from "@/components/ui/progress";
 import { PageLoader, PageError } from "@/components/ui/page-state";
 import { useProposalsData } from "@/hooks/use-api";
 import { formatDate } from "@/lib/format";
+import { useQueryClient } from "@tanstack/react-query";
+import { useOrg } from "@/hooks/use-org";
 
 export default function ProposalsPage() {
   const { data, isLoading, error } = useProposalsData();
+  const queryClient = useQueryClient();
+  const { currentOrgId } = useOrg();
 
   const handleExport = async (proposalId: string, format: "pdf" | "docx") => {
     try {
@@ -35,10 +39,72 @@ export default function ProposalsPage() {
     }
   };
 
+  const handleDelete = async (proposalId: string, proposalName: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this proposal?\n\n"${proposalName}"\n\nThis action cannot be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/proposals/${proposalId}?orgId=${currentOrgId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete proposal");
+      }
+
+      // Refresh proposals list
+      queryClient.invalidateQueries({ queryKey: ["proposals"], exact: false });
+      alert("Proposal deleted successfully");
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("Failed to delete proposal. Please try again.");
+    }
+  };
+
+  const handleArchive = async (proposalId: string, proposalName: string, currentlyArchived: boolean) => {
+    const action = currentlyArchived ? "unarchive" : "archive";
+    const confirmed = window.confirm(
+      currentlyArchived
+        ? `Unarchive this proposal?\n\n"${proposalName}"\n\nThis will move it back to your active proposals and allow editing.`
+        : `Archive this proposal?\n\n"${proposalName}"\n\nThis will move it to the bottom of the list and prevent editing.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/proposals/${proposalId}/archive?orgId=${currentOrgId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: !currentlyArchived }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${action} proposal`);
+      }
+
+      // Refresh proposals list
+      queryClient.invalidateQueries({ queryKey: ["proposals"], exact: false });
+    } catch (error) {
+      console.error(`${action} error:`, error);
+      alert(`Failed to ${action} proposal. Please try again.`);
+    }
+  };
+
   if (isLoading) return <PageLoader label="Loading proposals" />;
   if (error || !data) return <PageError message={error?.message || "Unable to load proposals"} />;
 
-  const proposals = data.proposals;
+  // Sort proposals: active first, then archived at the bottom
+  const proposals = [...data.proposals].sort((a, b) => {
+    if (a.archived === b.archived) return 0;
+    return a.archived ? 1 : -1;
+  });
 
   return (
     <div className="space-y-8">
@@ -79,10 +145,17 @@ export default function ProposalsPage() {
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white">
             {proposals.map((proposal) => (
-              <tr key={proposal.id} className="hover:bg-slate-50/50">
+              <tr key={proposal.id} className={`hover:bg-slate-50/50 ${proposal.archived ? "opacity-60" : ""}`}>
                 <td className="px-6 py-4">
-                  <p className="font-semibold text-slate-900">{proposal.opportunityName}</p>
-                  <p className="text-xs text-slate-500">#{proposal.id.slice(0, 8)}</p>
+                  <div className="flex items-center gap-2">
+                    <div>
+                      <p className="font-semibold text-slate-900">{proposal.opportunityName}</p>
+                      <p className="text-xs text-slate-500">#{proposal.id.slice(0, 8)}</p>
+                    </div>
+                    {proposal.archived && (
+                      <Badge tone="neutral">Archived</Badge>
+                    )}
+                  </div>
                 </td>
                 <td className="px-6 py-4 text-slate-600">{proposal.ownerName ?? "Unassigned"}</td>
                 <td className="px-6 py-4">
@@ -114,6 +187,20 @@ export default function ProposalsPage() {
                       title="Export Word"
                     >
                       <FileText className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleArchive(proposal.id, proposal.opportunityName, proposal.archived ?? false)}
+                      className="text-slate-400 hover:text-amber-600 transition-colors"
+                      title={proposal.archived ? "Unarchive proposal" : "Archive proposal"}
+                    >
+                      {proposal.archived ? <ArchiveX className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(proposal.id, proposal.opportunityName)}
+                      className="text-slate-400 hover:text-red-600 transition-colors"
+                      title="Delete proposal"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </td>

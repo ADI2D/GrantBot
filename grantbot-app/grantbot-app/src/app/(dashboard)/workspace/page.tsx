@@ -3,13 +3,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { Sparkles, RefreshCw, Share2, ShieldAlert, Download, FileText } from "lucide-react";
+import { Sparkles, RefreshCw, Share2, ShieldAlert, Download, FileText, MessageSquare, Archive } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader, PageError, EmptyState } from "@/components/ui/page-state";
 import { useWorkspaceData } from "@/hooks/use-api";
+
+type Comment = {
+  id: string;
+  sectionId: string | null;
+  commenterName: string;
+  commenterEmail: string | null;
+  commentText: string;
+  createdAt: string;
+};
 
 export default function WorkspacePage() {
   const params = useSearchParams();
@@ -21,6 +30,10 @@ export default function WorkspacePage() {
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [draftContent, setDraftContent] = useState("");
   const [complianceState, setComplianceState] = useState(data?.compliance ?? []);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+
+  const { proposal, sections } = data ?? {};
 
   useEffect(() => {
     if (data?.compliance) {
@@ -29,7 +42,24 @@ export default function WorkspacePage() {
     }
   }, [data?.compliance]);
 
-  const { proposal, sections } = data ?? {};
+  // Load comments when proposal changes
+  useEffect(() => {
+    async function loadComments() {
+      if (!proposal?.id) return;
+
+      try {
+        const response = await fetch(`/api/proposals/${proposal.id}/comments`);
+        if (response.ok) {
+          const data = await response.json() as { comments: Comment[] };
+          setComments(data.comments);
+        }
+      } catch (err) {
+        console.error("[workspace] Error loading comments:", err);
+      }
+    }
+
+    loadComments();
+  }, [proposal?.id]);
 
   const activeSection = useMemo(() => {
     if (!sections?.length) return undefined;
@@ -94,16 +124,16 @@ export default function WorkspacePage() {
     },
   });
 
-  // Autosave after 2 seconds of inactivity
+  // Autosave after 2 seconds of inactivity (disabled for archived proposals)
   useEffect(() => {
-    if (!activeSection || draftContent === activeSection.content) return;
+    if (!activeSection || draftContent === activeSection.content || proposal?.archived) return;
 
     const timeoutId = setTimeout(() => {
       sectionMutation.mutate(draftContent);
     }, 2000);
 
     return () => clearTimeout(timeoutId);
-  }, [draftContent, activeSection, sectionMutation]);
+  }, [draftContent, activeSection, sectionMutation, proposal?.archived]);
 
   if (isLoading) return <PageLoader label="Loading workspace" />;
   if (error || !data || !sections?.length) {
@@ -157,8 +187,68 @@ export default function WorkspacePage() {
     }
   };
 
+  const handleShareDraft = async () => {
+    if (!proposal?.id) return;
+
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      "⚠️ SHARING CONFIRMATION\n\n" +
+      "Anyone with this link can:\n" +
+      "• View the full proposal draft\n" +
+      "• Leave comments and feedback\n" +
+      "• Access it without logging in\n\n" +
+      "The link will automatically expire after 7 days.\n" +
+      "You can revoke access early at any time.\n\n" +
+      "Do you want to continue?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setShareMessage("Generating share link...");
+
+      const response = await fetch(`/api/proposals/${proposal.id}/share`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate share link");
+      }
+
+      const { shareUrl } = await response.json() as { shareUrl: string };
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareUrl);
+      setShareMessage("Link copied to clipboard!");
+
+      // Clear message after 3 seconds
+      setTimeout(() => setShareMessage(null), 3000);
+    } catch (error) {
+      console.error("Share error:", error);
+      setShareMessage("Failed to generate share link");
+      setTimeout(() => setShareMessage(null), 3000);
+    }
+  };
+
   return (
     <div className="space-y-8">
+      {proposal?.archived && (
+        <div className="rounded-2xl border border-slate-300 bg-slate-100 p-4 text-sm text-slate-700">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-400 bg-white text-slate-600">
+              <Archive className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-semibold">This proposal is archived</p>
+              <p className="text-xs text-slate-600/80">
+                This proposal is in read-only mode. To edit this proposal, unarchive it from the Proposals page.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       {impersonated && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
           <div className="flex flex-wrap items-center gap-3">
@@ -208,11 +298,11 @@ export default function WorkspacePage() {
               </Button>
             </>
           )}
-          <Button variant="secondary" className="gap-2">
+          <Button variant="secondary" className="gap-2" onClick={handleShareDraft} disabled={proposal?.archived}>
             <Share2 className="h-4 w-4" />
-            Share draft link
+            {shareMessage ?? "Share draft link"}
           </Button>
-          <Button className="gap-2">
+          <Button className="gap-2" disabled={proposal?.archived}>
             <Sparkles className="h-4 w-4" />
             Ask GrantBot
           </Button>
@@ -280,7 +370,7 @@ export default function WorkspacePage() {
                               onClick={() =>
                                 handleComplianceStatus(sectionIndex, itemIndex, option.value)
                               }
-                              disabled={complianceMutation.isPending}
+                              disabled={complianceMutation.isPending || proposal?.archived}
                               >
                                 {option.label}
                               </button>
@@ -291,6 +381,34 @@ export default function WorkspacePage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-slate-600" />
+                <p className="font-semibold text-slate-800">
+                  Reviewer Feedback ({comments.filter((c) => c.sectionId === activeSection?.id).length})
+                </p>
+              </div>
+              {comments.filter((c) => c.sectionId === activeSection?.id).length === 0 && (
+                <p className="mt-2 text-slate-500">No comments on this section yet.</p>
+              )}
+              <div className="mt-3 space-y-3">
+                {comments
+                  .filter((c) => c.sectionId === activeSection?.id)
+                  .map((comment) => (
+                    <div key={comment.id} className="rounded-xl border border-slate-100 bg-white p-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-xs font-semibold text-slate-900">{comment.commenterName}</p>
+                          <p className="text-xs text-slate-500">
+                            {new Date(comment.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="mt-2 text-xs text-slate-700">{comment.commentText}</p>
+                    </div>
+                  ))}
               </div>
             </div>
           </Card>
@@ -304,18 +422,24 @@ export default function WorkspacePage() {
                 <p className="text-xs text-slate-500">{proposal.opportunityName}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" className="gap-2" onClick={handleRegenerate}>
+                <Button variant="secondary" size="sm" className="gap-2" onClick={handleRegenerate} disabled={proposal.archived}>
                   <RefreshCw className="h-4 w-4" />
                   Regenerate
                 </Button>
                 <Badge tone="info">Confidence {(proposal.confidence ?? 0).toFixed(2)}</Badge>
               </div>
             </div>
-            <Textarea rows={18} value={draftContent} onChange={(event) => setDraftContent(event.target.value)} />
+            <Textarea
+              rows={18}
+              value={draftContent}
+              onChange={(event) => setDraftContent(event.target.value)}
+              disabled={proposal.archived}
+              className={proposal.archived ? "opacity-60 cursor-not-allowed" : ""}
+            />
             <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-              <p>Edits save back to Supabase</p>
+              <p>{proposal.archived ? "Read-only mode" : "Edits save back to Supabase"}</p>
               <div className="flex gap-3">
-                <Button variant="secondary" size="sm" onClick={handleSaveSection} disabled={sectionMutation.isPending}>
+                <Button variant="secondary" size="sm" onClick={handleSaveSection} disabled={sectionMutation.isPending || proposal.archived}>
                   Save section
                 </Button>
               </div>
