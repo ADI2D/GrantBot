@@ -21,6 +21,7 @@ export default function WorkspacePage() {
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [draftContent, setDraftContent] = useState("");
   const [complianceState, setComplianceState] = useState(data?.compliance ?? []);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (data?.compliance) {
@@ -157,6 +158,35 @@ export default function WorkspacePage() {
     }
   };
 
+  const handleShareDraft = async () => {
+    if (!proposal?.id) return;
+
+    try {
+      setShareMessage("Generating share link...");
+
+      const response = await fetch(`/api/proposals/${proposal.id}/share`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate share link");
+      }
+
+      const { shareUrl } = await response.json() as { shareUrl: string };
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareUrl);
+      setShareMessage("Link copied to clipboard!");
+
+      // Clear message after 3 seconds
+      setTimeout(() => setShareMessage(null), 3000);
+    } catch (error) {
+      console.error("Share error:", error);
+      setShareMessage("Failed to generate share link");
+      setTimeout(() => setShareMessage(null), 3000);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {impersonated && (
@@ -208,9 +238,9 @@ export default function WorkspacePage() {
               </Button>
             </>
           )}
-          <Button variant="secondary" className="gap-2">
+          <Button variant="secondary" className="gap-2" onClick={handleShareDraft}>
             <Share2 className="h-4 w-4" />
-            Share draft link
+            {shareMessage ?? "Share draft link"}
           </Button>
           <Button className="gap-2">
             <Sparkles className="h-4 w-4" />
