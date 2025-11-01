@@ -59,7 +59,7 @@ export async function fetchOpportunities(client: Client, orgId: string): Promise
     .select(
       "id, name, focus_area, amount, deadline, alignment_score, status, compliance_notes",
     )
-    .eq("organization_id", orgId)
+    .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .order("deadline", { ascending: true });
 
   if (error) {
