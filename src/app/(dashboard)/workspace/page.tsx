@@ -3,13 +3,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { Sparkles, RefreshCw, Share2, ShieldAlert, Download, FileText } from "lucide-react";
+import { Sparkles, RefreshCw, Share2, ShieldAlert, Download, FileText, MessageSquare } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader, PageError, EmptyState } from "@/components/ui/page-state";
 import { useWorkspaceData } from "@/hooks/use-api";
+
+type Comment = {
+  id: string;
+  sectionId: string | null;
+  commenterName: string;
+  commenterEmail: string | null;
+  commentText: string;
+  createdAt: string;
+};
 
 export default function WorkspacePage() {
   const params = useSearchParams();
@@ -22,6 +31,7 @@ export default function WorkspacePage() {
   const [draftContent, setDraftContent] = useState("");
   const [complianceState, setComplianceState] = useState(data?.compliance ?? []);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
 
   useEffect(() => {
     if (data?.compliance) {
@@ -29,6 +39,25 @@ export default function WorkspacePage() {
       setComplianceState(data.compliance);
     }
   }, [data?.compliance]);
+
+  // Load comments when proposal changes
+  useEffect(() => {
+    async function loadComments() {
+      if (!proposal?.id) return;
+
+      try {
+        const response = await fetch(`/api/proposals/${proposal.id}/comments`);
+        if (response.ok) {
+          const data = await response.json() as { comments: Comment[] };
+          setComments(data.comments);
+        }
+      } catch (err) {
+        console.error("[workspace] Error loading comments:", err);
+      }
+    }
+
+    loadComments();
+  }, [proposal?.id]);
 
   const { proposal, sections } = data ?? {};
 
@@ -160,6 +189,21 @@ export default function WorkspacePage() {
 
   const handleShareDraft = async () => {
     if (!proposal?.id) return;
+
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      "⚠️ SHARING CONFIRMATION\n\n" +
+      "Anyone with this link can:\n" +
+      "• View the full proposal draft\n" +
+      "• Leave comments and feedback\n" +
+      "• Access it without logging in\n\n" +
+      "The link will remain active until you revoke it.\n\n" +
+      "Do you want to continue?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
 
     try {
       setShareMessage("Generating share link...");
@@ -321,6 +365,34 @@ export default function WorkspacePage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-slate-600" />
+                <p className="font-semibold text-slate-800">
+                  Reviewer Feedback ({comments.filter((c) => c.sectionId === activeSection?.id).length})
+                </p>
+              </div>
+              {comments.filter((c) => c.sectionId === activeSection?.id).length === 0 && (
+                <p className="mt-2 text-slate-500">No comments on this section yet.</p>
+              )}
+              <div className="mt-3 space-y-3">
+                {comments
+                  .filter((c) => c.sectionId === activeSection?.id)
+                  .map((comment) => (
+                    <div key={comment.id} className="rounded-xl border border-slate-100 bg-white p-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-xs font-semibold text-slate-900">{comment.commenterName}</p>
+                          <p className="text-xs text-slate-500">
+                            {new Date(comment.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="mt-2 text-xs text-slate-700">{comment.commentText}</p>
+                    </div>
+                  ))}
               </div>
             </div>
           </Card>
