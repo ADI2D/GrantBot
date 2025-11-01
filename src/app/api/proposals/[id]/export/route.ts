@@ -7,10 +7,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const supabase = await createRouteSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) {
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .from("org_members")
       .select("role")
       .eq("organization_id", proposal.organization_id)
-      .eq("user_id", session.user.id)
+      .eq("user_id", user.id)
       .single();
 
     if (!membership) {
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     await supabase.from("activity_logs").insert({
       organization_id: proposal.organization_id,
       proposal_id: id,
-      user_id: session.user.id,
+      user_id: user.id,
       action: "proposal_exported",
       metadata: { format, filename },
     });

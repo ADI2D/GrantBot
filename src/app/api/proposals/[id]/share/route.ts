@@ -12,10 +12,11 @@ export async function POST(
   try {
     const supabase = await createRouteSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) {
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -37,7 +38,7 @@ export async function POST(
       .from("org_members")
       .select("organization_id")
       .eq("organization_id", proposal.organization_id)
-      .eq("user_id", session.user.id)
+      .eq("user_id", user.id)
       .maybeSingle();
 
     if (!membership) {
@@ -102,10 +103,11 @@ export async function DELETE(
   try {
     const supabase = await createRouteSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) {
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -126,7 +128,7 @@ export async function DELETE(
       .from("org_members")
       .select("organization_id")
       .eq("organization_id", proposal.organization_id)
-      .eq("user_id", session.user.id)
+      .eq("user_id", user.id)
       .maybeSingle();
 
     if (!membership) {

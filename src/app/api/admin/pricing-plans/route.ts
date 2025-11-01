@@ -19,15 +19,16 @@ function toNumber(value: unknown, field: string) {
 export async function GET() {
   const supabase = await createRouteSupabase();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (!session?.user) {
+  if (error || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    await requireAdminRole(session.user.id, ["super_admin", "developer"]);
+    await requireAdminRole(user.id, ["super_admin", "developer"]);
   } catch (error) {
     if (error instanceof AdminAuthorizationError) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -53,15 +54,16 @@ export async function GET() {
 export async function POST(request: Request) {
   const supabase = await createRouteSupabase();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (!session?.user) {
+  if (error || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    await requireAdminRole(session.user.id, ["super_admin"]);
+    await requireAdminRole(user.id, ["super_admin"]);
   } catch (error) {
     if (error instanceof AdminAuthorizationError) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -139,15 +141,16 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const supabase = await createRouteSupabase();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (!session?.user) {
+  if (error || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    await requireAdminRole(session.user.id, ["super_admin"]);
+    await requireAdminRole(user.id, ["super_admin"]);
   } catch (error) {
     if (error instanceof AdminAuthorizationError) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

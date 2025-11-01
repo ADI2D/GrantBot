@@ -71,10 +71,11 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createRouteSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) {
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -8,10 +8,11 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   try {
     const supabase = await createRouteSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) {
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     await supabase.from("activity_logs").insert({
       organization_id: proposal.organization_id,
       proposal_id: proposal.id,
-      user_id: session.user.id,
+      user_id: user.id,
       action: "section_regenerated",
       metadata: { sectionId, sectionTitle: sectionRecord.title },
     });

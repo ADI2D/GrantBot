@@ -7,16 +7,17 @@ import type { AdminRole } from "@/lib/admin";
 export async function POST(request: Request) {
   const supabase = await createRouteSupabase();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (!session?.user) {
+  if (error || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   let actorRole: AdminRole;
   try {
-    actorRole = await requireAdminRole(session.user.id, ["super_admin", "support"]);
+    actorRole = await requireAdminRole(user.id, ["super_admin", "support"]);
   } catch (error) {
     if (error instanceof AdminAuthorizationError) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
   const payload = await request.json();
 
   await recordAdminAction({
-    actorUserId: session.user.id,
+    actorUserId: user.id,
     actorRole,
     action: "billing.refund.initiated",
     targetType: "stripe_invoice",

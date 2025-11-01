@@ -20,10 +20,11 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createRouteSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) {
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
       .from("org_members")
       .select("role")
       .eq("organization_id", orgId)
-      .eq("user_id", session.user.id)
+      .eq("user_id", user.id)
       .single();
 
     if (!membership) {
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
       fileSize: file.size,
       mimeType: file.type,
       uploadedAt: new Date().toISOString(),
-      uploadedBy: session.user.email,
+      uploadedBy: user.email,
       url: urlData.publicUrl, // Storage reference path
     };
 
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
     // Log activity
     await supabase.from("activity_logs").insert({
       organization_id: orgId,
-      user_id: session.user.id,
+      user_id: user.id,
       action: "document_uploaded",
       metadata: { fileName: file.name, fileSize: file.size, title },
     });

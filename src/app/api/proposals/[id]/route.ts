@@ -13,10 +13,11 @@ export async function DELETE(
   try {
     const supabase = await createRouteSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) {
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -43,7 +44,7 @@ export async function DELETE(
       .from("org_members")
       .select("organization_id")
       .eq("organization_id", orgId)
-      .eq("user_id", session.user.id)
+      .eq("user_id", user.id)
       .maybeSingle();
 
     if (!membership) {
@@ -64,7 +65,7 @@ export async function DELETE(
     await supabase.from("activity_logs").insert({
       organization_id: orgId,
       proposal_id: proposalId,
-      user_id: session.user.id,
+      user_id: user.id,
       action: "proposal_deleted",
       metadata: { proposalId },
     });

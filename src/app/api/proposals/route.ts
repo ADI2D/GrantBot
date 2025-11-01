@@ -9,9 +9,10 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createRouteSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session?.user) {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -30,9 +31,10 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createRouteSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session?.user) {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
       .insert({
         organization_id: orgId,
         opportunity_id: opportunityId ?? null,
-        owner_name: ownerName ?? session.user.email,
+        owner_name: ownerName ?? user.email,
         status: "drafting",
         progress: 0,
         checklist_status: "in_progress",
@@ -100,7 +102,7 @@ export async function POST(request: NextRequest) {
     await supabase.from("activity_logs").insert({
       organization_id: orgId,
       proposal_id: newProposal.id,
-      user_id: session.user.id,
+      user_id: user.id,
       action: "proposal_created",
       metadata: { opportunityId, ownerName },
     });

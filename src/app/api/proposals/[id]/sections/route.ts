@@ -6,9 +6,10 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   try {
     const supabase = await createRouteSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session?.user) {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -26,9 +27,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   try {
     const supabase = await createRouteSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session?.user) {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -56,7 +58,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       await supabase.from("activity_logs").insert({
         organization_id: proposalRecord.organization_id,
         proposal_id: params.id,
-        user_id: session.user.id,
+        user_id: user.id,
         action: "section_updated",
         metadata: { sectionId },
       });

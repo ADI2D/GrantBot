@@ -13,10 +13,11 @@ export async function PATCH(
   try {
     const supabase = await createRouteSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) {
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -47,7 +48,7 @@ export async function PATCH(
       .from("org_members")
       .select("organization_id")
       .eq("organization_id", orgId)
-      .eq("user_id", session.user.id)
+      .eq("user_id", user.id)
       .maybeSingle();
 
     if (!membership) {
@@ -68,7 +69,7 @@ export async function PATCH(
     await supabase.from("activity_logs").insert({
       organization_id: orgId,
       proposal_id: proposalId,
-      user_id: session.user.id,
+      user_id: user.id,
       action: archived ? "proposal_archived" : "proposal_unarchived",
       metadata: { proposalId, archived },
     });

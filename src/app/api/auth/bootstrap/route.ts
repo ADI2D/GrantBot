@@ -6,10 +6,11 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createRouteSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) {
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     const { data: existingMembership, error: membershipError } = await adminClient
       .from("org_members")
       .select("organization_id, organizations!inner(*)")
-      .eq("user_id", session.user.id)
+      .eq("user_id", user.id)
       .maybeSingle();
 
     if (membershipError && membershipError.code !== "PGRST116") {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
         name: organizationName ?? "New Organization",
         onboarding_completion: 0,
         plan_id: defaultPlanId,
-        created_by: session.user.id,
+        created_by: user.id,
       })
       .select()
       .single();
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     const { error: memberError } = await adminClient.from("org_members").insert({
       organization_id: organization.id,
-      user_id: session.user.id,
+      user_id: user.id,
       role: "owner",
     });
 

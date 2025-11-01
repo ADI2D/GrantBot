@@ -8,16 +8,17 @@ import type { AdminRole } from "@/lib/admin";
 export async function POST(request: Request) {
   const supabase = await createRouteSupabase();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (!session?.user) {
+  if (error || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   let actorRole: AdminRole;
   try {
-    actorRole = await requireAdminRole(session.user.id, ["super_admin", "support"]);
+    actorRole = await requireAdminRole(user.id, ["super_admin", "support"]);
   } catch (error) {
     if (error instanceof AdminAuthorizationError) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
       organization_id: organizationId,
       subject,
       priority,
-      opened_by: session.user.id,
+      opened_by: user.id,
       status: payload.status ?? "open",
     })
     .select("id")
@@ -57,14 +58,14 @@ export async function POST(request: Request) {
     ticket_id: ticketData.id,
     event_type: "status.open",
     message: message || "Ticket created",
-    actor_admin_id: session.user.id,
+    actor_admin_id: user.id,
     metadata: payload.metadata ?? null,
   };
 
   await serviceClient.from("support_ticket_events").insert(eventPayload);
 
   await recordAdminAction({
-    actorUserId: session.user.id,
+    actorUserId: user.id,
     actorRole,
     action: "support.ticket.created",
     targetType: "support_ticket",
@@ -78,16 +79,17 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const supabase = await createRouteSupabase();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (!session?.user) {
+  if (error || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   let actorRole: AdminRole;
   try {
-    actorRole = await requireAdminRole(session.user.id, ["super_admin", "support"]);
+    actorRole = await requireAdminRole(user.id, ["super_admin", "support"]);
   } catch (error) {
     if (error instanceof AdminAuthorizationError) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -119,14 +121,14 @@ export async function PATCH(request: Request) {
     ticket_id: ticketId,
     event_type: `status.${status}`,
     message: message || `Ticket status updated to ${status}`,
-    actor_admin_id: session.user.id,
+    actor_admin_id: user.id,
     metadata: payload.metadata ?? null,
   };
 
   await serviceClient.from("support_ticket_events").insert(eventPayload);
 
   await recordAdminAction({
-    actorUserId: session.user.id,
+    actorUserId: user.id,
     actorRole,
     action: "support.ticket.updated",
     targetType: "support_ticket",
