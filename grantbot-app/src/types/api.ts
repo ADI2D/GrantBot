@@ -75,6 +75,12 @@ export type DocumentMeta = {
   title: string;
   status?: string;
   url?: string;
+  fileName?: string; // Original file name
+  filePath?: string; // Storage path
+  fileSize?: number; // Size in bytes
+  mimeType?: string; // MIME type
+  uploadedAt?: string; // ISO timestamp
+  uploadedBy?: string; // User email
 };
 
 export type WorkspaceResponse = {

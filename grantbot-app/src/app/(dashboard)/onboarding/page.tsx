@@ -7,11 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, UploadCloud, Trash2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { PageLoader, PageError } from "@/components/ui/page-state";
 import { useOrganizationProfile } from "@/hooks/use-api";
 import { useOrg } from "@/hooks/use-org";
-import type { DocumentMeta } from "@/types/api";
+import { FileUpload } from "@/components/documents/file-upload";
 
 const steps = [
   { label: "Org profile", description: "Mission, EIN, budget" },
@@ -39,8 +39,6 @@ export default function OnboardingPage() {
     impact: "",
     differentiator: "",
   });
-  const [documents, setDocuments] = useState<DocumentMeta[]>([]);
-  const [newDocument, setNewDocument] = useState<DocumentMeta>({ title: "", status: "Ready" });
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,7 +53,6 @@ export default function OnboardingPage() {
         impact: data.organization.impactSummary ?? "",
         differentiator: data.organization.differentiator ?? "",
       });
-      setDocuments(data.organization.documents ?? []);
     }
   }, [data]);
 
@@ -70,7 +67,6 @@ export default function OnboardingPage() {
       impact: string;
       differentiator: string;
       budget: string;
-      documents: DocumentMeta[];
     }) => {
       const response = await fetch(`/api/organization?orgId=${currentOrgId}`, {
         method: "PATCH",
@@ -96,20 +92,7 @@ export default function OnboardingPage() {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    mutation.mutate({
-      ...profile,
-      documents,
-    });
-  };
-
-  const handleAddDocument = () => {
-    if (!newDocument.title.trim()) return;
-    setDocuments((prev) => [...prev, newDocument]);
-    setNewDocument({ title: "", status: "Ready" });
-  };
-
-  const handleRemoveDocument = (title: string) => {
-    setDocuments((prev) => prev.filter((doc) => doc.title !== title));
+    mutation.mutate(profile);
   };
 
   if (isLoading) return <PageLoader label="Loading profile" />;
@@ -209,72 +192,14 @@ export default function OnboardingPage() {
                 onChange={(event) => handleChange("differentiator", event.target.value)}
               />
             </div>
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">Document vault</p>
-                  <p className="text-xs text-slate-500">
-                    Track which compliance artifacts are ready before exporting proposals.
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-2 rounded-xl border border-slate-100 bg-white p-3">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Document title (e.g., IRS 990)"
-                    value={newDocument.title}
-                    onChange={(event) =>
-                      setNewDocument((prev) => ({ ...prev, title: event.target.value }))
-                    }
-                  />
-                  <Input
-                    placeholder="URL or storage path"
-                    value={newDocument.url ?? ""}
-                    onChange={(event) =>
-                      setNewDocument((prev) => ({ ...prev, url: event.target.value }))
-                    }
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Status (Ready / Missing)"
-                    value={newDocument.status ?? ""}
-                    onChange={(event) =>
-                      setNewDocument((prev) => ({ ...prev, status: event.target.value }))
-                    }
-                  />
-                  <Button type="button" variant="secondary" onClick={handleAddDocument}>
-                    <UploadCloud className="mr-2 h-4 w-4" />
-                    Add document
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                {documents.length === 0 && (
-                  <p className="text-xs text-slate-500">No documents tracked yet.</p>
-                )}
-                {documents.map((doc) => (
-                  <div
-                    key={doc.title}
-                    className="flex items-center justify-between rounded-xl border border-slate-100 bg-white px-3 py-2 text-sm"
-                  >
-                    <div>
-                      <p className="font-semibold text-slate-800">{doc.title}</p>
-                      <p className="text-xs text-slate-500">
-                        {doc.status ?? "Status unknown"}
-                        {doc.url ? ` • ${doc.url}` : ""}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="text-slate-400 hover:text-rose-500"
-                      onClick={() => handleRemoveDocument(doc.title)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4">
+              <FileUpload
+                orgId={currentOrgId}
+                documents={data?.organization?.documents || []}
+                onUploadSuccess={() => {
+                  queryClient.invalidateQueries({ queryKey: ["organization", currentOrgId] });
+                }}
+              />
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-slate-500">

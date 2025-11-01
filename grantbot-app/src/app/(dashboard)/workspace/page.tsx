@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { Sparkles, RefreshCw, Share2, ShieldAlert } from "lucide-react";
+import { Sparkles, RefreshCw, Share2, ShieldAlert, Download, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,6 +94,17 @@ export default function WorkspacePage() {
     },
   });
 
+  // Autosave after 2 seconds of inactivity
+  useEffect(() => {
+    if (!activeSection || draftContent === activeSection.content) return;
+
+    const timeoutId = setTimeout(() => {
+      sectionMutation.mutate(draftContent);
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
+  }, [draftContent, activeSection, sectionMutation]);
+
   if (isLoading) return <PageLoader label="Loading workspace" />;
   if (error || !data || !sections?.length) {
     return <PageError message={error?.message || "Unable to load workspace"} />;
@@ -119,6 +130,31 @@ export default function WorkspacePage() {
     });
     setComplianceState(updated);
     complianceMutation.mutate(updated);
+  };
+
+  const handleExport = async (format: "pdf" | "docx") => {
+    if (!proposal?.id) return;
+
+    try {
+      const response = await fetch(`/api/proposals/${proposal.id}/export?format=${format}`);
+
+      if (!response.ok) {
+        throw new Error("Export failed");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `proposal-${proposal.id}.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export error:", error);
+      alert(`Failed to export ${format.toUpperCase()}`);
+    }
   };
 
   return (
@@ -150,6 +186,28 @@ export default function WorkspacePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {proposal && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="gap-2"
+                onClick={() => handleExport("pdf")}
+              >
+                <Download className="h-4 w-4" />
+                Export PDF
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="gap-2"
+                onClick={() => handleExport("docx")}
+              >
+                <FileText className="h-4 w-4" />
+                Export Word
+              </Button>
+            </>
+          )}
           <Button variant="secondary" className="gap-2">
             <Share2 className="h-4 w-4" />
             Share draft link
@@ -222,7 +280,7 @@ export default function WorkspacePage() {
                               onClick={() =>
                                 handleComplianceStatus(sectionIndex, itemIndex, option.value)
                               }
-                              disabled={complianceMutation.isLoading}
+                              disabled={complianceMutation.isPending}
                               >
                                 {option.label}
                               </button>

@@ -19,7 +19,13 @@ export function LoginForm() {
 
   const handlePasswordSignIn = async () => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) {
+      // Handle rate limit specifically
+      if (error.message.includes("rate limit") || error.status === 429) {
+        throw new Error("Too many login attempts. Please wait a few minutes and try again.");
+      }
+      throw error;
+    }
     window.location.href = "/dashboard";
   };
 
@@ -28,7 +34,12 @@ export function LoginForm() {
       email,
       options: { emailRedirectTo: `${window.location.origin}/dashboard` },
     });
-    if (error) throw error;
+    if (error) {
+      if (error.message.includes("rate limit") || error.status === 429) {
+        throw new Error("Too many requests. Please wait a few minutes and try again.");
+      }
+      throw error;
+    }
     setMessage("Magic link sent. Check your inbox.");
   };
 
@@ -39,7 +50,12 @@ export function LoginForm() {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    if (error) throw error;
+    if (error) {
+      if (error.message.includes("rate limit") || error.status === 429) {
+        throw new Error("Too many requests. Please wait a few minutes and try again.");
+      }
+      throw error;
+    }
     setMessage("Password reset email sent. Check your inbox.");
   };
 

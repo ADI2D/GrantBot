@@ -117,10 +117,10 @@ export default function OpportunitiesPage() {
                 <Button variant="secondary">Preview RFP</Button>
                 <Button
                   onClick={() => createProposal.mutate(opportunity.id)}
-                  disabled={createProposal.isLoading}
+                  disabled={createProposal.isPending}
                   className="gap-2"
                 >
-                  {createProposal.isLoading ? "Creating..." : "Draft proposal"}
+                  {createProposal.isPending ? "Creating..." : "Draft proposal"}
                 </Button>
               </div>
             </div>

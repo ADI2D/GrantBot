@@ -1,4 +1,12 @@
 -- Demo seed data for the GrantBot workspace
+truncate table public.admin_audit_logs cascade;
+truncate table public.admin_customer_notes cascade;
+truncate table public.support_ticket_events cascade;
+truncate table public.support_tickets cascade;
+truncate table public.billing_payments cascade;
+truncate table public.ai_cost_events cascade;
+truncate table public.feature_flags cascade;
+truncate table public.admin_users cascade;
 truncate table public.proposal_sections cascade;
 truncate table public.outcomes cascade;
 truncate table public.proposals cascade;
@@ -32,6 +40,12 @@ insert into public.organizations (
 insert into public.org_members (organization_id, user_id, role)
 values
   ('8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001', 'a8006bc4-02ce-4154-a29d-ebb25f87c5aa', 'owner');
+
+-- Seed admin roles (replace with real auth user IDs in non-demo environments)
+insert into public.admin_users (user_id, role)
+values
+  ('a8006bc4-02ce-4154-a29d-ebb25f87c5aa', 'super_admin'),
+  ('c5dfd1ac-b4f0-4b16-9d7a-6bbfcb0b7f1e', 'support');
 
 insert into public.opportunities (
   id,
@@ -199,6 +213,236 @@ insert into public.outcomes (
     90000,
     'Compliance checklist catches 92% of missing attachments.',
     now() - interval '40 days'
+  );
+
+-- Billing, pricing, and AI cost telemetry for admin dashboards
+insert into public.billing_payments (
+  organization_id,
+  stripe_invoice_id,
+  stripe_customer_id,
+  amount,
+  currency,
+  status,
+  due_date,
+  paid_at,
+  metadata,
+  created_at
+) values
+  (
+    '8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001',
+    'in_demo_001',
+    'cus_demo_001',
+    49900,
+    'usd',
+    'paid',
+    now() - interval '6 days',
+    now() - interval '5 days',
+    jsonb_build_object('plan', 'growth'),
+    now() - interval '7 days'
+  ),
+  (
+    '8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001',
+    'in_demo_002',
+    'cus_demo_001',
+    49900,
+    'usd',
+    'open',
+    now() + interval '10 days',
+    null,
+    jsonb_build_object('plan', 'growth'),
+    now() - interval '2 days'
+  ),
+  (
+    '8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001',
+    'in_demo_003',
+    'cus_demo_001',
+    49900,
+    'usd',
+    'past_due',
+    now() - interval '3 days',
+    null,
+    jsonb_build_object('plan', 'growth', 'notes', 'Card declined'),
+    now() - interval '15 days'
+  );
+
+insert into public.ai_cost_events (
+  organization_id,
+  proposal_id,
+  template_id,
+  model,
+  prompt_tokens,
+  completion_tokens,
+  total_tokens,
+  cost_usd,
+  metadata,
+  created_at
+) values
+  (
+    '8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001',
+    '0bdc3ad4-8c1a-4e63-9dc8-4fdd8ba4d301',
+    'proposal_draft_v1',
+    'gpt-4o-mini',
+    1820,
+    640,
+    2460,
+    3.24,
+    jsonb_build_object('summary', 'Initial narrative draft'),
+    now() - interval '4 days'
+  ),
+  (
+    '8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001',
+    '95df8db9-2b22-4c9b-ac1c-cbf0ff0cee02',
+    'compliance_check_v2',
+    'gpt-4o-mini',
+    940,
+    210,
+    1150,
+    1.08,
+    jsonb_build_object('summary', 'Compliance checklist pass'),
+    now() - interval '1 days'
+  );
+
+insert into public.admin_audit_logs (
+  actor_user_id,
+  actor_role,
+  action,
+  target_type,
+  target_id,
+  metadata,
+  ip_address,
+  user_agent,
+  created_at
+) values
+  (
+    'a8006bc4-02ce-4154-a29d-ebb25f87c5aa',
+    'super_admin',
+    'customer.note.created',
+    'organization',
+    '8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001',
+    jsonb_build_object('length', 148),
+    '10.0.0.5',
+    'Mozilla/5.0 (demo seed)',
+    now() - interval '3 days'
+  ),
+  (
+    'c5dfd1ac-b4f0-4b16-9d7a-6bbfcb0b7f1e',
+    'support',
+    'support.ticket.updated',
+    'support_ticket',
+    '2001',
+    jsonb_build_object('status', 'awaiting_customer'),
+    '10.0.0.12',
+    'Mozilla/5.0 (demo seed)',
+    now() - interval '12 hours'
+  );
+
+insert into public.admin_customer_notes (
+  organization_id,
+  admin_user_id,
+  content,
+  created_at
+) values
+  (
+    '8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001',
+    'a8006bc4-02ce-4154-a29d-ebb25f87c5aa',
+    'Met with the executive director; focus on storytelling in next proposal draft.',
+    now() - interval '3 days'
+  ),
+  (
+    '8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001',
+    'c5dfd1ac-b4f0-4b16-9d7a-6bbfcb0b7f1e',
+    'Customer requested billing review; follow up after finance sync.',
+    now() - interval '18 hours'
+  );
+
+insert into public.support_tickets (
+  id,
+  organization_id,
+  subject,
+  status,
+  priority,
+  opened_by,
+  created_at,
+  updated_at
+) values
+  (
+    2001,
+    '8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001',
+    'Unable to sync Stripe customer portal',
+    'open',
+    'high',
+    'a8006bc4-02ce-4154-a29d-ebb25f87c5aa',
+    now() - interval '2 days',
+    now() - interval '6 hours'
+  ),
+  (
+    2002,
+    '8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001',
+    'Question about proposal AI credits',
+    'closed',
+    'normal',
+    'c5dfd1ac-b4f0-4b16-9d7a-6bbfcb0b7f1e',
+    now() - interval '9 days',
+    now() - interval '1 days'
+  );
+
+insert into public.support_ticket_events (
+  ticket_id,
+  event_type,
+  message,
+  metadata,
+  actor_admin_id,
+  created_at
+) values
+  (
+    2001,
+    'status.updated',
+    'Ticket escalated to billing specialist.',
+    jsonb_build_object('from', 'open', 'to', 'pending_billing'),
+    'c5dfd1ac-b4f0-4b16-9d7a-6bbfcb0b7f1e',
+    now() - interval '12 hours'
+  ),
+  (
+    2002,
+    'comment.added',
+    'Provided guidance on AI credit usage and linked documentation.',
+    jsonb_build_object('channel', 'email'),
+    'a8006bc4-02ce-4154-a29d-ebb25f87c5aa',
+    now() - interval '2 days'
+  );
+
+insert into public.feature_flags (
+  key,
+  description,
+  rollout_percentage,
+  enabled,
+  target_plans,
+  target_customer_ids,
+  created_by,
+  created_at,
+  updated_at
+) values
+  (
+    'ai_pipeline_v2',
+    'Second-generation AI drafting pipeline',
+    25,
+    true,
+    '["growth","impact"]'::jsonb,
+    '[]'::jsonb,
+    'a8006bc4-02ce-4154-a29d-ebb25f87c5aa',
+    now() - interval '14 days',
+    now() - interval '2 days'
+  ),
+  (
+    'support_handoff_beta',
+    'Routes high-priority tickets to concierge channel',
+    0,
+    false,
+    '["impact"]'::jsonb,
+    '[]'::jsonb,
+    'c5dfd1ac-b4f0-4b16-9d7a-6bbfcb0b7f1e',
+    now() - interval '7 days',
+    now() - interval '7 days'
   );
 
 insert into public.activity_logs (

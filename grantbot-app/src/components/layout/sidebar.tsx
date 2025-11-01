@@ -11,6 +11,7 @@ import {
   BarChart3,
   FileText,
   CreditCard,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ const navItems = [
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "Checklists", href: "/checklists", icon: ClipboardList },
   { label: "Billing", href: "/billing", icon: CreditCard },
+  { label: "Connectors", href: "/admin/connectors", icon: Settings },
 ];
 
 export function Sidebar() {

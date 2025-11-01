@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FilePen } from "lucide-react";
+import { Download, FilePen, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,29 @@ import { formatDate } from "@/lib/format";
 
 export default function ProposalsPage() {
   const { data, isLoading, error } = useProposalsData();
+
+  const handleExport = async (proposalId: string, format: "pdf" | "docx") => {
+    try {
+      const response = await fetch(`/api/proposals/${proposalId}/export?format=${format}`);
+
+      if (!response.ok) {
+        throw new Error("Export failed");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `proposal-${proposalId}.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export error:", error);
+      alert(`Failed to export ${format.toUpperCase()}`);
+    }
+  };
 
   if (isLoading) return <PageLoader label="Loading proposals" />;
   if (error || !data) return <PageError message={error?.message || "Unable to load proposals"} />;
@@ -51,6 +74,7 @@ export default function ProposalsPage() {
               <th className="px-6 py-3">Progress</th>
               <th className="px-6 py-3">Due</th>
               <th className="px-6 py-3">Checklist</th>
+              <th className="px-6 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white">
@@ -74,6 +98,24 @@ export default function ProposalsPage() {
                   <Badge tone={proposal.checklistStatus === "ready" ? "success" : "warning"}>
                     {proposal.checklistStatus.replaceAll("_", " ")}
                   </Badge>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleExport(proposal.id, "pdf")}
+                      className="text-slate-400 hover:text-blue-600 transition-colors"
+                      title="Export PDF"
+                    >
+                      <Download className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleExport(proposal.id, "docx")}
+                      className="text-slate-400 hover:text-blue-600 transition-colors"
+                      title="Export Word"
+                    >
+                      <FileText className="h-4 w-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

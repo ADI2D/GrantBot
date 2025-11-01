@@ -30,17 +30,26 @@ STRIPE_SECRET_KEY=
 ```
 
 ### Supabase Schema & Seed
-`supabase/migrations/20241024_initial.sql` defines the multi-tenant tables (organizations, org_members, opportunities, proposals, proposal_sections, outcomes) plus RLS policies. Subsequent migrations add document metadata, billing plan fields, and audit timestamps. Use `supabase/seed/001_demo_data.sql` to load the GrantBot demo org:
-```bash
-# Via Supabase CLI or psql
-psql \"$SUPABASE_URL\" <<'SQL'
-\\i supabase/migrations/20241024_initial.sql
-\\i supabase/seed/001_demo_data.sql
-\\i supabase/migrations/20241026_org_members_read.sql
-\\i supabase/migrations/20241027_admin_roles_and_audit.sql
-SQL
-```
-Set `SUPABASE_SERVICE_ROLE_KEY` so API routes can proxy secure reads, while browser code relies on the anon key.
+All tables, indexes, and row-level policies live under `supabase/migrations`. They cover the entire workspace plus the super-admin panel (admin users, audit logs, billing invoices, AI cost events, support tickets, feature flags, pricing plans, etc.).
+
+1. **Install & authenticate CLI** (one-time):
+   ```bash
+   brew install supabase/tap/supabase   # or npm install -g supabase
+   supabase login                       # paste an access token from app.supabase.com
+   supabase link --project-ref <your-project-ref>
+   ```
+2. **Apply schema:**
+   ```bash
+   supabase db push
+   ```
+   This replays every migration file in order so the admin panel tables/policies are provisioned together with the core workspace schema.
+3. **Load demo content (optional):**
+   ```bash
+   supabase db seed --file supabase/seed/001_demo_data.sql
+   ```
+   The seed resets key tables and inserts a configured organization, proposals, billing invoices, AI cost telemetry, admin users, audit logs, support tickets, feature flags, and notes—everything the `/admin` experience expects out of the box. Replace the placeholder UUIDs with real `auth.users` IDs once you have Supabase auth wired up.
+
+Set `SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`. The service role key is required for server actions and API routes that write to RLS-protected admin tables (notes, tickets, billing overrides, etc.), while the browser uses the anon key.
 
 ### Billing Setup
 - Create a Stripe test account and generate a customer record for your organization.
