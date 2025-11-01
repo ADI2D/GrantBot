@@ -33,6 +33,8 @@ export default function WorkspacePage() {
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
 
+  const { proposal, sections } = data ?? {};
+
   useEffect(() => {
     if (data?.compliance) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- sync derived data after query resolves
@@ -58,8 +60,6 @@ export default function WorkspacePage() {
 
     loadComments();
   }, [proposal?.id]);
-
-  const { proposal, sections } = data ?? {};
 
   const activeSection = useMemo(() => {
     if (!sections?.length) return undefined;
