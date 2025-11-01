@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ proposal: newProposal });
   } catch (error) {
+    console.error("[proposals][POST] Error creating proposal:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },
