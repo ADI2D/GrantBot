@@ -28,6 +28,7 @@ export type Proposal = {
   checklistStatus: string;
   confidence: number | null;
   complianceSummary?: { section: string; items: { label: string; status: string }[] }[];
+  archived?: boolean;
 };
 
 export type LearningInsight = {

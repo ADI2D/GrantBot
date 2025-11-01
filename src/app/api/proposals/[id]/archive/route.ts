@@ -3,10 +3,10 @@ import { createRouteSupabase } from "@/lib/supabase-server";
 import { resolveOrgId } from "@/lib/org";
 
 /**
- * DELETE /api/proposals/[id]
- * Deletes a proposal and all associated data
+ * PATCH /api/proposals/[id]/archive
+ * Archives or unarchives a proposal
  */
-export async function DELETE(
+export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -22,6 +22,11 @@ export async function DELETE(
 
     const { id: proposalId } = await params;
     const orgId = resolveOrgId(request.nextUrl.searchParams.get("orgId"));
+    const { archived } = await request.json();
+
+    if (typeof archived !== "boolean") {
+      return NextResponse.json({ error: "archived must be a boolean" }, { status: 400 });
+    }
 
     // Verify user has access to this proposal's organization
     const { data: proposal } = await supabase
@@ -34,7 +39,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
     }
 
-    // Check that proposal belongs to the user's organization
     if (proposal.organization_id !== orgId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -50,28 +54,28 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Delete proposal (cascade will delete sections, comments, etc.)
+    // Update archived status
     const { error } = await supabase
       .from("proposals")
-      .delete()
+      .update({ archived })
       .eq("id", proposalId);
 
     if (error) {
       throw error;
     }
 
-    // Log the deletion
+    // Log the action
     await supabase.from("activity_logs").insert({
       organization_id: orgId,
       proposal_id: proposalId,
       user_id: session.user.id,
-      action: "proposal_deleted",
-      metadata: { proposalId },
+      action: archived ? "proposal_archived" : "proposal_unarchived",
+      metadata: { proposalId, archived },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, archived });
   } catch (error) {
-    console.error("[proposals][DELETE] Error deleting proposal:", error);
+    console.error("[proposals][archive] Error updating archived status:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },

@@ -60,6 +60,8 @@ export async function fetchOpportunities(client: Client, orgId: string): Promise
       "id, name, focus_area, amount, deadline, alignment_score, status, compliance_notes, application_url",
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
+    .neq("status", "closed") // Filter out closed opportunities
+    .gte("deadline", new Date().toISOString().split("T")[0]) // Filter out past deadlines (only future dates)
     .order("deadline", { ascending: true });
 
   if (error) {
@@ -89,6 +91,7 @@ type RawProposal = {
   checklist_status: string;
   confidence: number | null;
   compliance_summary: ComplianceSection[] | null;
+  archived: boolean | null;
   opportunities: {
     name: string;
     focus_area: string | null;
@@ -99,7 +102,7 @@ export async function fetchProposals(client: Client, orgId: string): Promise<Pro
   const { data, error } = await client
     .from("proposals")
     .select(
-      "id, opportunity_id, owner_name, status, progress, due_date, checklist_status, confidence, compliance_summary, opportunities:opportunity_id(name, focus_area)"
+      "id, opportunity_id, owner_name, status, progress, due_date, checklist_status, confidence, compliance_summary, archived, opportunities:opportunity_id(name, focus_area)"
     )
     .eq("organization_id", orgId)
     .order("due_date", { ascending: true });
@@ -129,6 +132,7 @@ export async function fetchProposals(client: Client, orgId: string): Promise<Pro
       checklistStatus: proposal.checklist_status,
       confidence: proposal.confidence,
       complianceSummary,
+      archived: proposal.archived ?? false,
     };
   });
 }

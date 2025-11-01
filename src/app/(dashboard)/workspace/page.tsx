@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { Sparkles, RefreshCw, Share2, ShieldAlert, Download, FileText, MessageSquare } from "lucide-react";
+import { Sparkles, RefreshCw, Share2, ShieldAlert, Download, FileText, MessageSquare, Archive } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -124,16 +124,16 @@ export default function WorkspacePage() {
     },
   });
 
-  // Autosave after 2 seconds of inactivity
+  // Autosave after 2 seconds of inactivity (disabled for archived proposals)
   useEffect(() => {
-    if (!activeSection || draftContent === activeSection.content) return;
+    if (!activeSection || draftContent === activeSection.content || proposal?.archived) return;
 
     const timeoutId = setTimeout(() => {
       sectionMutation.mutate(draftContent);
     }, 2000);
 
     return () => clearTimeout(timeoutId);
-  }, [draftContent, activeSection, sectionMutation]);
+  }, [draftContent, activeSection, sectionMutation, proposal?.archived]);
 
   if (isLoading) return <PageLoader label="Loading workspace" />;
   if (error || !data || !sections?.length) {
@@ -234,6 +234,21 @@ export default function WorkspacePage() {
 
   return (
     <div className="space-y-8">
+      {proposal?.archived && (
+        <div className="rounded-2xl border border-slate-300 bg-slate-100 p-4 text-sm text-slate-700">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-400 bg-white text-slate-600">
+              <Archive className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-semibold">This proposal is archived</p>
+              <p className="text-xs text-slate-600/80">
+                This proposal is in read-only mode. To edit this proposal, unarchive it from the Proposals page.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       {impersonated && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
           <div className="flex flex-wrap items-center gap-3">
@@ -283,11 +298,11 @@ export default function WorkspacePage() {
               </Button>
             </>
           )}
-          <Button variant="secondary" className="gap-2" onClick={handleShareDraft}>
+          <Button variant="secondary" className="gap-2" onClick={handleShareDraft} disabled={proposal?.archived}>
             <Share2 className="h-4 w-4" />
             {shareMessage ?? "Share draft link"}
           </Button>
-          <Button className="gap-2">
+          <Button className="gap-2" disabled={proposal?.archived}>
             <Sparkles className="h-4 w-4" />
             Ask GrantBot
           </Button>
@@ -355,7 +370,7 @@ export default function WorkspacePage() {
                               onClick={() =>
                                 handleComplianceStatus(sectionIndex, itemIndex, option.value)
                               }
-                              disabled={complianceMutation.isPending}
+                              disabled={complianceMutation.isPending || proposal?.archived}
                               >
                                 {option.label}
                               </button>
@@ -407,18 +422,24 @@ export default function WorkspacePage() {
                 <p className="text-xs text-slate-500">{proposal.opportunityName}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" className="gap-2" onClick={handleRegenerate}>
+                <Button variant="secondary" size="sm" className="gap-2" onClick={handleRegenerate} disabled={proposal.archived}>
                   <RefreshCw className="h-4 w-4" />
                   Regenerate
                 </Button>
                 <Badge tone="info">Confidence {(proposal.confidence ?? 0).toFixed(2)}</Badge>
               </div>
             </div>
-            <Textarea rows={18} value={draftContent} onChange={(event) => setDraftContent(event.target.value)} />
+            <Textarea
+              rows={18}
+              value={draftContent}
+              onChange={(event) => setDraftContent(event.target.value)}
+              disabled={proposal.archived}
+              className={proposal.archived ? "opacity-60 cursor-not-allowed" : ""}
+            />
             <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-              <p>Edits save back to Supabase</p>
+              <p>{proposal.archived ? "Read-only mode" : "Edits save back to Supabase"}</p>
               <div className="flex gap-3">
-                <Button variant="secondary" size="sm" onClick={handleSaveSection} disabled={sectionMutation.isPending}>
+                <Button variant="secondary" size="sm" onClick={handleSaveSection} disabled={sectionMutation.isPending || proposal.archived}>
                   Save section
                 </Button>
               </div>

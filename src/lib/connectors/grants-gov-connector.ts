@@ -310,15 +310,28 @@ export class GrantsGovConnector extends BaseConnector {
 
       console.log(`[${this.source}] Sample item keys:`, Object.keys(items[0]));
 
-      // Filter by date if 'since' is provided
-      if (since) {
-        return items.filter((item) => {
+      // Filter items to only active opportunities
+      const now = new Date();
+      const activeItems = items.filter((item) => {
+        // Filter by date if 'since' is provided
+        if (since) {
           const pubDate = this.parseDate(item.pubDate || item.published || item['dc:date']);
-          return pubDate && pubDate > since;
-        });
-      }
+          if (!pubDate || pubDate <= since) {
+            return false;
+          }
+        }
 
-      return items;
+        // Check if opportunity has a deadline and it's in the future
+        const deadline = this.parseDate(item.deadline || item.closeDate);
+        if (!deadline || deadline < now) {
+          return false; // No deadline or deadline has passed
+        }
+
+        return true;
+      });
+
+      console.log(`[${this.source}] Filtered to ${activeItems.length} active items (${items.length - activeItems.length} filtered out)`);
+      return activeItems;
     } catch (error) {
       console.error(`[${this.source}] RSS parse error:`, error);
       throw error;
@@ -372,7 +385,7 @@ export class GrantsGovConnector extends BaseConnector {
 
       console.log(`[${this.source}] Sample opportunity keys:`, Object.keys(opportunities[0]));
 
-      // Filter to only ACTIVE opportunities (not archived, with future or no deadline)
+      // Filter to only ACTIVE opportunities (not archived, with future deadlines)
       const now = new Date();
       const activeOpportunities = opportunities.filter((opp) => {
         // Skip if already archived
@@ -383,15 +396,18 @@ export class GrantsGovConnector extends BaseConnector {
           }
         }
 
-        // Skip if deadline has passed
-        if (opp.CloseDate) {
-          const closeDate = this.parseGrantsGovDate(opp.CloseDate);
-          if (closeDate && closeDate < now) {
-            return false; // Deadline passed
-          }
+        // Skip if no deadline (suspicious - grants always have deadlines)
+        if (!opp.CloseDate) {
+          return false; // No deadline - skip to avoid confusion
         }
 
-        return true; // Active opportunity
+        // Skip if deadline has passed
+        const closeDate = this.parseGrantsGovDate(opp.CloseDate);
+        if (!closeDate || closeDate < now) {
+          return false; // Deadline passed or invalid
+        }
+
+        return true; // Active opportunity with future deadline
       });
 
       console.log(`[${this.source}] Filtered to ${activeOpportunities.length} active opportunities (${opportunities.length - activeOpportunities.length} archived/closed)`);
