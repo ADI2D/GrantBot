@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
         .from("opportunities")
         .select("id, name")
         .eq("id", opportunityId)
-        .eq("organization_id", orgId)
-        .single();
+        .or(`organization_id.eq.${orgId},organization_id.is.null`)
+        .maybeSingle();
       if (opportunityRecord) {
         opportunityName = opportunityRecord.name ?? opportunityName;
       }
