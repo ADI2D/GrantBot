@@ -213,9 +213,19 @@ export default function ConnectorsAdminPage() {
                   </div>
                 </div>
 
-                {connector.errors && (
+                {connector.errors && Array.isArray(connector.errors) && connector.errors.length > 0 && (
                   <div className="mt-2 text-sm text-rose-600">
-                    Error: {JSON.stringify(connector.errors)}
+                    <span className="font-medium">Errors:</span>
+                    <ul className="mt-1 list-disc list-inside">
+                      {connector.errors.map((err: any, idx: number) => (
+                        <li key={idx}>{typeof err === 'string' ? err : err.message || JSON.stringify(err)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {connector.errors && !Array.isArray(connector.errors) && (
+                  <div className="mt-2 text-sm text-rose-600">
+                    <span className="font-medium">Error:</span> {typeof connector.errors === 'string' ? connector.errors : connector.errors.message || JSON.stringify(connector.errors)}
                   </div>
                 )}
               </div>
