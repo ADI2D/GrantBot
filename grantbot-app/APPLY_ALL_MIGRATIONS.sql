@@ -91,6 +91,52 @@ ALTER TABLE proposals ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT
 -- Create index for faster filtering of archived proposals
 CREATE INDEX IF NOT EXISTS idx_proposals_archived ON proposals(archived);
 
+-- 5. Create connector_sync_state table for connector health tracking
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS connector_sync_state (
+  source TEXT PRIMARY KEY,
+  last_sync_started_at TIMESTAMPTZ,
+  last_sync_completed_at TIMESTAMPTZ,
+  last_successful_sync_at TIMESTAMPTZ,
+  records_fetched INTEGER DEFAULT 0,
+  records_created INTEGER DEFAULT 0,
+  records_updated INTEGER DEFAULT 0,
+  records_skipped INTEGER DEFAULT 0,
+  errors JSONB,
+  status TEXT DEFAULT 'idle' CHECK (status IN ('idle', 'running', 'error')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for querying connector health
+CREATE INDEX IF NOT EXISTS idx_connector_sync_state_status
+  ON connector_sync_state(status, last_sync_completed_at);
+
+-- 6. Create sync_logs table for sync audit trail
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS sync_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  source TEXT NOT NULL,
+  started_at TIMESTAMPTZ NOT NULL,
+  completed_at TIMESTAMPTZ,
+  status TEXT NOT NULL CHECK (status IN ('success', 'partial', 'failed', 'running')),
+  records_processed INTEGER DEFAULT 0,
+  records_created INTEGER DEFAULT 0,
+  records_updated INTEGER DEFAULT 0,
+  records_skipped INTEGER DEFAULT 0,
+  errors JSONB,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for querying logs by source and time
+CREATE INDEX IF NOT EXISTS idx_sync_logs_source
+  ON sync_logs(source, started_at DESC);
+
+-- Index for finding recent logs
+CREATE INDEX IF NOT EXISTS idx_sync_logs_recent
+  ON sync_logs(started_at DESC);
+
 -- ============================================================================
 -- VERIFICATION
 -- ============================================================================
@@ -103,15 +149,16 @@ WHERE table_name = 'proposals'
   AND column_name IN ('share_token', 'share_expires_at', 'archived')
 ORDER BY column_name;
 
--- Check proposal_comments table exists
+-- Check all new tables exist
 SELECT table_name
 FROM information_schema.tables
-WHERE table_name = 'proposal_comments';
+WHERE table_name IN ('proposal_comments', 'connector_sync_state', 'sync_logs')
+ORDER BY table_name;
 
 -- Check indexes
 SELECT indexname, indexdef
 FROM pg_indexes
-WHERE tablename IN ('proposals', 'proposal_comments')
+WHERE tablename IN ('proposals', 'proposal_comments', 'connector_sync_state', 'sync_logs')
   AND indexname LIKE 'idx_%'
 ORDER BY tablename, indexname;
 
@@ -121,4 +168,5 @@ ORDER BY tablename, indexname;
 -- - Share draft links with 7-day expiration
 -- - External reviewer comments on shared proposals
 -- - Archive/unarchive proposals
+-- - Connector health monitoring and sync logs
 -- ============================================================================
