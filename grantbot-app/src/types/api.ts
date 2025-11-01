@@ -13,6 +13,7 @@ export type Opportunity = {
   alignmentScore: number | null;
   status: string;
   complianceNotes: string | null;
+  applicationUrl?: string | null;
 };
 
 export type Proposal = {
@@ -27,6 +28,7 @@ export type Proposal = {
   checklistStatus: string;
   confidence: number | null;
   complianceSummary?: { section: string; items: { label: string; status: string }[] }[];
+  archived?: boolean;
 };
 
 export type LearningInsight = {
