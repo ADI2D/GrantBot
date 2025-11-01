@@ -5,7 +5,7 @@ import { createRouteSupabase } from "@/lib/supabase-server";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteSupabase();
+    const supabase = await createRouteSupabase();
     const {
       data: { session },
     } = await supabase.auth.getSession();
