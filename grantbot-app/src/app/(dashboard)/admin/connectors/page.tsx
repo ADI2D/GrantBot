@@ -272,40 +272,42 @@ export default function ConnectorsAdminPage() {
       <Card className="p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Recent Sync Activity</h2>
         <div className="space-y-3">
-          {logsData?.logs.map((log) => (
-            <div
-              key={log.id}
-              className="flex items-center justify-between text-sm border-b border-slate-100 pb-3 last:border-0 last:pb-0"
-            >
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-slate-900 capitalize">
-                    {log.source.replace("_", " ")}
-                  </span>
-                  <Badge
-                    tone={
-                      log.status === "success"
-                        ? "success"
-                        : log.status === "partial"
-                          ? "warning"
-                          : log.status === "failed"
-                            ? "error"
-                            : "info"
-                    }
-                  >
-                    {log.status}
-                  </Badge>
-                </div>
-                <div className="mt-1 text-slate-600">
-                  {new Date(log.started_at).toLocaleString()} • Created: {log.records_created} •
-                  Updated: {log.records_updated} • Skipped: {log.records_skipped}
+          {logsData?.logs && logsData.logs.length > 0 ? (
+            logsData.logs.map((log) => (
+              <div
+                key={log.id}
+                className="flex items-center justify-between text-sm border-b border-slate-100 pb-3 last:border-0 last:pb-0"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-slate-900 capitalize">
+                      {log.source.replace("_", " ")}
+                    </span>
+                    <Badge
+                      tone={
+                        log.status === "success"
+                          ? "success"
+                          : log.status === "partial"
+                            ? "warning"
+                            : log.status === "failed"
+                              ? "error"
+                              : "info"
+                      }
+                    >
+                      {log.status}
+                    </Badge>
+                  </div>
+                  <div className="mt-1 text-slate-600">
+                    {new Date(log.started_at).toLocaleString()} • Created: {log.records_created} •
+                    Updated: {log.records_updated} • Skipped: {log.records_skipped}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-
-          {logsData?.logs.length === 0 && (
-            <p className="text-center text-slate-500 py-8">No sync history yet</p>
+            ))
+          ) : (
+            <p className="text-center text-slate-500 py-8">
+              No sync history yet. Click "Sync" or "Full Refresh" to run your first sync.
+            </p>
           )}
         </div>
       </Card>
