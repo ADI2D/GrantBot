@@ -7,11 +7,11 @@ import { getServiceSupabaseClient } from "@/lib/supabase-client";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = getServiceSupabaseClient();
-    const proposalId = params.id;
+    const { id: proposalId } = await params;
 
     // Fetch comments (RLS policies handle access control)
     const { data: comments, error } = await supabase
@@ -40,11 +40,11 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = getServiceSupabaseClient();
-    const proposalId = params.id;
+    const { id: proposalId } = await params;
     const body = await request.json();
 
     const { sectionId, commenterName, commenterEmail, commentText } = body;

@@ -8,7 +8,7 @@ import { resolveOrgId } from "@/lib/org";
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createRouteSupabase();
@@ -20,7 +20,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const proposalId = params.id;
+    const { id: proposalId } = await params;
     const orgId = resolveOrgId(request.nextUrl.searchParams.get("orgId"));
     const { archived } = await request.json();
 

@@ -7,7 +7,7 @@ import { createRouteSupabase } from "@/lib/supabase-server";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createRouteSupabase();
@@ -19,7 +19,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const proposalId = params.id;
+    const { id: proposalId } = await params;
 
     // Check if proposal already has a share token
     const { data: proposal } = await supabase
@@ -97,7 +97,7 @@ export async function POST(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createRouteSupabase();
@@ -109,7 +109,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const proposalId = params.id;
+    const { id: proposalId } = await params;
 
     // Verify user has access to this proposal's organization
     const { data: proposal } = await supabase
