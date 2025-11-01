@@ -57,10 +57,10 @@ export default function SharedProposalPage() {
       try {
         const supabase = getServiceSupabaseClient();
 
-        // Fetch proposal by share token (uses public RLS policy)
+        // Fetch proposal by share token (uses public RLS policy with expiration check)
         const { data: proposalData, error: proposalError } = await supabase
           .from("proposals")
-          .select("id, owner_name, status, progress, due_date, confidence")
+          .select("id, owner_name, status, progress, due_date, confidence, share_expires_at")
           .eq("share_token", token)
           .maybeSingle();
 
@@ -69,7 +69,15 @@ export default function SharedProposalPage() {
         }
 
         if (!proposalData) {
-          throw new Error("Invalid or expired share link");
+          throw new Error("This share link is invalid or has expired. Please request a new link from the proposal owner.");
+        }
+
+        // Double-check expiration on client side
+        if (proposalData.share_expires_at) {
+          const expiresAt = new Date(proposalData.share_expires_at);
+          if (expiresAt < new Date()) {
+            throw new Error("This share link expired on " + expiresAt.toLocaleDateString() + ". Please request a new link from the proposal owner.");
+          }
         }
 
         // Fetch opportunity name

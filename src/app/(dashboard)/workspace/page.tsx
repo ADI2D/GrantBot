@@ -197,7 +197,8 @@ export default function WorkspacePage() {
       "• View the full proposal draft\n" +
       "• Leave comments and feedback\n" +
       "• Access it without logging in\n\n" +
-      "The link will remain active until you revoke it.\n\n" +
+      "The link will automatically expire after 7 days.\n" +
+      "You can revoke access early at any time.\n\n" +
       "Do you want to continue?"
     );
 

@@ -24,7 +24,7 @@ export async function POST(
     // Check if proposal already has a share token
     const { data: proposal } = await supabase
       .from("proposals")
-      .select("id, share_token, organization_id")
+      .select("id, share_token, share_expires_at, organization_id")
       .eq("id", proposalId)
       .single();
 
@@ -44,10 +44,18 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // If share token already exists, return it
-    if (proposal.share_token) {
-      const shareUrl = `${request.nextUrl.origin}/shared/${proposal.share_token}`;
-      return NextResponse.json({ shareToken: proposal.share_token, shareUrl });
+    // If share token already exists and not expired, return it
+    if (proposal.share_token && proposal.share_expires_at) {
+      const expiresAt = new Date(proposal.share_expires_at);
+      if (expiresAt > new Date()) {
+        const shareUrl = `${request.nextUrl.origin}/shared/${proposal.share_token}`;
+        return NextResponse.json({
+          shareToken: proposal.share_token,
+          shareUrl,
+          expiresAt: proposal.share_expires_at,
+        });
+      }
+      // If expired, fall through to generate new token
     }
 
     // Generate new share token (cryptographically secure random string)
@@ -55,10 +63,17 @@ export async function POST(
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
-    // Update proposal with share token
+    // Set expiration to 7 days from now
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    // Update proposal with share token and expiration
     const { error } = await supabase
       .from("proposals")
-      .update({ share_token: shareToken })
+      .update({
+        share_token: shareToken,
+        share_expires_at: expiresAt.toISOString(),
+      })
       .eq("id", proposalId);
 
     if (error) {
@@ -66,7 +81,7 @@ export async function POST(
     }
 
     const shareUrl = `${request.nextUrl.origin}/shared/${shareToken}`;
-    return NextResponse.json({ shareToken, shareUrl });
+    return NextResponse.json({ shareToken, shareUrl, expiresAt: expiresAt.toISOString() });
   } catch (error) {
     console.error("[proposals][share] Error generating share token:", error);
     return NextResponse.json(
