@@ -21,6 +21,8 @@ export default function OpportunitiesPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const createProposal = useMutation({
     mutationFn: async (opportunityId: string) => {
@@ -51,7 +53,27 @@ export default function OpportunitiesPage() {
   if (isLoading) return <PageLoader label="Loading opportunities" />;
   if (error || !data) return <PageError message={error?.message || "Unable to load opportunities"} />;
 
-  const opportunities = data.opportunities;
+  // Filter and search opportunities
+  const filteredOpportunities = data.opportunities.filter((opp) => {
+    // Apply focus area filter
+    if (selectedFilter && opp.focusArea !== selectedFilter) {
+      return false;
+    }
+
+    // Apply search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesName = opp.name.toLowerCase().includes(query);
+      const matchesFocusArea = opp.focusArea?.toLowerCase().includes(query);
+      if (!matchesName && !matchesFocusArea) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  const opportunities = filteredOpportunities;
 
   return (
     <div className="space-y-8">
@@ -79,20 +101,56 @@ export default function OpportunitiesPage() {
 
       <Card className="p-5">
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setSelectedFilter(null)}
+            className={`rounded-full border px-4 py-1 text-sm transition-colors ${
+              selectedFilter === null
+                ? "border-blue-500 bg-blue-50 text-blue-700"
+                : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
+            }`}
+          >
+            All
+          </button>
           {filters.map((filter) => (
             <button
               key={filter}
-              className="rounded-full border border-slate-200 px-4 py-1 text-sm text-slate-600 hover:border-blue-200 hover:text-blue-600"
+              onClick={() => setSelectedFilter(filter === selectedFilter ? null : filter)}
+              className={`rounded-full border px-4 py-1 text-sm transition-colors ${
+                selectedFilter === filter
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
+              }`}
             >
               {filter}
             </button>
           ))}
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Input placeholder="Search funder, keyword, geography" className="w-full max-w-md" />
+          <Input
+            placeholder="Search funder, keyword, geography"
+            className="w-full max-w-md"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
           <Badge tone="info">CSV import ready</Badge>
+          {(selectedFilter || searchQuery) && (
+            <button
+              onClick={() => {
+                setSelectedFilter(null);
+                setSearchQuery("");
+              }}
+              className="text-sm text-slate-500 hover:text-slate-700"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
         {feedback && <p className="mt-4 text-sm text-slate-500">{feedback}</p>}
+        {(selectedFilter || searchQuery) && (
+          <p className="mt-4 text-sm text-slate-600">
+            Showing {opportunities.length} of {data.opportunities.length} opportunities
+          </p>
+        )}
       </Card>
 
       <div className="grid gap-5">
