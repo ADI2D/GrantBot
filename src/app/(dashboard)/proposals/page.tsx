@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FilePen, FileText } from "lucide-react";
+import { Download, FilePen, FileText, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +8,13 @@ import { Progress } from "@/components/ui/progress";
 import { PageLoader, PageError } from "@/components/ui/page-state";
 import { useProposalsData } from "@/hooks/use-api";
 import { formatDate } from "@/lib/format";
+import { useQueryClient } from "@tanstack/react-query";
+import { useOrg } from "@/hooks/use-org";
 
 export default function ProposalsPage() {
   const { data, isLoading, error } = useProposalsData();
+  const queryClient = useQueryClient();
+  const { currentOrgId } = useOrg();
 
   const handleExport = async (proposalId: string, format: "pdf" | "docx") => {
     try {
@@ -32,6 +36,33 @@ export default function ProposalsPage() {
     } catch (error) {
       console.error("Export error:", error);
       alert(`Failed to export ${format.toUpperCase()}`);
+    }
+  };
+
+  const handleDelete = async (proposalId: string, proposalName: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this proposal?\n\n"${proposalName}"\n\nThis action cannot be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/proposals/${proposalId}?orgId=${currentOrgId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete proposal");
+      }
+
+      // Refresh proposals list
+      queryClient.invalidateQueries({ queryKey: ["proposals"], exact: false });
+      alert("Proposal deleted successfully");
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("Failed to delete proposal. Please try again.");
     }
   };
 
@@ -114,6 +145,13 @@ export default function ProposalsPage() {
                       title="Export Word"
                     >
                       <FileText className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(proposal.id, proposal.opportunityName)}
+                      className="text-slate-400 hover:text-red-600 transition-colors"
+                      title="Delete proposal"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </td>
