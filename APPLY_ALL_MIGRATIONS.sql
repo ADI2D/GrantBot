@@ -137,7 +137,21 @@ CREATE INDEX IF NOT EXISTS idx_sync_logs_source
 CREATE INDEX IF NOT EXISTS idx_sync_logs_recent
   ON sync_logs(started_at DESC);
 
--- 7. Fix opportunities RLS policy to allow public opportunities
+-- 7. Fix Grants.gov URL format
+-- ============================================================================
+-- Update application URLs from old format to new format
+-- Old: https://www.grants.gov/web/grants/view-opportunity.html?oppId=312633
+-- New: https://www.grants.gov/search-results-detail/312633
+
+UPDATE opportunities
+SET application_url = REGEXP_REPLACE(
+  application_url,
+  'https://www\.grants\.gov/web/grants/view-opportunity\.html\?oppId=(\d+)',
+  'https://www.grants.gov/search-results-detail/\1'
+)
+WHERE application_url LIKE '%grants.gov/web/grants/view-opportunity.html%';
+
+-- 8. Fix opportunities RLS policy to allow public opportunities
 -- ============================================================================
 -- Allow authenticated users to read public opportunities (organization_id IS NULL)
 -- These are opportunities synced from external sources that aren't tied to a specific org

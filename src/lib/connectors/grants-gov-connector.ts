@@ -239,7 +239,7 @@ export class GrantsGovConnector extends BaseConnector {
 
       opportunities.push({
         title: `${agency} - ${program.name}`,
-        link: `https://www.grants.gov/web/grants/view-opportunity.html?oppId=${oppId}`,
+        link: `https://www.grants.gov/search-results-detail/${oppId}`,
         description: `Federal grant opportunity for ${program.name.toLowerCase()} projects. This program supports innovative approaches to ${program.focus.toLowerCase()} initiatives.`,
         pubDate: pubDate.toISOString(),
         guid: oppId.toString(),
@@ -420,7 +420,7 @@ export class GrantsGovConnector extends BaseConnector {
 
         return {
           title: `${opp.AgencyName || opp.AgencyCode} - ${opp.OpportunityTitle}`,
-          link: `https://www.grants.gov/web/grants/view-opportunity.html?oppId=${oppId}`,
+          link: `https://www.grants.gov/search-results-detail/${oppId}`,
           description: this.cleanText(opp.Description) || "",
           pubDate: postDate?.toISOString() || new Date().toISOString(),
           guid: String(oppId),
@@ -472,8 +472,23 @@ export class GrantsGovConnector extends BaseConnector {
     const pubDate = raw.pubDate as string;
 
     // Extract opportunity ID from link or GUID
-    const oppIdMatch = String(link).match(/oppId=(\d+)/);
-    const opportunityID = oppIdMatch ? oppIdMatch[1] : (raw.guid as string) || `gen_${Date.now()}`;
+    // Support both old and new URL formats:
+    // Old: https://www.grants.gov/web/grants/view-opportunity.html?oppId=312633
+    // New: https://www.grants.gov/search-results-detail/312633
+    let opportunityID: string;
+    const oldFormatMatch = String(link).match(/oppId=(\d+)/);
+    const newFormatMatch = String(link).match(/search-results-detail\/(\d+)/);
+
+    if (oldFormatMatch) {
+      opportunityID = oldFormatMatch[1];
+    } else if (newFormatMatch) {
+      opportunityID = newFormatMatch[1];
+    } else {
+      opportunityID = (raw.guid as string) || `gen_${Date.now()}`;
+    }
+
+    // Always use the new URL format
+    const applicationUrl = `https://www.grants.gov/search-results-detail/${opportunityID}`;
 
     // Parse title: "Agency Name - Grant Title"
     const titleParts = String(title).split(" - ");
@@ -497,7 +512,7 @@ export class GrantsGovConnector extends BaseConnector {
       status: this.determineStatus(raw.deadline as string | undefined),
       funder_name: this.cleanText(agencyName),
       eligibility_requirements: undefined,
-      application_url: String(link),
+      application_url: applicationUrl,
       contact_email: undefined,
       geographic_scope: "national",
       compliance_notes: this.cleanText(description)?.substring(0, 500),
