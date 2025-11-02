@@ -19,6 +19,18 @@ type DeletedProposal = {
   deletedAt: string;
 };
 
+type DeletedProposalRecord = {
+  id: string;
+  owner_name: string | null;
+  status: string;
+  due_date: string | null;
+  deleted_at: string;
+  opportunities: {
+    name: string | null;
+    focus_area?: string | null;
+  } | null;
+};
+
 export default function DeletedProposalsPage() {
   const { currentOrgId } = useOrg();
   const queryClient = useQueryClient();
@@ -30,11 +42,11 @@ export default function DeletedProposalsPage() {
       if (!response.ok) {
         throw new Error("Failed to fetch deleted proposals");
       }
-      const json = await response.json();
+      const json = (await response.json()) as { proposals: DeletedProposalRecord[] };
       return {
-        proposals: json.proposals.map((p: any) => ({
+        proposals: json.proposals.map<DeletedProposal>((p) => ({
           id: p.id,
-          opportunityName: p.opportunities?.name || "Unknown Opportunity",
+          opportunityName: p.opportunities?.name ?? "Unknown Opportunity",
           ownerName: p.owner_name,
           status: p.status,
           dueDate: p.due_date,

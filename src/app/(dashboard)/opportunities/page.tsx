@@ -1,19 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Target, Filter, AlertTriangle } from "lucide-react";
+import { Target, Filter, AlertTriangle, Search, X, DollarSign, Calendar, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { PageLoader, PageError, EmptyState } from "@/components/ui/page-state";
-import { useOpportunitiesData } from "@/hooks/use-api";
+import { useOpportunitiesData, type OpportunitiesFilters } from "@/hooks/use-api";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
 import { useOrg } from "@/hooks/use-org";
 
-const filters = [
+const focusAreas = [
   "Education",
   "Health & Wellness",
   "Community Development",
@@ -24,14 +24,52 @@ const filters = [
   "Other"
 ];
 
+const amountRanges = [
+  { label: "Any amount", min: undefined, max: undefined },
+  { label: "Under $10K", min: undefined, max: 10000 },
+  { label: "$10K - $50K", min: 10000, max: 50000 },
+  { label: "$50K - $100K", min: 50000, max: 100000 },
+  { label: "$100K - $500K", min: 100000, max: 500000 },
+  { label: "$500K+", min: 500000, max: undefined },
+];
+
 export default function OpportunitiesPage() {
-  const { data, isLoading, error } = useOpportunitiesData();
   const { currentOrgId } = useOrg();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+
+  // Filter state
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedFocusArea, setSelectedFocusArea] = useState<string | undefined>();
+  const [selectedAmountRange, setSelectedAmountRange] = useState(0);
+  const [geographicScope, setGeographicScope] = useState("");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  // Debounce search input (500ms delay)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Build filters object
+  const filters: OpportunitiesFilters = useMemo(() => {
+    const range = amountRanges[selectedAmountRange];
+    return {
+      search: debouncedSearch || undefined,
+      focusArea: selectedFocusArea,
+      minAmount: range.min,
+      maxAmount: range.max,
+      geographicScope: geographicScope || undefined,
+    };
+  }, [debouncedSearch, selectedFocusArea, selectedAmountRange, geographicScope]);
+
+  // Fetch opportunities with filters
+  const { data, isLoading, error } = useOpportunitiesData(filters);
 
   const createProposal = useMutation({
     mutationFn: async (opportunityId: string) => {
@@ -59,178 +97,254 @@ export default function OpportunitiesPage() {
     },
   });
 
-  if (isLoading) return <PageLoader label="Loading opportunities" />;
+  const hasActiveFilters = debouncedSearch || selectedFocusArea || selectedAmountRange > 0 || geographicScope;
+
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setDebouncedSearch("");
+    setSelectedFocusArea(undefined);
+    setSelectedAmountRange(0);
+    setGeographicScope("");
+  };
+
+  if (isLoading) return <PageLoader label="Searching opportunities" />;
   if (error || !data) return <PageError message={error?.message || "Unable to load opportunities"} />;
 
-  // Filter and search opportunities (backend now handles date filtering)
+  const opportunities = data.opportunities;
   const now = new Date();
-  const filteredOpportunities = data.opportunities.filter((opp) => {
-    // Apply focus area filter
-    if (selectedFilter && opp.focusArea !== selectedFilter) {
-      return false;
-    }
-
-    // Apply search query (name, focus area, funder name)
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesName = opp.name.toLowerCase().includes(query);
-      const matchesFocusArea = opp.focusArea?.toLowerCase().includes(query);
-      const matchesFunder = opp.funderName?.toLowerCase().includes(query);
-      if (!matchesName && !matchesFocusArea && !matchesFunder) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-
-  const opportunities = filteredOpportunities;
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-blue-600">Opportunity manager</p>
-          <h1 className="text-3xl font-semibold text-slate-900">
-            Align funders to your programs.
-          </h1>
-          <p className="text-sm text-slate-600">
-            Curated feed combines manual sourcing + AI fit scoring. CSV imports supported for concierge accounts.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="secondary" className="gap-2">
-            <Filter className="h-4 w-4" />
-            Filter
-          </Button>
-          <Button className="gap-2">
-            <Target className="h-4 w-4" />
-            Add opportunity
-          </Button>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <header className="space-y-1">
+        <p className="text-sm font-semibold text-blue-600">Opportunity Discovery</p>
+        <h1 className="text-3xl font-semibold text-slate-900">
+          Find funding faster.
+        </h1>
+        <p className="text-sm text-slate-600">
+          Search {data.opportunities.length.toLocaleString()}+ grant opportunities with instant results. Powered by AI-assisted matching.
+        </p>
       </header>
 
+      {/* Search Bar */}
       <Card className="p-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setSelectedFilter(null)}
-            className={`rounded-full border px-4 py-1 text-sm transition-colors ${
-              selectedFilter === null
-                ? "border-blue-500 bg-blue-50 text-blue-700"
-                : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
-            }`}
-          >
-            All
-          </button>
-          {filters.map((filter) => (
+        <div className="space-y-4">
+          {/* Main search input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+            <Input
+              placeholder="Search by keyword, funder, program, or geographic location..."
+              className="pl-10 pr-10 text-base"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+
+          {/* Quick filter chips */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-slate-700">Focus Area:</span>
             <button
-              key={filter}
-              onClick={() => setSelectedFilter(filter === selectedFilter ? null : filter)}
-              className={`rounded-full border px-4 py-1 text-sm transition-colors ${
-                selectedFilter === filter
-                  ? "border-blue-500 bg-blue-50 text-blue-700"
+              onClick={() => setSelectedFocusArea(undefined)}
+              className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                !selectedFocusArea
+                  ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
                   : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
               }`}
             >
-              {filter}
+              All
             </button>
-          ))}
-        </div>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Input
-            placeholder="Search funder, keyword, geography"
-            className="w-full max-w-md"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <Badge tone="info">CSV import ready</Badge>
-          {(selectedFilter || searchQuery) && (
+            {focusAreas.map((area) => (
+              <button
+                key={area}
+                onClick={() => setSelectedFocusArea(area === selectedFocusArea ? undefined : area)}
+                className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                  selectedFocusArea === area
+                    ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
+                    : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
+                }`}
+              >
+                {area}
+              </button>
+            ))}
+          </div>
+
+          {/* Advanced filters toggle */}
+          <div className="flex items-center justify-between border-t border-slate-100 pt-4">
             <button
-              onClick={() => {
-                setSelectedFilter(null);
-                setSearchQuery("");
-              }}
-              className="text-sm text-slate-500 hover:text-slate-700"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors"
             >
-              Clear filters
+              <Filter className="h-4 w-4" />
+              {showAdvancedFilters ? "Hide" : "Show"} advanced filters
             </button>
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="text-sm text-slate-500 hover:text-slate-700 underline"
+              >
+                Clear all filters
+              </button>
+            )}
+          </div>
+
+          {/* Advanced filters panel */}
+          {showAdvancedFilters && (
+            <div className="grid gap-4 border-t border-slate-100 pt-4 md:grid-cols-2">
+              {/* Amount range */}
+              <div>
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <DollarSign className="h-4 w-4" />
+                  Award Amount
+                </label>
+                <select
+                  value={selectedAmountRange}
+                  onChange={(e) => setSelectedAmountRange(Number(e.target.value))}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  {amountRanges.map((range, index) => (
+                    <option key={index} value={index}>
+                      {range.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Geographic scope */}
+              <div>
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <MapPin className="h-4 w-4" />
+                  Geographic Scope
+                </label>
+                <Input
+                  placeholder="e.g., California, National, International"
+                  value={geographicScope}
+                  onChange={(e) => setGeographicScope(e.target.value)}
+                  className="text-sm"
+                />
+              </div>
+            </div>
           )}
+
+          {/* Search stats */}
+          <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+            <p className="text-sm text-slate-600">
+              Showing <span className="font-semibold text-slate-900">{opportunities.length}</span> opportunities
+              {hasActiveFilters && ` matching your search`}
+            </p>
+            {debouncedSearch && (
+              <Badge tone="info">Searching: "{debouncedSearch}"</Badge>
+            )}
+          </div>
         </div>
-        {feedback && <p className="mt-4 text-sm text-slate-500">{feedback}</p>}
-        {(selectedFilter || searchQuery) && (
-          <p className="mt-4 text-sm text-slate-600">
-            Showing {opportunities.length} of {data.opportunities.length} opportunities
-          </p>
-        )}
       </Card>
 
+      {/* Feedback message */}
+      {feedback && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm text-blue-900">{feedback}</p>
+        </div>
+      )}
+
+      {/* Results grid */}
       <div className="grid gap-5">
         {opportunities.length === 0 && (
-          <EmptyState title="No opportunities" description="Add funders or import from your spreadsheet." />
+          <EmptyState
+            title="No opportunities found"
+            description={hasActiveFilters ? "Try adjusting your filters or search terms." : "Add funders or import from your spreadsheet."}
+          />
         )}
         {opportunities.map((opportunity) => {
           const deadline = opportunity.deadline ? new Date(opportunity.deadline) : null;
           const isOpen = deadline ? deadline >= now : false;
+          const isClosingSoon = deadline && isOpen && deadline.getTime() - now.getTime() < 7 * 24 * 60 * 60 * 1000;
 
           return (
-            <Card key={opportunity.id} className="p-5">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-base font-semibold text-slate-900">{opportunity.name}</p>
-                    {isOpen ? (
-                      <Badge tone="success" className="bg-green-100 text-green-700">Open</Badge>
-                    ) : (
-                      <Badge tone="neutral" className="bg-slate-100 text-slate-600">Closed</Badge>
+            <Card key={opportunity.id} className={`p-6 transition-shadow hover:shadow-md ${!isOpen ? "opacity-60" : ""}`}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  {/* Title and badges */}
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <h3 className="text-lg font-semibold text-slate-900">{opportunity.name}</h3>
+                    {!isOpen && <Badge tone="neutral">Closed</Badge>}
+                    {isClosingSoon && <Badge tone="warning">Closing Soon</Badge>}
+                    {opportunity.alignmentScore && opportunity.alignmentScore >= 0.8 && (
+                      <Badge tone="success">{formatPercent(opportunity.alignmentScore)} Match</Badge>
                     )}
                   </div>
-                  <p className="text-sm text-slate-500">
-                    {opportunity.funderName && `${opportunity.funderName} • `}
-                    Focus: {opportunity.focusArea ?? "Multi-issue"} • Due {formatDate(opportunity.deadline)}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-                    <Badge tone="info">{formatPercent(opportunity.alignmentScore)}</Badge>
-                    <Badge tone="neutral">{formatCurrency(opportunity.amount)}</Badge>
-                    <Badge tone="neutral">{opportunity.status.replaceAll("_", " ")}</Badge>
+
+                  {/* Metadata */}
+                  <div className="mb-4 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
+                    {opportunity.funderName && (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-slate-700">Funder:</span>
+                        {opportunity.funderName}
+                      </div>
+                    )}
+                    {opportunity.amount && (
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        <span className="font-semibold text-emerald-600">{formatCurrency(opportunity.amount)}</span>
+                      </div>
+                    )}
+                    {opportunity.focusArea && (
+                      <div className="flex items-center gap-2">
+                        <Target className="h-4 w-4" />
+                        {opportunity.focusArea}
+                      </div>
+                    )}
+                    {deadline && (
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span className={isClosingSoon ? "font-semibold text-amber-600" : ""}>
+                          Due: {formatDate(deadline)}
+                        </span>
+                      </div>
+                    )}
+                    {opportunity.geographicScope && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        {opportunity.geographicScope}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Compliance notes preview */}
+                  {opportunity.complianceNotes && (
+                    <p className="text-sm text-slate-600 line-clamp-2">
+                      {opportunity.complianceNotes}
+                    </p>
+                  )}
                 </div>
-              <div className="flex items-center gap-3">
-                {opportunity.applicationUrl ? (
+
+                {/* Actions */}
+                <div className="flex flex-col gap-2">
+                  {opportunity.applicationUrl && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => window.open(opportunity.applicationUrl!, "_blank")}
+                    >
+                      View RFP
+                    </Button>
+                  )}
                   <Button
-                    variant="secondary"
-                    onClick={() => {
-                      window.open(opportunity.applicationUrl!, '_blank');
-                    }}
+                    size="sm"
+                    onClick={() => createProposal.mutate(opportunity.id)}
+                    disabled={!isOpen || createProposal.isPending}
                   >
-                    Preview RFP
+                    Draft Proposal
                   </Button>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    disabled
-                    className="opacity-50"
-                  >
-                    No RFP link
-                  </Button>
-                )}
-                <Button
-                  onClick={() => createProposal.mutate(opportunity.id)}
-                  disabled={createProposal.isPending}
-                  className="gap-2"
-                >
-                  {createProposal.isPending ? "Creating..." : "Draft proposal"}
-                </Button>
-              </div>
-              </div>
-              {opportunity.complianceNotes && (
-                <div className="mt-4 rounded-2xl border border-dashed border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
-                  <div className="flex items-center gap-2 font-medium">
-                    <AlertTriangle className="h-4 w-4" />
-                    Compliance heads-up
-                  </div>
-                  <p className="text-amber-700">{opportunity.complianceNotes}</p>
                 </div>
-              )}
+              </div>
             </Card>
           );
         })}

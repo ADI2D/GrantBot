@@ -13,7 +13,7 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const baseStyles =
-  "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
+  "inline-flex items-center justify-center gap-2 rounded-[var(--radius-soft)] font-semibold transition-shadow duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-growth-teal)] focus-visible:ring-offset-[color:var(--color-clean-white)] disabled:pointer-events-none disabled:opacity-60";
 
 const sizeStyles: Record<ButtonSize, string> = {
   md: "px-4 py-2 text-sm",
@@ -22,11 +22,11 @@ const sizeStyles: Record<ButtonSize, string> = {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-blue-600 text-white shadow-sm hover:bg-blue-500 focus-visible:outline-blue-600",
+    "bg-[color:var(--color-growth-teal)] text-white shadow-soft hover:shadow-hover hover:brightness-105",
   secondary:
-    "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 focus-visible:outline-slate-400",
+    "bg-[color:var(--color-surface)] text-[color:var(--color-text-primary)] border border-[color:var(--color-border)] shadow-soft hover:bg-[color:var(--color-surface-muted)] hover:shadow-hover",
   ghost:
-    "text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus-visible:outline-slate-400",
+    "text-[color:var(--color-growth-teal)] hover:bg-[color:var(--color-surface-info)]",
 };
 
 export const Button = forwardRef<HTMLButtonElement, Props>(

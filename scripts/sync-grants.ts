@@ -11,9 +11,31 @@
 //   npm run sync:grants -- --source grants_gov  # Sync specific connector
 // ============================================================================
 
+import { readFileSync } from "fs";
+import { resolve } from "path";
 import { GrantsGovConnector } from "../src/lib/connectors/grants-gov-connector";
 import { GrantIngestionPipeline } from "../src/lib/ingestion/pipeline";
 import type { GrantConnector } from "../src/types/connectors";
+
+// Load environment variables from .env.local
+try {
+  const envPath = resolve(__dirname, "../.env.local");
+  const envContent = readFileSync(envPath, "utf-8");
+
+  envContent.split("\n").forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) return;
+
+    const [key, ...valueParts] = trimmed.split("=");
+    const value = valueParts.join("=").replace(/^["']|["']$/g, "");
+
+    if (key && value) {
+      process.env[key] = value;
+    }
+  });
+} catch (error) {
+  console.error("Error loading .env.local:", error);
+}
 
 // Parse command line arguments
 const args = process.argv.slice(2);

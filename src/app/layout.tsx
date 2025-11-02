@@ -2,6 +2,21 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppProviders } from "@/components/providers/app-providers";
 import { createServerSupabase } from "@/lib/supabase-server";
+import { Montserrat, Merriweather } from "next/font/google";
+
+const headingFont = Montserrat({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-heading-variable",
+  weight: ["600", "700", "800"],
+});
+
+const bodyFont = Merriweather({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-body-variable",
+  weight: ["300", "400", "700"],
+});
 
 export const metadata: Metadata = {
   title: "GrantBot | AI Grant Workspace",
@@ -27,8 +42,8 @@ export default async function RootLayout({
   } = await supabase.auth.getSession();
 
   return (
-    <html lang="en">
-      <body className="bg-slate-50 text-slate-900 antialiased">
+    <html lang="en" className={`${headingFont.variable} ${bodyFont.variable}`}>
+      <body className="antialiased font-body bg-surface text-primary">
         <AppProviders initialSession={session}>{children}</AppProviders>
       </body>
     </html>

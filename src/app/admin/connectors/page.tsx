@@ -19,7 +19,7 @@ type ConnectorHealth = {
   records_created: number;
   records_updated: number;
   records_skipped: number;
-  errors?: any;
+  errors?: unknown | unknown[] | null;
   hours_since_last_sync?: number;
 };
 
@@ -45,7 +45,31 @@ type SyncLog = {
   records_created: number;
   records_updated: number;
   records_skipped: number;
-  errors?: any;
+  errors?: unknown | unknown[] | null;
+};
+
+const formatErrorMessage = (error: unknown): string => {
+  if (!error) {
+    return "Unknown error";
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "object") {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string") {
+      return message;
+    }
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return "Unknown error";
+    }
+  }
+  return String(error);
 };
 
 export default function ConnectorsAdminPage() {
@@ -114,68 +138,75 @@ export default function ConnectorsAdminPage() {
   const { connectors, summary } = healthData;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <header>
-        <h1 className="text-2xl font-bold text-slate-900">Grant Connectors</h1>
-        <p className="text-sm text-slate-600">Monitor and manage data source integrations</p>
+      <header className="space-y-1">
+        <p className="text-xs uppercase tracking-[0.2em] text-muted">Data orchestration</p>
+        <h1 className="text-3xl font-semibold text-primary">Grant Connectors</h1>
+        <p className="text-sm text-muted">Monitor and manage data source integrations.</p>
       </header>
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="p-4">
+        <Card className="p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600">Total Connectors</p>
-              <p className="text-2xl font-bold text-slate-900">{summary.total}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted/80">Total connectors</p>
+              <p className="mt-3 text-2xl font-semibold text-primary">{summary.total}</p>
             </div>
-            <RefreshCw className="h-8 w-8 text-slate-400" />
+            <RefreshCw className="h-8 w-8 text-[color:var(--color-growth-teal)]/50" />
           </div>
         </Card>
 
-        <Card className="p-4">
+        <Card className="p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600">Healthy</p>
-              <p className="text-2xl font-bold text-emerald-600">{summary.healthy}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted/80">Healthy</p>
+              <p className="mt-3 text-2xl font-semibold text-[color:var(--color-success-green)]">
+                {summary.healthy}
+              </p>
             </div>
-            <CheckCircle className="h-8 w-8 text-emerald-500" />
+            <CheckCircle className="h-8 w-8 text-[color:var(--color-success-green)]" />
           </div>
         </Card>
 
-        <Card className="p-4">
+        <Card className="p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600">Warnings</p>
-              <p className="text-2xl font-bold text-amber-600">{summary.warning}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted/80">Warnings</p>
+              <p className="mt-3 text-2xl font-semibold text-[color:var(--color-warning-red)]">
+                {summary.warning}
+              </p>
             </div>
-            <AlertTriangle className="h-8 w-8 text-amber-500" />
+            <AlertTriangle className="h-8 w-8 text-[color:var(--color-warning-red)]" />
           </div>
         </Card>
 
-        <Card className="p-4">
+        <Card className="p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600">Errors</p>
-              <p className="text-2xl font-bold text-rose-600">{summary.error}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted/80">Errors</p>
+              <p className="mt-3 text-2xl font-semibold text-[color:var(--color-warning-red)]">
+                {summary.error}
+              </p>
             </div>
-            <XCircle className="h-8 w-8 text-rose-500" />
+            <XCircle className="h-8 w-8 text-[color:var(--color-warning-red)]" />
           </div>
         </Card>
       </div>
 
       {/* Connectors List */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Active Connectors</h2>
+        <h2 className="mb-4 text-lg font-semibold text-primary">Active connectors</h2>
         <div className="space-y-4">
           {connectors.map((connector) => (
             <div
               key={connector.source}
-              className="flex items-center justify-between border-b border-slate-100 pb-4 last:border-0 last:pb-0"
+              className="flex items-center justify-between border-b border-[color:var(--color-border)] pb-4 last:border-0 last:pb-0"
             >
               <div className="flex-1">
                 <div className="flex items-center gap-3">
-                  <h3 className="font-semibold text-slate-900 capitalize">
+                  <h3 className="font-semibold text-primary capitalize">
                     {connector.source.replace("_", " ")}
                   </h3>
                   <Badge
@@ -187,45 +218,48 @@ export default function ConnectorsAdminPage() {
                           : "error"
                     }
                   >
-                    {connector.health}
+                    {connector.health.charAt(0).toUpperCase() + connector.health.slice(1)}
                   </Badge>
                   {connector.status === "running" && (
-                    <Badge tone="info">Syncing...</Badge>
+                    <Badge tone="info" className="animate-pulse">Syncing now</Badge>
+                  )}
+                  {connector.status === "idle" && connector.health === "healthy" && (
+                    <Badge tone="neutral" className="bg-slate-100 text-slate-600">Ready</Badge>
                   )}
                 </div>
 
-                <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-slate-600">
+                <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-muted">
                   <div>
-                    <span className="font-medium">Last Sync:</span>{" "}
+                    <span className="font-medium text-primary">Last Sync:</span>{" "}
                     {connector.last_sync_completed_at
                       ? new Date(connector.last_sync_completed_at).toLocaleString()
                       : "Never"}
                   </div>
                   <div>
-                    <span className="font-medium">Records Fetched:</span>{" "}
+                    <span className="font-medium text-primary">Records Fetched:</span>{" "}
                     {connector.records_fetched}
                   </div>
                   <div>
-                    <span className="font-medium">Created:</span> {connector.records_created}
+                    <span className="font-medium text-primary">Created:</span> {connector.records_created}
                   </div>
                   <div>
-                    <span className="font-medium">Updated:</span> {connector.records_updated}
+                    <span className="font-medium text-primary">Updated:</span> {connector.records_updated}
                   </div>
                 </div>
 
-                {connector.errors && Array.isArray(connector.errors) && connector.errors.length > 0 && (
-                  <div className="mt-2 text-sm text-rose-600">
+                {Array.isArray(connector.errors) && connector.errors.length > 0 && (
+                  <div className="mt-3 text-sm text-[color:var(--color-warning-red)]">
                     <span className="font-medium">Errors:</span>
                     <ul className="mt-1 list-disc list-inside">
-                      {connector.errors.map((err: any, idx: number) => (
-                        <li key={idx}>{typeof err === 'string' ? err : err.message || JSON.stringify(err)}</li>
+                      {connector.errors.map((err, idx) => (
+                        <li key={idx}>{formatErrorMessage(err)}</li>
                       ))}
                     </ul>
                   </div>
                 )}
                 {connector.errors && !Array.isArray(connector.errors) && (
-                  <div className="mt-2 text-sm text-rose-600">
-                    <span className="font-medium">Error:</span> {typeof connector.errors === 'string' ? connector.errors : connector.errors.message || JSON.stringify(connector.errors)}
+                  <div className="mt-3 text-sm text-[color:var(--color-warning-red)]">
+                    <span className="font-medium">Error:</span> {formatErrorMessage(connector.errors)}
                   </div>
                 )}
               </div>
@@ -263,24 +297,24 @@ export default function ConnectorsAdminPage() {
           ))}
 
           {connectors.length === 0 && (
-            <p className="text-center text-slate-500 py-8">No connectors configured</p>
+            <p className="py-8 text-center text-muted">No connectors configured.</p>
           )}
         </div>
       </Card>
 
       {/* Recent Sync Logs */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Recent Sync Activity</h2>
-        <div className="space-y-3">
+        <h2 className="mb-4 text-lg font-semibold text-primary">Recent sync activity</h2>
+        <div className="space-y-3 text-sm">
           {logsData?.logs && logsData.logs.length > 0 ? (
             logsData.logs.map((log) => (
               <div
                 key={log.id}
-                className="flex items-center justify-between text-sm border-b border-slate-100 pb-3 last:border-0 last:pb-0"
+                className="flex items-center justify-between border-b border-[color:var(--color-border)] pb-3 last:border-0 last:pb-0"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-slate-900 capitalize">
+                    <span className="font-medium text-primary capitalize">
                       {log.source.replace("_", " ")}
                     </span>
                     <Badge
@@ -306,7 +340,7 @@ export default function ConnectorsAdminPage() {
             ))
           ) : (
             <p className="text-center text-slate-500 py-8">
-              No sync history yet. Click "Sync" or "Full Refresh" to run your first sync.
+              No sync history yet. Click “Sync” or “Full Refresh” to run your first sync.
             </p>
           )}
         </div>

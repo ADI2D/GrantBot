@@ -8,6 +8,35 @@ import { BaseConnector } from "./base-connector";
 import type { RawGrant, CanonicalOpportunity } from "@/types/connectors";
 import { XMLParser } from "fast-xml-parser";
 
+type RssItem = {
+  [key: string]: unknown;
+  title?: string;
+  description?: string;
+  link?: string;
+  guid?: string;
+  pubDate?: string;
+  published?: string;
+  deadline?: string;
+  closeDate?: string;
+  "dc:date"?: string;
+};
+
+type XmlOpportunity = {
+  [key: string]: unknown;
+  OpportunityID?: string;
+  OpportunityNumber?: string;
+  AgencyName?: string;
+  AgencyCode?: string;
+  OpportunityTitle?: string;
+  Description?: string;
+  CloseDate?: string;
+  PostDate?: string;
+  AwardCeiling?: number | string;
+  EstimatedTotalProgramFunding?: number | string;
+  ArchiveDate?: string;
+  CategoryOfFundingActivity?: string | string[];
+};
+
 /**
  * Connector for Grants.gov federal opportunities
  *
@@ -265,32 +294,36 @@ export class GrantsGovConnector extends BaseConnector {
       console.log(`[${this.source}] Parsed XML root keys:`, Object.keys(parsed));
 
       // Try different RSS/Atom structures
-      let items: any[] = [];
+      let items: RssItem[] = [];
 
       // Standard RSS 2.0: rss > channel > item
       if (parsed.rss?.channel?.item) {
-        items = Array.isArray(parsed.rss.channel.item)
+        const rawItems = Array.isArray(parsed.rss.channel.item)
           ? parsed.rss.channel.item
           : [parsed.rss.channel.item];
+        items = rawItems as RssItem[];
         console.log(`[${this.source}] Found ${items.length} items in RSS 2.0 format`);
       }
       // Atom feed: feed > entry
       else if (parsed.feed?.entry) {
-        items = Array.isArray(parsed.feed.entry)
+        const rawItems = Array.isArray(parsed.feed.entry)
           ? parsed.feed.entry
           : [parsed.feed.entry];
+        items = rawItems as RssItem[];
         console.log(`[${this.source}] Found ${items.length} items in Atom format`);
       }
       // RSS 1.0: RDF > item
       else if (parsed.RDF?.item) {
-        items = Array.isArray(parsed.RDF.item)
+        const rawItems = Array.isArray(parsed.RDF.item)
           ? parsed.RDF.item
           : [parsed.RDF.item];
+        items = rawItems as RssItem[];
         console.log(`[${this.source}] Found ${items.length} items in RDF format`);
       }
       // Direct items array
       else if (parsed.item) {
-        items = Array.isArray(parsed.item) ? parsed.item : [parsed.item];
+        const rawItems = Array.isArray(parsed.item) ? parsed.item : [parsed.item];
+        items = rawItems as RssItem[];
         console.log(`[${this.source}] Found ${items.length} direct items`);
       }
       else {
@@ -315,7 +348,7 @@ export class GrantsGovConnector extends BaseConnector {
       const activeItems = items.filter((item) => {
         // Filter by date if 'since' is provided
         if (since) {
-          const pubDate = this.parseDate(item.pubDate || item.published || item['dc:date']);
+          const pubDate = this.parseDate(item.pubDate || item.published || item["dc:date"]);
           if (!pubDate || pubDate <= since) {
             return false;
           }
@@ -366,11 +399,12 @@ export class GrantsGovConnector extends BaseConnector {
       console.log(`[${this.source}] Parsed XML Extract root keys:`, Object.keys(parsed));
 
       // The XML Extract structure is: Grants > OpportunitySynopsisDetail_1_0
-      let opportunities: any[] = [];
+      let opportunities: XmlOpportunity[] = [];
 
       if (parsed.Grants?.OpportunitySynopsisDetail_1_0) {
         const details = parsed.Grants.OpportunitySynopsisDetail_1_0;
-        opportunities = Array.isArray(details) ? details : [details];
+        const rawOpportunities = Array.isArray(details) ? details : [details];
+        opportunities = rawOpportunities as XmlOpportunity[];
         console.log(`[${this.source}] Found ${opportunities.length} opportunities in XML Extract`);
       } else {
         console.warn(`[${this.source}] Unexpected XML Extract structure`);

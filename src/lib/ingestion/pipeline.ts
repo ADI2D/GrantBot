@@ -40,13 +40,35 @@ export class GrantIngestionPipeline {
     const { incremental = true, dryRun = false } = options;
     const startTime = Date.now();
     const errors: Error[] = [];
+    const syncStartedAt = new Date();
 
     console.log(`[Pipeline] Starting sync for ${connector.source}...`);
+
+    // Create sync log entry
+    const { data: syncLogData, error: syncLogError } = await this.supabase
+      .from("sync_logs")
+      .insert({
+        source: connector.source,
+        started_at: syncStartedAt.toISOString(),
+        status: "running",
+        records_processed: 0,
+        records_created: 0,
+        records_updated: 0,
+        records_skipped: 0,
+      })
+      .select("id")
+      .single();
+
+    const syncLogId = syncLogData?.id;
+
+    if (syncLogError) {
+      console.error(`[Pipeline] Failed to create sync log entry:`, syncLogError);
+    }
 
     // Update sync state to 'running'
     await connector.updateSyncState({
       status: "running",
-      last_sync_started_at: new Date(),
+      last_sync_started_at: syncStartedAt,
       errors: [],
     } as SyncState);
 
@@ -63,15 +85,32 @@ export class GrantIngestionPipeline {
 
       if (rawData.length === 0) {
         console.log(`[Pipeline] ${connector.source}: No new records to process`);
+        const completedAt = new Date();
+
         await connector.updateSyncState({
           status: "idle",
-          last_sync_completed_at: new Date(),
-          last_successful_sync_at: new Date(),
+          last_sync_completed_at: completedAt,
+          last_successful_sync_at: completedAt,
           records_fetched: 0,
           records_created: 0,
           records_updated: 0,
           records_skipped: 0,
         } as SyncState);
+
+        // Update sync log entry
+        if (syncLogId) {
+          await this.supabase
+            .from("sync_logs")
+            .update({
+              completed_at: completedAt.toISOString(),
+              status: "success",
+              records_processed: 0,
+              records_created: 0,
+              records_updated: 0,
+              records_skipped: 0,
+            })
+            .eq("id", syncLogId);
+        }
 
         return {
           source: connector.source,
@@ -117,18 +156,35 @@ export class GrantIngestionPipeline {
 
       // Determine final status
       const status = errors.length === 0 ? "success" : errors.length < rawData.length ? "partial" : "failed";
+      const completedAt = new Date();
 
       // Update sync state
       await connector.updateSyncState({
         status: status === "failed" ? "error" : "idle",
-        last_sync_completed_at: new Date(),
-        last_successful_sync_at: status !== "failed" ? new Date() : undefined,
+        last_sync_completed_at: completedAt,
+        last_successful_sync_at: status !== "failed" ? completedAt : undefined,
         records_fetched: rawData.length,
         records_created: created,
         records_updated: updated,
         records_skipped: skipped,
         errors: errors.length > 0 ? errors.map((e) => e.message) : [],
       } as unknown as SyncState);
+
+      // Update sync log entry
+      if (syncLogId) {
+        await this.supabase
+          .from("sync_logs")
+          .update({
+            completed_at: completedAt.toISOString(),
+            status: status,
+            records_processed: rawData.length,
+            records_created: created,
+            records_updated: updated,
+            records_skipped: skipped,
+            errors: errors.length > 0 ? errors.map((e) => ({ message: e.message, stack: e.stack })) : null,
+          })
+          .eq("id", syncLogId);
+      }
 
       console.log(
         `[Pipeline] ${connector.source}: Completed in ${Date.now() - startTime}ms - Created: ${created}, Updated: ${updated}, Skipped: ${skipped}, Errors: ${errors.length}`
@@ -147,12 +203,29 @@ export class GrantIngestionPipeline {
     } catch (error) {
       console.error(`[Pipeline] ${connector.source}: Fatal error:`, error);
       errors.push(error as Error);
+      const completedAt = new Date();
 
       await connector.updateSyncState({
         status: "error",
-        last_sync_completed_at: new Date(),
+        last_sync_completed_at: completedAt,
         errors: errors.map((e) => e.message),
       } as unknown as SyncState);
+
+      // Update sync log entry
+      if (syncLogId) {
+        await this.supabase
+          .from("sync_logs")
+          .update({
+            completed_at: completedAt.toISOString(),
+            status: "failed",
+            records_processed: 0,
+            records_created: 0,
+            records_updated: 0,
+            records_skipped: 0,
+            errors: errors.map((e) => ({ message: e.message, stack: e.stack })),
+          })
+          .eq("id", syncLogId);
+      }
 
       return {
         source: connector.source,

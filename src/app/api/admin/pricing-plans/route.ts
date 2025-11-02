@@ -16,6 +16,17 @@ function toNumber(value: unknown, field: string) {
   return Math.round(parsed);
 }
 
+function toNullableNumber(value: unknown, field: string): number | null {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`${field} must be a positive number`);
+  }
+  return Math.round(parsed);
+}
+
 export async function GET() {
   const supabase = await createRouteSupabase();
   const {
@@ -78,6 +89,11 @@ export async function POST(request: Request) {
     const description = typeof payload.description === "string" ? payload.description.trim() : null;
     const monthlyPriceCents = toNumber(payload.monthlyPriceCents, "monthlyPriceCents");
     const maxProposals = toNumber(payload.maxProposalsPerMonth, "maxProposalsPerMonth");
+    const seatLimit = toNullableNumber(payload.seatLimit, "seatLimit");
+    const maxOpportunities = toNullableNumber(payload.maxOpportunities, "maxOpportunities");
+    const maxDocuments = toNullableNumber(payload.maxDocuments, "maxDocuments");
+    const allowAi = payload.allowAi !== false;
+    const allowAnalytics = payload.allowAnalytics !== false;
     const active = payload.active !== false;
 
     if (!id || !name) {
@@ -115,6 +131,11 @@ export async function POST(request: Request) {
         description,
         monthly_price_cents: monthlyPriceCents,
         max_proposals_per_month: maxProposals,
+        seat_limit: seatLimit,
+        max_opportunities: maxOpportunities,
+        max_documents: maxDocuments,
+        allow_ai: allowAi,
+        allow_analytics: allowAnalytics,
         active,
         stripe_product_id: stripeProductId,
         stripe_price_id: stripePriceId,
@@ -169,7 +190,7 @@ export async function PATCH(request: Request) {
     const { data: current, error: fetchError } = await adminClient
       .from("pricing_plans")
       .select(
-        "id, name, description, monthly_price_cents, max_proposals_per_month, stripe_product_id, stripe_price_id",
+        "id, name, description, monthly_price_cents, max_proposals_per_month, stripe_product_id, stripe_price_id, seat_limit, max_opportunities, max_documents, allow_ai, allow_analytics",
       )
       .eq("id", id)
       .maybeSingle();
@@ -199,14 +220,49 @@ export async function PATCH(request: Request) {
       updates.description = nextDescription ?? null;
     }
 
-    if (typeof payload.active === "boolean") {
+    if (typeof payload.active === "boolean" && payload.active !== current.active) {
       updates.active = payload.active;
+    }
+
+    if (payload.allowAi !== undefined) {
+      const nextAllowAi = Boolean(payload.allowAi);
+      if (nextAllowAi !== current.allow_ai) {
+        updates.allow_ai = nextAllowAi;
+      }
+    }
+
+    if (payload.allowAnalytics !== undefined) {
+      const nextAllowAnalytics = Boolean(payload.allowAnalytics);
+      if (nextAllowAnalytics !== current.allow_analytics) {
+        updates.allow_analytics = nextAllowAnalytics;
+      }
     }
 
     if (payload.maxProposalsPerMonth !== undefined) {
       const limit = toNumber(payload.maxProposalsPerMonth, "maxProposalsPerMonth");
       if (limit !== current.max_proposals_per_month) {
         updates.max_proposals_per_month = limit;
+      }
+    }
+
+    if (payload.seatLimit !== undefined) {
+      const seatLimit = toNullableNumber(payload.seatLimit, "seatLimit");
+      if (seatLimit !== (current.seat_limit ?? null)) {
+        updates.seat_limit = seatLimit;
+      }
+    }
+
+    if (payload.maxOpportunities !== undefined) {
+      const maxOpps = toNullableNumber(payload.maxOpportunities, "maxOpportunities");
+      if (maxOpps !== (current.max_opportunities ?? null)) {
+        updates.max_opportunities = maxOpps;
+      }
+    }
+
+    if (payload.maxDocuments !== undefined) {
+      const maxDocs = toNullableNumber(payload.maxDocuments, "maxDocuments");
+      if (maxDocs !== (current.max_documents ?? null)) {
+        updates.max_documents = maxDocs;
       }
     }
 

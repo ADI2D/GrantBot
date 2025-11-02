@@ -35,3 +35,7 @@ export async function requireAdminRole(userId: string, allowed: AdminRole[] = ["
 
   return role;
 }
+
+export async function requireSuperAdmin(userId: string) {
+  return requireAdminRole(userId, ["super_admin"]);
+}

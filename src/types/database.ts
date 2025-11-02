@@ -121,6 +121,12 @@ export type Database = {
           stripe_product_id: string | null;
           stripe_price_id: string | null;
           active: boolean;
+          seat_limit: number | null;
+          max_opportunities: number | null;
+          max_documents: number | null;
+          allow_ai: boolean | null;
+          allow_analytics: boolean | null;
+          features: unknown;
           created_at: string | null;
           updated_at: string | null;
         };

@@ -36,12 +36,36 @@ export function useOrganizationProfile() {
   });
 }
 
-export function useOpportunitiesData() {
+export type OpportunitiesFilters = {
+  search?: string;
+  focusArea?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  minDeadline?: string;
+  maxDeadline?: string;
+  geographicScope?: string;
+};
+
+export function useOpportunitiesData(filters?: OpportunitiesFilters) {
   const { currentOrgId } = useOrg();
+
+  // Build query string with filters
+  const params = new URLSearchParams();
+  if (currentOrgId) params.set("orgId", currentOrgId);
+  if (filters?.search) params.set("search", filters.search);
+  if (filters?.focusArea) params.set("focusArea", filters.focusArea);
+  if (filters?.minAmount !== undefined) params.set("minAmount", filters.minAmount.toString());
+  if (filters?.maxAmount !== undefined) params.set("maxAmount", filters.maxAmount.toString());
+  if (filters?.minDeadline) params.set("minDeadline", filters.minDeadline);
+  if (filters?.maxDeadline) params.set("maxDeadline", filters.maxDeadline);
+  if (filters?.geographicScope) params.set("geographicScope", filters.geographicScope);
+
+  const queryString = params.toString();
+
   return useQuery({
-    queryKey: ["opportunities", currentOrgId],
+    queryKey: ["opportunities", currentOrgId, filters],
     queryFn: () => fetcher<{ opportunities: DashboardResponse["opportunities"] }>(
-      `/api/opportunities?orgId=${currentOrgId}`,
+      `/api/opportunities?${queryString}`,
     ),
     enabled: Boolean(currentOrgId),
   });

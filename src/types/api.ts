@@ -15,6 +15,7 @@ export type Opportunity = {
   status: string;
   complianceNotes: string | null;
   applicationUrl?: string | null;
+  geographicScope?: string | null;
 };
 
 export type Proposal = {

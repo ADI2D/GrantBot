@@ -17,7 +17,19 @@ type PageParams = {
 };
 
 export default async function AdminCustomerDetailPage({ params }: PageParams) {
-  const orgId = params.orgId;
+  const orgParam = params.orgId;
+  let detail;
+
+  try {
+    detail = await fetchAdminCustomerDetail(orgParam);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("not found")) {
+      notFound();
+    }
+    throw error;
+  }
+
+  const resolvedOrgId = detail.organization.id;
 
   const addNote = async (formData: FormData) => {
     "use server";
@@ -39,7 +51,7 @@ export default async function AdminCustomerDetailPage({ params }: PageParams) {
 
     const serviceClient = getServiceSupabaseClient();
     const { error } = await serviceClient.from("admin_customer_notes").insert({
-      organization_id: orgId,
+      organization_id: resolvedOrgId,
       admin_user_id: session.user.id,
       content: noteContent,
     });
@@ -53,23 +65,12 @@ export default async function AdminCustomerDetailPage({ params }: PageParams) {
       actorRole,
       action: "customer.note.created",
       targetType: "organization",
-      targetId: orgId,
+      targetId: resolvedOrgId,
       metadata: { length: noteContent.length },
     });
 
-    revalidatePath(`/admin/customers/${orgId}`);
+    revalidatePath(`/admin/customers/${orgParam}`);
   };
-
-  let detail;
-
-  try {
-    detail = await fetchAdminCustomerDetail(orgId);
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("not found")) {
-      notFound();
-    }
-    throw error;
-  }
 
   const {
     organization,
@@ -100,10 +101,10 @@ export default async function AdminCustomerDetailPage({ params }: PageParams) {
       actorRole,
       action: "customer.impersonation.started",
       targetType: "organization",
-      targetId: orgId,
+      targetId: resolvedOrgId,
     });
 
-    redirect(`/workspace?orgId=${orgId}&impersonated=1`);
+    redirect(`/workspace?orgId=${resolvedOrgId}&impersonated=1`);
   };
 
   return (

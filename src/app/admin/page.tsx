@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/card";
 import { getServiceSupabaseClient } from "@/lib/supabase-client";
 import { formatCurrency, formatDate } from "@/lib/format";
 
@@ -29,9 +30,10 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-10">
-      <section>
-        <h1 className="text-2xl font-semibold text-slate-900">Operational overview</h1>
-        <p className="text-sm text-slate-500">Key metrics for the GrantBot workspace.</p>
+      <section className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.2em] text-muted">Executive view</p>
+        <h1 className="text-3xl font-semibold text-primary">Operational overview</h1>
+        <p className="text-sm text-muted">Key metrics for the GrantBot workspace.</p>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <DashboardCard title="Active organizations" value={orgCount} caption="Total orgs in Supabase" />
           <DashboardCard title="Members" value={memberCount} caption="Total seats across orgs" />
@@ -40,63 +42,64 @@ export default async function AdminDashboardPage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[2fr,1fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Recent invoices</h2>
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-primary">Recent invoices</h2>
           <table className="mt-4 w-full text-left text-sm">
-            <thead className="text-xs uppercase text-slate-500">
+            <thead className="text-xs uppercase text-muted">
               <tr>
-                <th className="py-2">Invoice</th>
-                <th className="py-2">Amount</th>
-                <th className="py-2">Status</th>
-                <th className="py-2">Date</th>
+                <th className="py-2 text-left font-semibold text-secondary">Invoice</th>
+                <th className="py-2 text-left font-semibold text-secondary">Amount</th>
+                <th className="py-2 text-left font-semibold text-secondary">Status</th>
+                <th className="py-2 text-left font-semibold text-secondary">Date</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[color:var(--color-border)]">
               {invoices.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-sm text-slate-500">
+                  <td colSpan={4} className="py-6 text-center text-sm text-muted">
                     No invoices recorded yet.
                   </td>
                 </tr>
               ) : (
                 invoices.map((invoice) => (
-                  <tr key={invoice.stripe_invoice_id}>
-                    <td className="py-2 text-slate-700">{invoice.stripe_invoice_id}</td>
-                    <td className="py-2 text-slate-700">
+                  <tr key={invoice.stripe_invoice_id} className="hover:bg-[color:var(--color-surface-muted)]">
+                    <td className="py-2 text-primary">{invoice.stripe_invoice_id}</td>
+                    <td className="py-2 text-primary">
                       {formatCurrency(Number(invoice.amount ?? 0), invoice.currency ?? "USD")}
                     </td>
-                    <td className="py-2 text-slate-500">{invoice.status ?? "unknown"}</td>
-                    <td className="py-2 text-slate-500">
-                      {invoice.created_at ? formatDate(invoice.created_at) : "--"}
-                    </td>
+                    <td className="py-2 text-muted">{invoice.status ?? "unknown"}</td>
+                    <td className="py-2 text-muted">{invoice.created_at ? formatDate(invoice.created_at) : "--"}</td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Recent admin activity</h2>
-          <ul className="mt-4 space-y-3 text-sm text-slate-600">
+        </Card>
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-primary">Recent admin activity</h2>
+          <ul className="mt-4 space-y-3 text-sm text-muted">
             {auditLogs.length === 0 ? (
-              <li className="text-slate-500">No admin actions recorded yet.</li>
+              <li className="text-muted">No admin actions recorded yet.</li>
             ) : (
               auditLogs.map((log, index) => (
-                <li key={`${log.created_at}-${index}`} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                  <p className="font-medium text-slate-800">{log.action}</p>
-                  <p className="text-xs text-slate-500">
-                    {log.actor_role ?? "unknown"} &bull; {log.created_at ? formatDate(log.created_at) : "--"}
+                <Card
+                  key={`${log.created_at}-${index}`}
+                  className="border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 py-2 shadow-none"
+                >
+                  <p className="font-medium text-primary">{log.action}</p>
+                  <p className="text-xs text-muted">
+                    {log.actor_role ?? "unknown"} • {log.created_at ? formatDate(log.created_at) : "--"}
                   </p>
                   {log.target_type && (
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted">
                       Target: {log.target_type} {log.target_id ?? "--"}
                     </p>
                   )}
-                </li>
+                </Card>
               ))
             )}
           </ul>
-        </div>
+        </Card>
       </section>
     </div>
   );
@@ -112,10 +115,10 @@ function DashboardCard({
   caption: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p className="text-xs uppercase text-slate-500">{title}</p>
-      <p className="mt-3 text-3xl font-semibold text-slate-900">{value.toLocaleString()}</p>
-      <p className="text-sm text-slate-500">{caption}</p>
-    </div>
+    <Card className="p-6">
+      <p className="text-xs uppercase tracking-[0.2em] text-muted/80">{title}</p>
+      <p className="mt-4 text-3xl font-semibold text-primary">{value.toLocaleString()}</p>
+      <p className="text-sm text-muted">{caption}</p>
+    </Card>
   );
 }

@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/card";
 import { fetchAdminAnalytics, formatRevenueTrendValue } from "@/lib/admin-analytics";
 import { formatCurrency } from "@/lib/format";
 
@@ -5,18 +6,26 @@ export default async function AdminAnalyticsPage() {
   const analytics = await fetchAdminAnalytics();
 
   return (
-    <div className="space-y-8">
-      <header>
-        <p className="text-xs uppercase text-slate-500">Insights</p>
-        <h1 className="text-2xl font-semibold text-slate-900">Analytics</h1>
-        <p className="text-sm text-slate-500">
+    <div className="space-y-10">
+      <header className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.2em] text-muted">Insights</p>
+        <h1 className="text-3xl font-semibold text-primary">Analytics</h1>
+        <p className="text-sm text-muted">
           Monitor growth, retention, and outcomes across every GrantBot organization.
         </p>
       </header>
 
       <section className="grid gap-6 lg:grid-cols-4">
-        <AnalyticsCard label="Active organizations" value={analytics.activeOrganizations.toString()} hint="Across all workspaces" />
-        <AnalyticsCard label="Seats provisioned" value={analytics.activeMembers.toString()} hint="Total users with access" />
+        <AnalyticsCard
+          label="Active organizations"
+          value={analytics.activeOrganizations.toString()}
+          hint="Across all workspaces"
+        />
+        <AnalyticsCard
+          label="Seats provisioned"
+          value={analytics.activeMembers.toString()}
+          hint="Total users with access"
+        />
         <AnalyticsCard
           label="Proposals this month"
           value={analytics.proposalsThisMonth.toString()}
@@ -39,23 +48,26 @@ export default async function AdminAnalyticsPage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[2fr,1fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Revenue trend</h2>
-          <p className="text-sm text-slate-500">Collected MRR over the last six months.</p>
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-primary">Revenue trend</h2>
+          <p className="text-sm text-muted">Collected MRR over the last six months.</p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {analytics.revenueTrend.map((point) => (
-              <div key={point.month} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs uppercase text-slate-500">{point.month}</p>
-                <p className="mt-2 text-lg font-semibold text-slate-900">
+              <Card
+                key={point.month}
+                className="border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4 shadow-none"
+              >
+                <p className="text-xs uppercase tracking-[0.2em] text-muted/80">{point.month}</p>
+                <p className="mt-2 text-lg font-semibold text-primary">
                   {formatRevenueTrendValue(point.total, analytics.currency)}
                 </p>
-              </div>
+              </Card>
             ))}
           </div>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Operations highlights</h2>
-          <ul className="mt-4 space-y-3 text-sm text-slate-600">
+        </Card>
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-primary">Operations highlights</h2>
+          <ul className="mt-4 space-y-3 text-sm text-muted">
             <li>
               {analytics.proposalsThisMonth > 0
                 ? `${analytics.proposalsThisMonth} proposals submitted this month.`
@@ -67,45 +79,46 @@ export default async function AdminAnalyticsPage() {
                 : "Waiting on new award outcomes."}
             </li>
             <li>
-              Active organizations total {analytics.activeOrganizations}. Keep an eye on onboarding completion for recent signups.
+              Active organizations total {analytics.activeOrganizations}. Keep an eye on onboarding completion for recent
+              signups.
             </li>
           </ul>
-        </div>
+        </Card>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">AI cost monitoring</h2>
-        <p className="text-sm text-slate-500">
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold text-primary">AI cost monitoring</h2>
+        <p className="text-sm text-muted">
           Alerts will trigger when monthly AI spend crosses $500 / $1000 / $2000 thresholds as outlined in the PRD.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs uppercase text-slate-500">Budget guardrail</p>
-            <p className="mt-2 text-lg font-semibold text-slate-900">$500</p>
-            <p className="text-xs text-slate-500">Slack alert to #ai-ops</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs uppercase text-slate-500">Optimization needed</p>
-            <p className="mt-2 text-lg font-semibold text-slate-900">$1,000</p>
-            <p className="text-xs text-slate-500">Auto-create support ticket</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs uppercase text-slate-500">Executive alert</p>
-            <p className="mt-2 text-lg font-semibold text-slate-900">$2,000</p>
-            <p className="text-xs text-slate-500">Email founders weekly report</p>
-          </div>
+          <Card className="border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4 shadow-none">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted/80">Budget guardrail</p>
+            <p className="mt-2 text-lg font-semibold text-primary">$500</p>
+            <p className="text-xs text-muted">Slack alert to #ai-ops</p>
+          </Card>
+          <Card className="border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4 shadow-none">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted/80">Optimization needed</p>
+            <p className="mt-2 text-lg font-semibold text-primary">$1,000</p>
+            <p className="text-xs text-muted">Auto-create support ticket</p>
+          </Card>
+          <Card className="border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4 shadow-none">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted/80">Executive alert</p>
+            <p className="mt-2 text-lg font-semibold text-primary">$2,000</p>
+            <p className="text-xs text-muted">Email founders weekly report</p>
+          </Card>
         </div>
-      </section>
+      </Card>
     </div>
   );
 }
 
 function AnalyticsCard({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p className="text-xs uppercase text-slate-500">{label}</p>
-      <p className="mt-3 text-3xl font-semibold text-slate-900">{value}</p>
-      <p className="text-sm text-slate-500">{hint}</p>
-    </div>
+    <Card className="p-6">
+      <p className="text-xs uppercase tracking-[0.2em] text-muted/80">{label}</p>
+      <p className="mt-4 text-3xl font-semibold text-primary">{value}</p>
+      <p className="text-sm text-muted">{hint}</p>
+    </Card>
   );
 }

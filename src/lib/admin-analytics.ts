@@ -69,9 +69,19 @@ export async function fetchAdminAnalytics(): Promise<AdminAnalyticsSnapshot> {
     throw new Error("Failed to load revenue data");
   }
 
-  if (aiCostsResult.error) {
-    throw new Error("Failed to load AI cost data");
-  }
+  const aiCostRows = (() => {
+    if (!aiCostsResult.error) {
+      return aiCostsResult.data ?? [];
+    }
+
+    // Gracefully handle environments where the AI cost table has not been created yet
+    if (isMissingTableError(aiCostsResult.error)) {
+      console.warn("[admin-analytics] AI cost table missing — defaulting to zeroes");
+      return [];
+    }
+
+    throw new Error(`Failed to load AI cost data: ${aiCostsResult.error.message}`);
+  })();
 
   const now = new Date();
   const currentMonth = now.getUTCMonth();
@@ -96,7 +106,7 @@ export async function fetchAdminAnalytics(): Promise<AdminAnalyticsSnapshot> {
   const revenueTrend = buildRevenueTrend(paymentsResult.data ?? []);
   const currency = paymentsResult.data?.[0]?.currency ?? "USD";
 
-  const aiCostThisMonth = (aiCostsResult.data ?? []).reduce((sum, item) => {
+  const aiCostThisMonth = aiCostRows.reduce((sum, item) => {
     if (!item.created_at) return sum;
     const created = new Date(item.created_at);
     if (created.getUTCFullYear() === currentYear && created.getUTCMonth() === currentMonth) {
@@ -175,4 +185,8 @@ function formatMonthLabel(date: Date) {
 
 export function formatRevenueTrendValue(value: number, currency: string) {
   return formatCurrency(value, currency);
+}
+
+function isMissingTableError(error: { code?: string }) {
+  return error.code === "42P01";
 }

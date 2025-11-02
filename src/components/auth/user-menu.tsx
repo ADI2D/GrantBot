@@ -4,12 +4,10 @@ import { useState } from "react";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 
 export function UserMenu() {
   const session = useSession();
   const supabase = useSupabaseClient();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
 
   if (!session?.user) return null;

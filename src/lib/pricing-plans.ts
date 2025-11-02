@@ -9,6 +9,11 @@ export type PricingPlan = {
   stripeProductId: string | null;
   stripePriceId: string | null;
   active: boolean;
+  seatLimit: number | null;
+  maxOpportunities: number | null;
+  maxDocuments: number | null;
+  allowAi: boolean;
+  allowAnalytics: boolean;
 };
 
 let planCache: PricingPlan[] | null = null;
@@ -24,7 +29,9 @@ async function fetchPlans() {
     const supabase = getServiceSupabaseClient();
     const { data, error } = await supabase
       .from("pricing_plans")
-      .select("id, name, monthly_price_cents, max_proposals_per_month, description, stripe_product_id, stripe_price_id, active")
+      .select(
+        "id, name, monthly_price_cents, max_proposals_per_month, description, stripe_product_id, stripe_price_id, active, seat_limit, max_opportunities, max_documents, allow_ai, allow_analytics",
+      )
       .eq("active", true)
       .order("monthly_price_cents", { ascending: true });
 
@@ -44,6 +51,11 @@ async function fetchPlans() {
         stripeProductId: plan.stripe_product_id,
         stripePriceId: plan.stripe_price_id,
         active: plan.active,
+        seatLimit: plan.seat_limit ?? null,
+        maxOpportunities: plan.max_opportunities ?? null,
+        maxDocuments: plan.max_documents ?? null,
+        allowAi: plan.allow_ai ?? true,
+        allowAnalytics: plan.allow_analytics ?? true,
       })) ?? [];
     lastFetched = Date.now();
     return planCache;
@@ -56,6 +68,21 @@ async function fetchPlans() {
 function getDefaultPlans(): PricingPlan[] {
   return [
     {
+      id: "workspace_free",
+      name: "Workspace (Free)",
+      monthlyPriceCents: 0,
+      maxProposalsPerMonth: 1,
+      description: "Single-user workspace with manual tracking tools.",
+      stripeProductId: null,
+      stripePriceId: null,
+      active: true,
+      seatLimit: 1,
+      maxOpportunities: 3,
+      maxDocuments: 3,
+      allowAi: false,
+      allowAnalytics: false,
+    },
+    {
       id: "starter",
       name: "Starter",
       monthlyPriceCents: 24900,
@@ -64,6 +91,11 @@ function getDefaultPlans(): PricingPlan[] {
       stripeProductId: null,
       stripePriceId: null,
       active: true,
+      seatLimit: 3,
+      maxOpportunities: 10,
+      maxDocuments: 20,
+      allowAi: false,
+      allowAnalytics: false,
     },
     {
       id: "growth",
@@ -74,6 +106,11 @@ function getDefaultPlans(): PricingPlan[] {
       stripeProductId: null,
       stripePriceId: null,
       active: true,
+      seatLimit: 10,
+      maxOpportunities: 50,
+      maxDocuments: 100,
+      allowAi: true,
+      allowAnalytics: true,
     },
     {
       id: "impact",
@@ -84,6 +121,11 @@ function getDefaultPlans(): PricingPlan[] {
       stripeProductId: null,
       stripePriceId: null,
       active: true,
+      seatLimit: null,
+      maxOpportunities: null,
+      maxDocuments: null,
+      allowAi: true,
+      allowAnalytics: true,
     },
   ];
 }
@@ -106,10 +148,16 @@ export async function listAllPricingPlans() {
   const supabase = getServiceSupabaseClient();
   const { data, error } = await supabase
     .from("pricing_plans")
-    .select("id, name, monthly_price_cents, max_proposals_per_month, description, stripe_product_id, stripe_price_id, active")
+    .select(
+      "id, name, monthly_price_cents, max_proposals_per_month, description, stripe_product_id, stripe_price_id, active, seat_limit, max_opportunities, max_documents, allow_ai, allow_analytics",
+    )
     .order("monthly_price_cents", { ascending: true });
 
   if (error) {
+    if (error.message.includes("pricing_plans")) {
+      console.warn("[pricing-plans] listAllPricingPlans: table missing, returning defaults");
+      return getDefaultPlans();
+    }
     throw new Error(error.message);
   }
 
@@ -123,6 +171,11 @@ export async function listAllPricingPlans() {
       stripeProductId: plan.stripe_product_id,
       stripePriceId: plan.stripe_price_id,
       active: plan.active,
+      seatLimit: plan.seat_limit ?? null,
+      maxOpportunities: plan.max_opportunities ?? null,
+      maxDocuments: plan.max_documents ?? null,
+      allowAi: plan.allow_ai ?? true,
+      allowAnalytics: plan.allow_analytics ?? true,
     })) ?? []
   );
 }

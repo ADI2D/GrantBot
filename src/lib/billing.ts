@@ -33,6 +33,11 @@ export async function getBillingSummary(client: SupabaseClient<Database>, orgId:
       stripeProductId: null,
       stripePriceId: null,
       active: true,
+      seatLimit: 3,
+      maxOpportunities: 10,
+      maxDocuments: 20,
+      allowAi: false,
+      allowAnalytics: false,
     };
   }
 

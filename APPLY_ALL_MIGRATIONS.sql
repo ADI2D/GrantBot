@@ -252,3 +252,118 @@ ORDER BY policyname;
 -- - Connector health monitoring and sync logs
 -- - Public opportunities synced from external sources (grants.gov, etc.)
 -- ============================================================================
+
+-- ============================================================================
+-- PRICING PLANS (tiers & limits)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS pricing_plans (
+  id text primary key,
+  name text not null,
+  description text,
+  monthly_price_cents integer not null,
+  max_proposals_per_month integer not null,
+  seat_limit integer,
+  max_opportunities integer,
+  max_documents integer,
+  allow_ai boolean default true,
+  allow_analytics boolean default true,
+  stripe_product_id text,
+  stripe_price_id text,
+  active boolean default true,
+  features jsonb default '[]'::jsonb,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+ALTER TABLE pricing_plans ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'pricing_plans' AND policyname = 'Anyone can view active plans') THEN
+    CREATE POLICY "Anyone can view active plans" ON pricing_plans
+      FOR SELECT USING (active = true);
+  END IF;
+END $$;
+
+INSERT INTO pricing_plans (
+  id,
+  name,
+  description,
+  monthly_price_cents,
+  max_proposals_per_month,
+  seat_limit,
+  max_opportunities,
+  max_documents,
+  allow_ai,
+  allow_analytics,
+  active,
+  features
+) VALUES
+  (
+    'workspace_free',
+    'Workspace (Free)',
+    'Single-user workspace with manual tracking tools.',
+    0,
+    1,
+    1,
+    3,
+    3,
+    false,
+    false,
+    true,
+    '["1 seat","Track up to 3 opportunities","Upload up to 3 documents","Manual checklists","AI features locked","Analytics disabled"]'
+  ),
+  (
+    'starter',
+    'Starter',
+    'Perfect for small teams getting started',
+    24900,
+    2,
+    3,
+    10,
+    20,
+    false,
+    false,
+    true,
+    '["Up to 3 seats","Track 10 opportunities","Upload 20 documents","Manual checklists","AI insights locked"]'
+  ),
+  (
+    'growth',
+    'Growth',
+    'For growing organizations with more needs',
+    49900,
+    10,
+    10,
+    50,
+    100,
+    true,
+    true,
+    true,
+    '["10 seats","Track 50 opportunities","Upload 100 documents","AI drafting enabled","Analytics dashboard"]'
+  ),
+  (
+    'impact',
+    'Impact',
+    'Unlimited proposals for high-volume teams',
+    99900,
+    999,
+    NULL,
+    NULL,
+    NULL,
+    true,
+    true,
+    true,
+    '["Unlimited seats","Unlimited opportunities","Unlimited documents","Full AI suite","Advanced analytics"]'
+  )
+ON CONFLICT (id) DO UPDATE SET
+  name = excluded.name,
+  description = excluded.description,
+  monthly_price_cents = excluded.monthly_price_cents,
+  max_proposals_per_month = excluded.max_proposals_per_month,
+  seat_limit = excluded.seat_limit,
+  max_opportunities = excluded.max_opportunities,
+  max_documents = excluded.max_documents,
+  allow_ai = excluded.allow_ai,
+  allow_analytics = excluded.allow_analytics,
+  active = excluded.active,
+  features = excluded.features,
+  updated_at = now();

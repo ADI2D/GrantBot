@@ -118,6 +118,14 @@ function aggregateCounts(rows: { organization_id: string }[]) {
   }, new Map());
 }
 
+function isValidUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function slugToName(slug: string) {
+  return slug.replace(/-/g, " ").replace(/\s+/g, " ").trim();
+}
+
 function aggregatePayments(rows: PaymentRow[]) {
   return rows.reduce<
     Map<
@@ -233,49 +241,93 @@ export async function fetchAdminCustomers(limit = 50) {
 }
 
 export async function fetchAdminCustomerDetail(orgId: string): Promise<AdminCustomerDetail> {
+  const normalizedOrgId = typeof orgId === "string" ? decodeURIComponent(orgId).trim() : "";
+  if (!normalizedOrgId || normalizedOrgId === "undefined") {
+    throw new Error("Organization not found");
+  }
+
+  const isUuid = isValidUuid(normalizedOrgId);
+  const nameFromSlug = isUuid ? null : slugToName(normalizedOrgId);
   const supabase = getServiceSupabaseClient();
-  const { data: organization, error: orgError } = await supabase
+  let organization: {
+    id: string;
+    name: string;
+    mission?: string | null;
+    impact_summary?: string | null;
+    annual_budget: number | null;
+    created_at: string | null;
+  } | null = null;
+
+  const orConditions = (() => {
+    const base = [`id.eq.${normalizedOrgId}`];
+    if (!isUuid && nameFromSlug) {
+      const fuzzyPattern = `%${nameFromSlug.replace(/\s+/g, "%")}%`;
+      const escaped = fuzzyPattern.replace(/[,]/g, ""); // supabase OR delimiter safety
+      base.push(`name.ilike.${escaped}`);
+    }
+    return base.join(",");
+  })();
+
+  const { data: primaryOrg, error: primaryError } = await supabase
     .from("organizations")
     .select("id, name, mission, impact_summary, annual_budget, created_at")
-    .eq("id", orgId)
+    .or(orConditions)
+    .limit(1)
     .maybeSingle();
 
-  if (orgError) {
-    throw new Error("Failed to load organization");
+  if (primaryError) {
+    console.warn("[admin][customers] fallback organization query", primaryError);
+    const { data: fallbackOrg, error: fallbackError } = await supabase
+      .from("organizations")
+      .select("id, name, annual_budget, created_at")
+      .or(orConditions)
+      .limit(1)
+      .maybeSingle();
+
+    if (fallbackError) {
+      throw new Error(`Failed to load organization: ${fallbackError.message}`);
+    }
+
+    organization = fallbackOrg
+      ? { ...fallbackOrg, mission: null, impact_summary: null }
+      : null;
+  } else {
+    organization = primaryOrg;
   }
 
   if (!organization) {
     throw new Error("Organization not found");
   }
 
+  const organizationId = organization.id;
   const [membersResult, proposalsResult, paymentsResult, notesResult, ticketsResult] = await Promise.all([
       supabase
         .from("org_members")
         .select("user_id, role, created_at")
-        .eq("organization_id", orgId)
+        .eq("organization_id", organizationId)
         .order("created_at", { ascending: true }),
       supabase
         .from("proposals")
         .select("id, status, due_date, created_at")
-        .eq("organization_id", orgId)
+        .eq("organization_id", organizationId)
         .order("created_at", { ascending: false })
         .limit(10),
       supabase
         .from("billing_payments")
         .select("id, stripe_invoice_id, amount, currency, status, created_at")
-        .eq("organization_id", orgId)
+        .eq("organization_id", organizationId)
         .order("created_at", { ascending: false })
         .limit(10),
       supabase
         .from("admin_customer_notes")
         .select("id, admin_user_id, content, created_at")
-        .eq("organization_id", orgId)
+        .eq("organization_id", organizationId)
         .order("created_at", { ascending: false })
         .limit(20),
       supabase
         .from("support_tickets")
         .select("id, subject, status, priority, opened_by, created_at, updated_at")
-        .eq("organization_id", orgId)
+        .eq("organization_id", organizationId)
         .order("created_at", { ascending: false })
         .limit(10),
     ]);
@@ -361,6 +413,22 @@ export async function fetchAdminCustomerDetail(orgId: string): Promise<AdminCust
     events.push(event);
     ticketEventsByTicket.set(event.ticket_id, events);
   });
+
+  // Calculate ticket metrics
+  const openTicketCount = (ticketsResult.data ?? []).filter((ticket) => ticket.status !== "closed").length;
+  const resolutionDurations: number[] = [];
+  (ticketsResult.data ?? []).forEach((ticket) => {
+    if (ticket.status === "closed" && ticket.created_at && ticket.updated_at) {
+      const created = new Date(ticket.created_at);
+      const updated = new Date(ticket.updated_at);
+      const hours = (updated.getTime() - created.getTime()) / (1000 * 60 * 60);
+      resolutionDurations.push(hours);
+    }
+  });
+  const averageResolutionHours =
+    resolutionDurations.length > 0
+      ? Number((resolutionDurations.reduce((sum, value) => sum + value, 0) / resolutionDurations.length).toFixed(1))
+      : null;
 
   return {
     organization: {
@@ -487,17 +555,3 @@ export async function fetchAdminUsers(): Promise<AdminUserRecord[]> {
       email: emailMap.get(row.user_id) ?? null,
     }));
 }
-  const openTicketCount = (ticketsResult.data ?? []).filter((ticket) => ticket.status !== "closed").length;
-  const resolutionDurations: number[] = [];
-  (ticketsResult.data ?? []).forEach((ticket) => {
-    if (ticket.status === "closed" && ticket.created_at && ticket.updated_at) {
-      const created = new Date(ticket.created_at);
-      const updated = new Date(ticket.updated_at);
-      const hours = (updated.getTime() - created.getTime()) / (1000 * 60 * 60);
-      resolutionDurations.push(hours);
-    }
-  });
-  const averageResolutionHours =
-    resolutionDurations.length > 0
-      ? Number((resolutionDurations.reduce((sum, value) => sum + value, 0) / resolutionDurations.length).toFixed(1))
-      : null;

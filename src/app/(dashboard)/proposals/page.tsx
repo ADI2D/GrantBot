@@ -11,8 +11,35 @@ import { useProposalsData } from "@/hooks/use-api";
 import { formatDate } from "@/lib/format";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useOrg } from "@/hooks/use-org";
+import type { Proposal as ProposalSummary } from "@/types/api";
 
 type ViewMode = "active" | "deleted";
+
+type DeletedProposalRecord = {
+  id: string;
+  opportunity_id: string | null;
+  owner_name: string | null;
+  status: string | null;
+  progress: number | null;
+  due_date: string | null;
+  checklist_status?: string | null;
+  confidence?: number | null;
+  deleted_at: string;
+  opportunities: {
+    name: string | null;
+    focus_area: string | null;
+  } | null;
+};
+
+type DeletedProposalRow = ProposalSummary & {
+  deleted: true;
+  deletedAt: string;
+};
+
+type ProposalListItem = ProposalSummary | DeletedProposalRow;
+
+const isDeletedProposal = (proposal: ProposalListItem): proposal is DeletedProposalRow =>
+  (proposal as DeletedProposalRow).deleted === true;
 
 export default function ProposalsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("active");
@@ -21,22 +48,28 @@ export default function ProposalsPage() {
   const queryClient = useQueryClient();
 
   // Fetch deleted proposals
-  const { data: deletedData, isLoading: deletedLoading } = useQuery({
+  const {
+    data: deletedData,
+    isLoading: deletedLoading,
+    error: deletedError,
+  } = useQuery<{ proposals: DeletedProposalRow[] }>({
     queryKey: ["proposals", "deleted", currentOrgId],
     queryFn: async () => {
       const response = await fetch(`/api/proposals/deleted?orgId=${currentOrgId}`);
       if (!response.ok) throw new Error("Failed to fetch deleted proposals");
-      const json = await response.json();
+      const json = (await response.json()) as { proposals: DeletedProposalRecord[] };
       return {
-        proposals: json.proposals.map((p: any) => ({
+        proposals: json.proposals.map<DeletedProposalRow>((p) => ({
           id: p.id,
-          opportunityName: p.opportunities?.name || "Unknown Opportunity",
+          opportunityId: p.opportunity_id ?? null,
+          opportunityName: p.opportunities?.name ?? "Unknown Opportunity",
+          focusArea: p.opportunities?.focus_area ?? null,
           ownerName: p.owner_name,
-          status: p.status,
-          progress: p.progress,
+          status: p.status ?? "drafting",
+          progress: Number(p.progress ?? 0),
           dueDate: p.due_date,
-          checklistStatus: p.checklist_status || "pending",
-          confidence: p.confidence,
+          checklistStatus: p.checklist_status ?? "pending",
+          confidence: typeof p.confidence === "number" ? p.confidence : null,
           archived: false,
           deleted: true,
           deletedAt: p.deleted_at,
@@ -47,8 +80,11 @@ export default function ProposalsPage() {
   });
 
   const isLoading = viewMode === "active" ? activeLoading : deletedLoading;
-  const error = viewMode === "active" ? activeError : null;
-  const data = viewMode === "active" ? activeData : deletedData;
+  const currentError = (viewMode === "active" ? activeError : deletedError) as Error | null;
+  const proposals: ProposalListItem[] =
+    viewMode === "active"
+      ? (activeData?.proposals ?? [])
+      : (deletedData?.proposals ?? []);
 
   const handleExport = async (proposalId: string, format: "pdf" | "docx") => {
     try {
@@ -160,10 +196,12 @@ export default function ProposalsPage() {
   };
 
   if (isLoading) return <PageLoader label="Loading proposals" />;
-  if (error || !data) return <PageError message={error?.message || "Unable to load proposals"} />;
+  if (currentError) {
+    return <PageError message={currentError.message || "Unable to load proposals"} />;
+  }
 
   // Sort proposals: active first, then archived at the bottom
-  const proposals = [...data.proposals].sort((a, b) => {
+  const sortedProposals = [...proposals].sort((a, b) => {
     if (a.archived === b.archived) return 0;
     return a.archived ? 1 : -1;
   });
@@ -232,8 +270,8 @@ export default function ProposalsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white">
-            {proposals.map((proposal) => {
-              const isDeleted = viewMode === "deleted";
+            {sortedProposals.map((proposal) => {
+              const isDeleted = isDeletedProposal(proposal);
               const bgClass = isDeleted
                 ? "bg-rose-50/50"
                 : proposal.archived
@@ -269,9 +307,7 @@ export default function ProposalsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-slate-600">
-                    {isDeleted && (proposal as any).deletedAt
-                      ? formatDate((proposal as any).deletedAt)
-                      : formatDate(proposal.dueDate)}
+                    {isDeleted ? formatDate(proposal.deletedAt) : formatDate(proposal.dueDate)}
                   </td>
                   <td className="px-6 py-4">
                     <Badge tone={proposal.checklistStatus === "ready" ? "success" : "warning"}>

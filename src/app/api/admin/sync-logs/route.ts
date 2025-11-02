@@ -12,10 +12,10 @@ export async function GET(request: NextRequest) {
     const supabase = await createRouteSupabase();
     const {
       data: { user },
-      error,
+      error: authError,
     } = await supabase.auth.getUser();
 
-    if (error || !user) {
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -35,10 +35,10 @@ export async function GET(request: NextRequest) {
       query = query.eq("source", source);
     }
 
-    const { data: logs, error } = await query;
+    const { data: logs, error: queryError } = await query;
 
-    if (error) {
-      throw error;
+    if (queryError) {
+      throw queryError;
     }
 
     return NextResponse.json({

@@ -1,15 +1,19 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { fetchBillingOverview, formatAmount } from "@/lib/admin-billing";
 import { formatDate } from "@/lib/format";
+import { ManualBillingActions } from "./manual-actions";
 
-const STATUS_BADGES: Record<string, string> = {
-  paid: "bg-emerald-100 text-emerald-700",
-  succeeded: "bg-emerald-100 text-emerald-700",
-  open: "bg-amber-100 text-amber-700",
-  draft: "bg-slate-100 text-slate-600",
-  past_due: "bg-rose-100 text-rose-700",
-  uncollectible: "bg-rose-100 text-rose-700",
-  void: "bg-slate-200 text-slate-500",
+const STATUS_TONES: Record<string, "success" | "warning" | "neutral" | "info"> = {
+  paid: "success",
+  succeeded: "success",
+  open: "warning",
+  draft: "neutral",
+  past_due: "warning",
+  uncollectible: "warning",
+  void: "neutral",
 };
 
 export default async function AdminBillingPage() {
@@ -17,11 +21,11 @@ export default async function AdminBillingPage() {
   const currency = overview.invoices[0]?.currency ?? "USD";
 
   return (
-    <div className="space-y-8">
-      <header>
-        <p className="text-xs uppercase text-slate-500">Revenue controls</p>
-        <h1 className="text-2xl font-semibold text-slate-900">Billing</h1>
-        <p className="text-sm text-slate-500">
+    <div className="space-y-10">
+      <header className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.2em] text-muted">Revenue controls</p>
+        <h1 className="text-3xl font-semibold text-primary">Billing</h1>
+        <p className="text-sm text-muted">
           Manage plans, Stripe sync status, and manual adjustments for GrantBot customers.
         </p>
       </header>
@@ -46,59 +50,56 @@ export default async function AdminBillingPage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[2fr,1fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <Card className="p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Recent invoices</h2>
-              <p className="text-sm text-slate-500">Last 15 invoices synced from Stripe.</p>
+              <h2 className="text-lg font-semibold text-primary">Recent invoices</h2>
+              <p className="text-sm text-muted">Last 15 invoices synced from Stripe.</p>
             </div>
-            <Link
-              href="https://dashboard.stripe.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            >
-              Open Stripe
-            </Link>
+            <Button variant="secondary" asChild>
+              <Link href="https://dashboard.stripe.com/" target="_blank" rel="noopener noreferrer">
+                Open Stripe
+              </Link>
+            </Button>
           </div>
-          <div className="mt-6 overflow-hidden rounded-xl border border-slate-200">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+          <div className="mt-6 overflow-hidden rounded-[var(--radius-soft)] border border-[color:var(--color-border)]">
+            <table className="min-w-full divide-y divide-[color:var(--color-border)] text-sm">
+              <thead className="bg-[color:var(--color-surface-muted)] text-xs uppercase text-muted">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium">Invoice</th>
-                  <th className="px-4 py-3 text-left font-medium">Organization</th>
-                  <th className="px-4 py-3 text-left font-medium">Status</th>
-                  <th className="px-4 py-3 text-right font-medium">Amount</th>
-                  <th className="px-4 py-3 text-left font-medium">Due</th>
-                  <th className="px-4 py-3 text-left font-medium">Created</th>
+                  <th className="px-4 py-3 text-left font-semibold text-secondary">Invoice</th>
+                  <th className="px-4 py-3 text-left font-semibold text-secondary">Organization</th>
+                  <th className="px-4 py-3 text-left font-semibold text-secondary">Status</th>
+                  <th className="px-4 py-3 text-right font-semibold text-secondary">Amount</th>
+                  <th className="px-4 py-3 text-left font-semibold text-secondary">Due</th>
+                  <th className="px-4 py-3 text-left font-semibold text-secondary">Created</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+              <tbody className="divide-y divide-[color:var(--color-border)] bg-[color:var(--color-surface)] text-muted">
                 {overview.invoices.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-6 text-center text-sm text-slate-500">
+                    <td colSpan={6} className="px-4 py-6 text-center text-sm text-muted">
                       No invoices synced yet.
                     </td>
                   </tr>
                 ) : (
                   overview.invoices.map((invoice) => {
                     const status = invoice.status?.toLowerCase() ?? "unknown";
-                    const badgeTone = STATUS_BADGES[status] ?? "bg-slate-200 text-slate-600";
+                    const badgeTone = STATUS_TONES[status] ?? "neutral";
                     const org = overview.customerSummaries.find((summary) => summary.id === invoice.organizationId);
                     return (
-                      <tr key={invoice.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-medium text-slate-900">{invoice.stripeInvoiceId}</td>
-                        <td className="px-4 py-3 text-slate-500">{org?.name ?? "Unknown org"}</td>
+                      <tr key={invoice.id} className="hover:bg-[color:var(--color-surface-muted)]">
+                        <td className="px-4 py-3 font-semibold text-primary">{invoice.stripeInvoiceId}</td>
+                        <td className="px-4 py-3 text-muted">{org?.name ?? "Unknown org"}</td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${badgeTone}`}>
-                            {status.replace("_", " ")}
-                          </span>
+                          <Badge tone={badgeTone} className="capitalize">
+                            {status.replaceAll("_", " ")}
+                          </Badge>
                         </td>
-                        <td className="px-4 py-3 text-right text-slate-800">
+                        <td className="px-4 py-3 text-right text-primary">
                           {formatAmount(Number(invoice.amount ?? 0), invoice.currency ?? currency)}
                         </td>
-                        <td className="px-4 py-3 text-slate-500">{formatDate(invoice.dueDate)}</td>
-                        <td className="px-4 py-3 text-slate-500">{formatDate(invoice.createdAt)}</td>
+                        <td className="px-4 py-3 text-muted">{formatDate(invoice.dueDate)}</td>
+                        <td className="px-4 py-3 text-muted">{formatDate(invoice.createdAt)}</td>
                       </tr>
                     );
                   })
@@ -106,36 +107,14 @@ export default async function AdminBillingPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
 
         <div className="space-y-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-slate-900">Manual actions</h3>
-            <p className="mt-2 text-sm text-slate-500">
-              Use the API endpoints to perform billing overrides while audit trails capture each change.
-            </p>
-            <ul className="mt-4 space-y-3 text-sm text-slate-600">
-              <li>
-                <strong>Issue refund</strong> – POST <code>/api/admin/billing/refund</code> with{" "}
-                <code>{"{ stripeInvoiceId, amount }"}</code>
-              </li>
-              <li>
-                <strong>Apply credit</strong> – POST <code>/api/admin/billing/credit</code> with{" "}
-                <code>{"{ organizationId, amount, reason }"}</code>
-              </li>
-              <li>
-                <strong>Extend trial</strong> – POST <code>/api/admin/billing/trial</code> with{" "}
-                <code>{"{ organizationId, days }"}</code>
-              </li>
-            </ul>
-            <p className="mt-4 text-xs text-slate-500">
-              All endpoints require super-admin privileges and log entries to <code>admin_audit_logs</code>.
-            </p>
-          </div>
+          <ManualBillingActions />
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-slate-900">Alerts</h3>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600">
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-primary">Alerts</h3>
+            <ul className="mt-3 space-y-2 text-sm text-muted">
               <li>
                 {overview.delinquentInvoiceCount > 0 ? (
                   <>
@@ -152,7 +131,7 @@ export default async function AdminBillingPage() {
                   : "All invoices are settled."}
               </li>
             </ul>
-          </div>
+          </Card>
         </div>
       </section>
     </div>
@@ -161,10 +140,10 @@ export default async function AdminBillingPage() {
 
 function MetricCard({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p className="text-xs uppercase text-slate-500">{label}</p>
-      <p className="mt-3 text-3xl font-semibold text-slate-900">{value}</p>
-      <p className="text-sm text-slate-500">{hint}</p>
-    </div>
+    <Card className="p-6">
+      <p className="text-xs uppercase tracking-[0.2em] text-muted/80">{label}</p>
+      <p className="mt-4 text-3xl font-semibold text-primary">{value}</p>
+      <p className="text-sm text-muted">{hint}</p>
+    </Card>
   );
 }

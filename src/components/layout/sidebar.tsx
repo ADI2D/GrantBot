@@ -14,6 +14,7 @@ import {
   Settings,
   Shield,
   Users,
+  UserCog,
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ const navItems = [
 const adminNavItems = [
   { label: "Admin Dashboard", href: "/admin", icon: Shield },
   { label: "Customers", href: "/admin/customers", icon: Users },
+  { label: "Users", href: "/admin/users", icon: UserCog },
   { label: "Connectors", href: "/admin/connectors", icon: Zap },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];

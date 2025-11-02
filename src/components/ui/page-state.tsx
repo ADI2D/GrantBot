@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils";
 
 export function PageLoader({ label = "Loading" }: { label?: string }) {
   return (
-    <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 text-sm text-slate-500">
-      <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+    <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 text-sm text-[color:var(--color-text-muted)]">
+      <Loader2 className="h-5 w-5 animate-spin text-[color:var(--color-growth-teal)]" />
       <p>{label}…</p>
     </div>
   );
@@ -12,7 +12,7 @@ export function PageLoader({ label = "Loading" }: { label?: string }) {
 
 export function PageError({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+    <div className="rounded-[var(--radius-soft)] border border-[color:var(--color-warning-red)]/40 bg-[color:var(--color-surface-warning)] p-4 text-sm text-[color:var(--color-warning-red)]">
       {message}
     </div>
   );
@@ -30,12 +30,12 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center",
+        "rounded-[var(--radius-soft)] border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-6 text-center",
         className,
       )}
     >
-      <p className="text-sm font-semibold text-slate-900">{title}</p>
-      <p className="text-xs text-slate-500">{description}</p>
+      <p className="text-sm font-semibold text-[color:var(--color-text-primary)]">{title}</p>
+      <p className="text-xs text-[color:var(--color-text-muted)]">{description}</p>
     </div>
   );
 }

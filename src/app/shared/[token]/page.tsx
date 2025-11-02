@@ -36,6 +36,11 @@ type Comment = {
   createdAt: string;
 };
 
+type SharedProposalResponse = {
+  proposal: SharedProposal;
+  sections: ProposalSection[];
+};
+
 export default function SharedProposalPage() {
   const params = useParams();
   const token = params.token as string;
@@ -62,7 +67,7 @@ export default function SharedProposalPage() {
           throw new Error(errorData.error || "Failed to load shared proposal");
         }
 
-        const data = await response.json();
+        const data = (await response.json()) as SharedProposalResponse;
 
         setProposal({
           id: data.proposal.id,
@@ -74,15 +79,8 @@ export default function SharedProposalPage() {
           opportunityName: data.proposal.opportunityName,
         });
 
-        const loadedSections = data.sections.map((s: any) => ({
-          id: s.id,
-          title: s.title,
-          content: s.content,
-          tokenCount: s.tokenCount,
-        }));
-
-        setSections(loadedSections);
-        setActiveSection(loadedSections[0] ?? null);
+        setSections(data.sections);
+        setActiveSection(data.sections[0] ?? null);
 
         // Load comments
         await loadComments(data.proposal.id);
@@ -160,8 +158,6 @@ export default function SharedProposalPage() {
   if (!proposal) return <PageError message="Proposal not found" />;
 
   const sectionComments = comments.filter((c) => c.sectionId === activeSection?.id);
-  const generalComments = comments.filter((c) => c.sectionId === null);
-
   return (
     <div className="min-h-screen bg-slate-50 px-6 py-12">
       <div className="mx-auto max-w-6xl space-y-8">

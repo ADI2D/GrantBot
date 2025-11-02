@@ -37,7 +37,6 @@ export default function WorkspacePage() {
 
   useEffect(() => {
     if (data?.compliance) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync derived data after query resolves
       setComplianceState(data.compliance);
     }
   }, [data?.compliance]);
@@ -68,14 +67,12 @@ export default function WorkspacePage() {
 
   useEffect(() => {
     if (sections?.length && !activeSectionId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveSectionId(sections[0].id);
     }
   }, [sections, activeSectionId]);
 
   useEffect(() => {
     if (activeSection) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDraftContent(activeSection.content ?? "");
     }
   }, [activeSection]);

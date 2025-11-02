@@ -53,21 +53,73 @@ export async function fetchOrganization(client: Client, orgId: string) {
   };
 }
 
-export async function fetchOpportunities(client: Client, orgId: string): Promise<Opportunity[]> {
+export type OpportunityFilters = {
+  search?: string;
+  focusArea?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  minDeadline?: string;
+  maxDeadline?: string;
+  geographicScope?: string;
+};
+
+export async function fetchOpportunities(
+  client: Client,
+  orgId: string,
+  filters?: OpportunityFilters
+): Promise<Opportunity[]> {
   // Show opportunities from past 60 days OR future (for reference and planning)
   const sixtyDaysAgo = new Date();
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
   const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
 
-  const { data, error } = await client
+  let query = client
     .from("opportunities")
     .select(
-      "id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url",
+      "id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope",
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .neq("status", "closed") // Filter out closed opportunities
-    .gte("deadline", sixtyDaysAgoStr) // Show past 60 days + future
-    .order("deadline", { ascending: false }); // Most recent first
+    .gte("deadline", sixtyDaysAgoStr); // Show past 60 days + future
+
+  // Apply filters
+  if (filters?.focusArea) {
+    query = query.eq("focus_area", filters.focusArea);
+  }
+
+  if (filters?.minAmount !== undefined) {
+    query = query.gte("amount", filters.minAmount);
+  }
+
+  if (filters?.maxAmount !== undefined) {
+    query = query.lte("amount", filters.maxAmount);
+  }
+
+  if (filters?.minDeadline) {
+    query = query.gte("deadline", filters.minDeadline);
+  }
+
+  if (filters?.maxDeadline) {
+    query = query.lte("deadline", filters.maxDeadline);
+  }
+
+  if (filters?.geographicScope) {
+    query = query.ilike("geographic_scope", `%${filters.geographicScope}%`);
+  }
+
+  // Apply full-text search if query provided
+  if (filters?.search && filters.search.trim()) {
+    // Use Postgres full-text search with websearch_to_tsquery for natural language queries
+    query = query.textSearch("search_vector", filters.search, {
+      type: "websearch",
+      config: "english",
+    });
+  }
+
+  // Order by deadline (most recent first)
+  query = query.order("deadline", { ascending: false });
+
+  const { data, error} = await query;
 
   if (error) {
     throw new Error(`Failed to load opportunities: ${error.message}`);
@@ -85,6 +137,7 @@ export async function fetchOpportunities(client: Client, orgId: string): Promise
     status: item.status,
     complianceNotes: item.compliance_notes,
     applicationUrl: item.application_url,
+    geographicScope: item.geographic_scope,
   }));
 
   // Sort: Open opportunities first (future deadline), then closed (past deadline)
