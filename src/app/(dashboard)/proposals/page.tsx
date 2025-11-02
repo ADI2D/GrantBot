@@ -42,7 +42,7 @@ export default function ProposalsPage() {
 
   const handleDelete = async (proposalId: string, proposalName: string) => {
     const confirmed = window.confirm(
-      `Are you sure you want to delete this proposal?\n\n"${proposalName}"\n\nThis action cannot be undone.`
+      `Delete this proposal?\n\n"${proposalName}"\n\nYou can restore it from "View Deleted" within 90 days.`
     );
 
     if (!confirmed) {
@@ -60,7 +60,7 @@ export default function ProposalsPage() {
 
       // Refresh proposals list
       queryClient.invalidateQueries({ queryKey: ["proposals"], exact: false });
-      alert("Proposal deleted successfully");
+      alert("Proposal moved to deleted. You can restore it from 'View Deleted' for up to 90 days.");
     } catch (error) {
       console.error("Delete error:", error);
       alert("Failed to delete proposal. Please try again.");
