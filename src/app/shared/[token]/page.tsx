@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { PageLoader, PageError } from "@/components/ui/page-state";
-import { getServiceSupabaseClient } from "@/lib/supabase-client";
 import { Lock, MessageSquare, Send } from "lucide-react";
 
 type ProposalSection = {
@@ -55,71 +54,38 @@ export default function SharedProposalPage() {
   useEffect(() => {
     async function loadSharedProposal() {
       try {
-        const supabase = getServiceSupabaseClient();
+        // Fetch proposal and sections via secure API route
+        const response = await fetch(`/api/shared/${token}`);
 
-        // Fetch proposal by share token (uses public RLS policy with expiration check)
-        const { data: proposalData, error: proposalError } = await supabase
-          .from("proposals")
-          .select("id, owner_name, status, progress, due_date, confidence, share_expires_at")
-          .eq("share_token", token)
-          .maybeSingle();
-
-        if (proposalError) {
-          throw new Error("Unable to load shared proposal");
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to load shared proposal");
         }
 
-        if (!proposalData) {
-          throw new Error("This share link is invalid or has expired. Please request a new link from the proposal owner.");
-        }
-
-        // Double-check expiration on client side
-        if (proposalData.share_expires_at) {
-          const expiresAt = new Date(proposalData.share_expires_at);
-          if (expiresAt < new Date()) {
-            throw new Error("This share link expired on " + expiresAt.toLocaleDateString() + ". Please request a new link from the proposal owner.");
-          }
-        }
-
-        // Fetch opportunity name
-        const { data: oppData } = await supabase
-          .from("opportunities")
-          .select("name")
-          .eq("id", proposalData.id)
-          .maybeSingle();
+        const data = await response.json();
 
         setProposal({
-          id: proposalData.id,
-          ownerName: proposalData.owner_name,
-          status: proposalData.status,
-          progress: proposalData.progress,
-          dueDate: proposalData.due_date,
-          confidence: proposalData.confidence,
-          opportunityName: oppData?.name ?? "Unknown opportunity",
+          id: data.proposal.id,
+          ownerName: data.proposal.ownerName,
+          status: data.proposal.status,
+          progress: data.proposal.progress,
+          dueDate: data.proposal.dueDate,
+          confidence: data.proposal.confidence,
+          opportunityName: data.proposal.opportunityName,
         });
 
-        // Fetch sections (uses public RLS policy)
-        const { data: sectionsData, error: sectionsError } = await supabase
-          .from("proposal_sections")
-          .select("id, title, content, token_count")
-          .eq("proposal_id", proposalData.id)
-          .order("created_at", { ascending: true });
-
-        if (sectionsError) {
-          throw new Error("Unable to load proposal sections");
-        }
-
-        const loadedSections = (sectionsData ?? []).map((s) => ({
+        const loadedSections = data.sections.map((s: any) => ({
           id: s.id,
           title: s.title,
           content: s.content,
-          tokenCount: s.token_count ?? 0,
+          tokenCount: s.tokenCount,
         }));
 
         setSections(loadedSections);
         setActiveSection(loadedSections[0] ?? null);
 
         // Load comments
-        await loadComments(proposalData.id);
+        await loadComments(data.proposal.id);
 
         setLoading(false);
       } catch (err) {

@@ -10,6 +10,7 @@ import { useProposalsData } from "@/hooks/use-api";
 import { formatDate } from "@/lib/format";
 import { useQueryClient } from "@tanstack/react-query";
 import { useOrg } from "@/hooks/use-org";
+import Link from "next/link";
 
 export default function ProposalsPage() {
   const { data, isLoading, error } = useProposalsData();
@@ -119,6 +120,12 @@ export default function ProposalsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Link href="/proposals/deleted">
+            <Button variant="secondary" className="gap-2">
+              <Trash2 className="h-4 w-4" />
+              View Deleted
+            </Button>
+          </Link>
           <Button variant="secondary" className="gap-2">
             <Download className="h-4 w-4" />
             Export report
