@@ -3,10 +3,10 @@ import { createRouteSupabase } from "@/lib/supabase-server";
 import { resolveOrgId } from "@/lib/org";
 
 /**
- * PATCH /api/proposals/[id]/archive
- * Archives or unarchives a proposal
+ * POST /api/proposals/[id]/restore
+ * Restores a soft-deleted proposal
  */
-export async function PATCH(
+export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -23,16 +23,11 @@ export async function PATCH(
 
     const { id: proposalId } = await params;
     const orgId = resolveOrgId(request.nextUrl.searchParams.get("orgId"));
-    const { archived } = await request.json();
-
-    if (typeof archived !== "boolean") {
-      return NextResponse.json({ error: "archived must be a boolean" }, { status: 400 });
-    }
 
     // Verify user has access to this proposal's organization
     const { data: proposal } = await supabase
       .from("proposals")
-      .select("organization_id")
+      .select("organization_id, deleted_at")
       .eq("id", proposalId)
       .single();
 
@@ -40,6 +35,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
     }
 
+    // Check that proposal was deleted
+    if (!proposal.deleted_at) {
+      return NextResponse.json({ error: "Proposal is not deleted" }, { status: 400 });
+    }
+
+    // Check that proposal belongs to the user's organization
     if (proposal.organization_id !== orgId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -55,28 +56,28 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Update archived status
-    const { error: updateError } = await supabase
+    // Restore proposal (clear deleted_at timestamp)
+    const { error: restoreError } = await supabase
       .from("proposals")
-      .update({ archived })
+      .update({ deleted_at: null })
       .eq("id", proposalId);
 
-    if (updateError) {
-      throw updateError;
+    if (restoreError) {
+      throw restoreError;
     }
 
-    // Log the action
+    // Log the restoration
     await supabase.from("activity_logs").insert({
       organization_id: orgId,
       proposal_id: proposalId,
       user_id: user.id,
-      action: archived ? "proposal_archived" : "proposal_unarchived",
-      metadata: { proposalId, archived },
+      action: "proposal_restored",
+      metadata: { proposalId, restored_from: proposal.deleted_at },
     });
 
-    return NextResponse.json({ success: true, archived });
+    return NextResponse.json({ success: true, restored: true });
   } catch (error) {
-    console.error("[proposals][archive] Error updating archived status:", error);
+    console.error("[proposals][restore] Error restoring proposal:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },

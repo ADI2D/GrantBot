@@ -8,6 +8,7 @@ export type Opportunity = {
   id: string;
   name: string;
   focusArea: string | null;
+  funderName?: string | null;
   amount: number | null;
   deadline: string | null;
   alignmentScore: number | null;

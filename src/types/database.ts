@@ -49,6 +49,8 @@ export type Database = {
           checklist_status: string | null;
           confidence: number | null;
           compliance_summary: unknown;
+          archived: boolean | null;
+          deleted_at: string | null;
           created_at: string | null;
           updated_at: string | null;
         };

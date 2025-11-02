@@ -13,7 +13,16 @@ import { useOpportunitiesData } from "@/hooks/use-api";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
 import { useOrg } from "@/hooks/use-org";
 
-const filters = ["Food Security", "Health", "Youth", "Emergency", "Arts"];
+const filters = [
+  "Education",
+  "Health & Wellness",
+  "Community Development",
+  "Environment",
+  "Arts & Culture",
+  "Research & Innovation",
+  "Disaster Relief",
+  "Other"
+];
 
 export default function OpportunitiesPage() {
   const { data, isLoading, error } = useOpportunitiesData();

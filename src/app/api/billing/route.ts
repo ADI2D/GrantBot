@@ -177,10 +177,10 @@ export async function PATCH(request: NextRequest) {
     const supabase = await createRouteSupabase();
     const {
       data: { user },
-      error,
+      error: authError,
     } = await supabase.auth.getUser();
 
-    if (error || !user) {
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -201,13 +201,13 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Unknown plan" }, { status: 400 });
     }
 
-    const { error } = await adminClient
+    const { error: updateError } = await adminClient
       .from("organizations")
       .update({ plan_id: targetPlan.id })
       .eq("id", orgId);
 
-    if (error) {
-      throw error;
+    if (updateError) {
+      throw updateError;
     }
 
     return NextResponse.json({ planId: targetPlan.id });

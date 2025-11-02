@@ -57,7 +57,7 @@ export async function fetchOpportunities(client: Client, orgId: string): Promise
   const { data, error } = await client
     .from("opportunities")
     .select(
-      "id, name, focus_area, amount, deadline, alignment_score, status, compliance_notes, application_url",
+      "id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url",
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .neq("status", "closed") // Filter out closed opportunities
@@ -72,6 +72,7 @@ export async function fetchOpportunities(client: Client, orgId: string): Promise
     id: item.id,
     name: item.name,
     focusArea: item.focus_area,
+    funderName: item.funder_name,
     amount: item.amount,
     deadline: item.deadline,
     alignmentScore: item.alignment_score,
@@ -105,6 +106,7 @@ export async function fetchProposals(client: Client, orgId: string): Promise<Pro
       "id, opportunity_id, owner_name, status, progress, due_date, checklist_status, confidence, compliance_summary, archived, opportunities:opportunity_id(name, focus_area)"
     )
     .eq("organization_id", orgId)
+    .is("deleted_at", null) // Filter out soft-deleted proposals
     .order("due_date", { ascending: true });
 
   if (error) {

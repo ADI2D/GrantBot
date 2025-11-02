@@ -14,10 +14,10 @@ export async function DELETE(
     const supabase = await createRouteSupabase();
     const {
       data: { user },
-      error,
+      error: authError,
     } = await supabase.auth.getUser();
 
-    if (error || !user) {
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -51,14 +51,15 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Delete proposal (cascade will delete sections, comments, etc.)
-    const { error } = await supabase
+    // Soft delete proposal (set deleted_at timestamp)
+    const now = new Date().toISOString();
+    const { error: deleteError } = await supabase
       .from("proposals")
-      .delete()
+      .update({ deleted_at: now })
       .eq("id", proposalId);
 
-    if (error) {
-      throw error;
+    if (deleteError) {
+      throw deleteError;
     }
 
     // Log the deletion
@@ -67,10 +68,10 @@ export async function DELETE(
       proposal_id: proposalId,
       user_id: user.id,
       action: "proposal_deleted",
-      metadata: { proposalId },
+      metadata: { proposalId, deleted_at: now, recoverable: true },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, deleted_at: now });
   } catch (error) {
     console.error("[proposals][DELETE] Error deleting proposal:", error);
     return NextResponse.json(

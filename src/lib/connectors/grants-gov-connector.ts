@@ -495,8 +495,13 @@ export class GrantsGovConnector extends BaseConnector {
     const agencyName = titleParts.length > 1 ? titleParts[0] : (raw.agency as string);
     const grantTitle = titleParts.length > 1 ? titleParts.slice(1).join(" - ") : (raw.programName as string) || title;
 
-    // Get focus area
-    const focusArea = (raw.focusArea as string) || this.mapTitleToFocusArea(String(grantTitle + " " + description));
+    // Get focus area - map Grants.gov codes to friendly names
+    let focusArea = (raw.focusArea as string) || this.mapTitleToFocusArea(String(grantTitle + " " + description));
+
+    // If focus area looks like a Grants.gov category code, map it to friendly name
+    if (focusArea && focusArea.length <= 5) {
+      focusArea = this.mapCategoryCodeToFocusArea(focusArea);
+    }
 
     // Get amount and deadline
     const amount = this.parseNumber(raw.estimatedAward as string | number | null);
@@ -548,6 +553,77 @@ export class GrantsGovConnector extends BaseConnector {
     }
     if (lowerText.includes("disaster") || lowerText.includes("emergency") || lowerText.includes("relief")) {
       return "Disaster Relief";
+    }
+
+    return "Other";
+  }
+
+  /**
+   * Map Grants.gov category codes to friendly category names
+   * Grants.gov uses abbreviation codes in CategoryOfFundingActivity field
+   */
+  private mapCategoryCodeToFocusArea(codes: string | string[]): string {
+    // Handle array of codes or JSON array string
+    let codeArray: string[] = [];
+
+    if (typeof codes === "string") {
+      // Check if it's a JSON array string
+      if (codes.startsWith("[") && codes.endsWith("]")) {
+        try {
+          codeArray = JSON.parse(codes);
+        } catch {
+          codeArray = [codes];
+        }
+      } else {
+        codeArray = [codes];
+      }
+    } else if (Array.isArray(codes)) {
+      codeArray = codes;
+    }
+
+    // Check each code and return the first matching category
+    for (const code of codeArray) {
+      const upperCode = code.toUpperCase();
+
+      // Health & Wellness
+      if (["HL", "FN"].includes(upperCode)) {
+        return "Health & Wellness";
+      }
+
+      // Education
+      if (["ED", "ELT"].includes(upperCode)) {
+        return "Education";
+      }
+
+      // Environment
+      if (["ENV", "EN", "AG"].includes(upperCode)) {
+        return "Environment";
+      }
+
+      // Research & Innovation
+      if (["NR", "ST", "IS"].includes(upperCode)) {
+        return "Research & Innovation";
+      }
+
+      // Arts & Culture
+      if (["AR", "HU"].includes(upperCode)) {
+        return "Arts & Culture";
+      }
+
+      // Community Development
+      if (["CD", "HO", "RD"].includes(upperCode)) {
+        return "Community Development";
+      }
+
+      // Disaster Relief
+      if (["DPR"].includes(upperCode)) {
+        return "Disaster Relief";
+      }
+
+      // Law & Justice (categorize as Other)
+      if (["LJL", "ISS"].includes(upperCode)) {
+        return "Other";
+      }
     }
 
     return "Other";
