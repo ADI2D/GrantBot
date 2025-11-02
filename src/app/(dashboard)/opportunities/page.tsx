@@ -62,33 +62,21 @@ export default function OpportunitiesPage() {
   if (isLoading) return <PageLoader label="Loading opportunities" />;
   if (error || !data) return <PageError message={error?.message || "Unable to load opportunities"} />;
 
-  // Filter and search opportunities
+  // Filter and search opportunities (backend now handles date filtering)
+  const now = new Date();
   const filteredOpportunities = data.opportunities.filter((opp) => {
-    // Filter out closed opportunities
-    if (opp.status === "closed") {
-      return false;
-    }
-
-    // Filter out opportunities with past deadlines
-    if (opp.deadline) {
-      const deadline = new Date(opp.deadline);
-      const now = new Date();
-      if (deadline < now) {
-        return false;
-      }
-    }
-
     // Apply focus area filter
     if (selectedFilter && opp.focusArea !== selectedFilter) {
       return false;
     }
 
-    // Apply search query
+    // Apply search query (name, focus area, funder name)
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesName = opp.name.toLowerCase().includes(query);
       const matchesFocusArea = opp.focusArea?.toLowerCase().includes(query);
-      if (!matchesName && !matchesFocusArea) {
+      const matchesFunder = opp.funderName?.toLowerCase().includes(query);
+      if (!matchesName && !matchesFocusArea && !matchesFunder) {
         return false;
       }
     }
@@ -180,20 +168,32 @@ export default function OpportunitiesPage() {
         {opportunities.length === 0 && (
           <EmptyState title="No opportunities" description="Add funders or import from your spreadsheet." />
         )}
-        {opportunities.map((opportunity) => (
-          <Card key={opportunity.id} className="p-5">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-base font-semibold text-slate-900">{opportunity.name}</p>
-                <p className="text-sm text-slate-500">
-                  Focus: {opportunity.focusArea ?? "Multi-issue"} • Due {formatDate(opportunity.deadline)}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-                  <Badge tone="info">{formatPercent(opportunity.alignmentScore)}</Badge>
-                  <Badge tone="neutral">{formatCurrency(opportunity.amount)}</Badge>
-                  <Badge tone="neutral">{opportunity.status.replaceAll("_", " ")}</Badge>
+        {opportunities.map((opportunity) => {
+          const deadline = opportunity.deadline ? new Date(opportunity.deadline) : null;
+          const isOpen = deadline ? deadline >= now : false;
+
+          return (
+            <Card key={opportunity.id} className="p-5">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-base font-semibold text-slate-900">{opportunity.name}</p>
+                    {isOpen ? (
+                      <Badge tone="success" className="bg-green-100 text-green-700">Open</Badge>
+                    ) : (
+                      <Badge tone="neutral" className="bg-slate-100 text-slate-600">Closed</Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-slate-500">
+                    {opportunity.funderName && `${opportunity.funderName} • `}
+                    Focus: {opportunity.focusArea ?? "Multi-issue"} • Due {formatDate(opportunity.deadline)}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+                    <Badge tone="info">{formatPercent(opportunity.alignmentScore)}</Badge>
+                    <Badge tone="neutral">{formatCurrency(opportunity.amount)}</Badge>
+                    <Badge tone="neutral">{opportunity.status.replaceAll("_", " ")}</Badge>
+                  </div>
                 </div>
-              </div>
               <div className="flex items-center gap-3">
                 {opportunity.applicationUrl ? (
                   <Button
@@ -221,18 +221,19 @@ export default function OpportunitiesPage() {
                   {createProposal.isPending ? "Creating..." : "Draft proposal"}
                 </Button>
               </div>
-            </div>
-            {opportunity.complianceNotes && (
-              <div className="mt-4 rounded-2xl border border-dashed border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
-                <div className="flex items-center gap-2 font-medium">
-                  <AlertTriangle className="h-4 w-4" />
-                  Compliance heads-up
-                </div>
-                <p className="text-amber-700">{opportunity.complianceNotes}</p>
               </div>
-            )}
-          </Card>
-        ))}
+              {opportunity.complianceNotes && (
+                <div className="mt-4 rounded-2xl border border-dashed border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+                  <div className="flex items-center gap-2 font-medium">
+                    <AlertTriangle className="h-4 w-4" />
+                    Compliance heads-up
+                  </div>
+                  <p className="text-amber-700">{opportunity.complianceNotes}</p>
+                </div>
+              )}
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

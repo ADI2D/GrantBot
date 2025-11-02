@@ -31,6 +31,7 @@ export function roleTone(role: AdminRole) {
 export const adminNavItems = [
   { label: "Overview", href: "/admin" },
   { label: "Customers", href: "/admin/customers" },
+  { label: "Connectors", href: "/admin/connectors" },
   { label: "Analytics", href: "/admin/analytics" },
   { label: "AI Ops", href: "/admin/ai" },
   { label: "Billing", href: "/admin/billing" },

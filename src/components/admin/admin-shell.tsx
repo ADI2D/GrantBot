@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { UserMenu } from "@/components/auth/user-menu";
@@ -28,7 +29,17 @@ export function AdminShell({
           </Link>
           <p className="mt-1 text-xs text-slate-500">Internal operations</p>
         </div>
-        <nav className="mt-8 flex flex-1 flex-col gap-1 text-sm font-medium">
+
+        {/* Back to Main App */}
+        <Link
+          href="/dashboard"
+          className="mt-6 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:border-slate-300"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Link>
+
+        <nav className="mt-6 flex flex-1 flex-col gap-1 text-sm font-medium">
           {adminNavItems.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (

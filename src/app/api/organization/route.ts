@@ -32,10 +32,10 @@ export async function PATCH(request: NextRequest) {
     const supabase = await createRouteSupabase();
     const {
       data: { user },
-      error,
+      error: authError,
     } = await supabase.auth.getUser();
 
-    if (error || !user) {
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -46,7 +46,7 @@ export async function PATCH(request: NextRequest) {
       ? Number(String(payload.budget).replace(/[^0-9.]/g, "")) || null
       : null;
 
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from("organizations")
       .update({
         name: payload.organizationName,
@@ -58,8 +58,8 @@ export async function PATCH(request: NextRequest) {
       })
       .eq("id", orgId);
 
-    if (error) {
-      throw error;
+    if (updateError) {
+      throw updateError;
     }
 
     const organization = await fetchOrganization(supabase, orgId);

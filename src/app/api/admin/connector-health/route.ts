@@ -12,21 +12,21 @@ export async function GET(request: NextRequest) {
     const supabase = await createRouteSupabase();
     const {
       data: { user },
-      error,
+      error: authError,
     } = await supabase.auth.getUser();
 
-    if (error || !user) {
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Fetch connector sync state
-    const { data: connectors, error } = await supabase
+    const { data: connectors, error: fetchError } = await supabase
       .from("connector_sync_state")
       .select("*")
       .order("last_sync_completed_at", { ascending: false });
 
-    if (error) {
-      throw error;
+    if (fetchError) {
+      throw fetchError;
     }
 
     // Calculate health metrics for each connector

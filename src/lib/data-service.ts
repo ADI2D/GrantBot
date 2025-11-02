@@ -54,6 +54,11 @@ export async function fetchOrganization(client: Client, orgId: string) {
 }
 
 export async function fetchOpportunities(client: Client, orgId: string): Promise<Opportunity[]> {
+  // Show opportunities from past 60 days OR future (for reference and planning)
+  const sixtyDaysAgo = new Date();
+  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+  const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
+
   const { data, error } = await client
     .from("opportunities")
     .select(
@@ -61,14 +66,15 @@ export async function fetchOpportunities(client: Client, orgId: string): Promise
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .neq("status", "closed") // Filter out closed opportunities
-    .gte("deadline", new Date().toISOString().split("T")[0]) // Filter out past deadlines (only future dates)
-    .order("deadline", { ascending: true });
+    .gte("deadline", sixtyDaysAgoStr) // Show past 60 days + future
+    .order("deadline", { ascending: false }); // Most recent first
 
   if (error) {
     throw new Error(`Failed to load opportunities: ${error.message}`);
   }
 
-  return (data ?? []).map((item) => ({
+  const now = new Date();
+  const opportunities = (data ?? []).map((item) => ({
     id: item.id,
     name: item.name,
     focusArea: item.focus_area,
@@ -80,6 +86,21 @@ export async function fetchOpportunities(client: Client, orgId: string): Promise
     complianceNotes: item.compliance_notes,
     applicationUrl: item.application_url,
   }));
+
+  // Sort: Open opportunities first (future deadline), then closed (past deadline)
+  return opportunities.sort((a, b) => {
+    const aDeadline = a.deadline ? new Date(a.deadline) : new Date(0);
+    const bDeadline = b.deadline ? new Date(b.deadline) : new Date(0);
+    const aIsOpen = aDeadline >= now;
+    const bIsOpen = bDeadline >= now;
+
+    if (aIsOpen === bIsOpen) {
+      // Both open or both closed - sort by deadline (nearest first for open, most recent first for closed)
+      return aIsOpen ? aDeadline.getTime() - bDeadline.getTime() : bDeadline.getTime() - aDeadline.getTime();
+    }
+    // Open opportunities first
+    return aIsOpen ? -1 : 1;
+  });
 }
 
 type RawProposal = {

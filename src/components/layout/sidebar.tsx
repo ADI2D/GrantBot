@@ -12,6 +12,9 @@ import {
   FileText,
   CreditCard,
   Settings,
+  Shield,
+  Users,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +27,13 @@ const navItems = [
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "Checklists", href: "/checklists", icon: ClipboardList },
   { label: "Billing", href: "/billing", icon: CreditCard },
-  { label: "Connectors", href: "/admin/connectors", icon: Settings },
+];
+
+const adminNavItems = [
+  { label: "Admin Dashboard", href: "/admin", icon: Shield },
+  { label: "Customers", href: "/admin/customers", icon: Users },
+  { label: "Connectors", href: "/admin/connectors", icon: Zap },
+  { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 export function Sidebar() {
@@ -45,6 +54,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 text-sm font-medium">
+        {/* User Navigation */}
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -56,6 +66,34 @@ export function Sidebar() {
                 "flex items-center gap-3 rounded-xl px-3 py-2 transition",
                 isActive
                   ? "bg-blue-50 text-blue-700"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {item.label}
+            </Link>
+          );
+        })}
+
+        {/* Admin Section Divider */}
+        <div className="my-4 border-t border-slate-200 pt-4">
+          <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Admin
+          </p>
+        </div>
+
+        {/* Admin Navigation */}
+        {adminNavItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-3 py-2 transition",
+                isActive
+                  ? "bg-rose-50 text-rose-700"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
               )}
             >
