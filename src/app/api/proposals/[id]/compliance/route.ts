@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteSupabase } from "@/lib/supabase-server";
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+type RouteParams = Promise<{ id: string }>;
+
+export async function PATCH(request: NextRequest, { params }: { params: RouteParams }) {
   try {
+    const { id } = await params;
     const supabase = await createRouteSupabase();
     const {
       data: { user },
@@ -16,7 +19,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { error } = await supabase
       .from("proposals")
       .update({ compliance_summary: payload.compliance })
-      .eq("id", params.id);
+      .eq("id", id);
 
     if (error) {
       throw error;
@@ -25,13 +28,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { data: proposalRecord } = await supabase
       .from("proposals")
       .select("organization_id")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (proposalRecord) {
       await supabase.from("activity_logs").insert({
         organization_id: proposalRecord.organization_id,
-        proposal_id: params.id,
+        proposal_id: id,
         user_id: user.id,
         action: "compliance_updated",
         metadata: { items: payload.compliance },

@@ -131,6 +131,26 @@ export type Database = {
           updated_at: string | null;
         };
       };
+      freelancer_proposals: {
+        Row: {
+          id: string;
+          freelancer_user_id: string;
+          client_id: string;
+          client_name: string;
+          title: string;
+          status: string;
+          due_date: string | null;
+          owner_name: string | null;
+          draft_html: string | null;
+          checklist: unknown;
+          sections: unknown;
+          ai_prompts: unknown;
+          last_edited_at: string | null;
+          submitted_at: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+      };
       support_tickets: {
         Row: {
           id: number;

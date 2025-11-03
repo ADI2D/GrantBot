@@ -4,8 +4,11 @@ import { createRouteSupabase } from "@/lib/supabase-server";
 
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+type RouteParams = Promise<{ id: string }>;
+
+export async function POST(request: NextRequest, { params }: { params: RouteParams }) {
   try {
+    const { id: proposalId } = await params;
     const supabase = await createRouteSupabase();
     const {
       data: { user },
@@ -22,8 +25,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     if (!sectionId) {
       return NextResponse.json({ error: "Missing sectionId" }, { status: 400 });
     }
-
-    const proposalId = params.id;
 
     const { data: proposal } = await supabase
       .from("proposals")

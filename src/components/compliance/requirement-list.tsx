@@ -148,8 +148,8 @@ function RequirementCard({ requirement }: { requirement: ComplianceRequirement }
 function RiskBadge({ level }: { level: string }) {
   if (level === "high") {
     return (
-      <Badge tone="danger" className="flex-shrink-0">
-        <AlertTriangle className="h-3 w-3 mr-1" />
+      <Badge tone="warning" className="flex-shrink-0 border border-orange-200 bg-orange-50 text-orange-700">
+        <AlertTriangle className="mr-1 h-3 w-3" />
         High Risk
       </Badge>
     );
@@ -157,14 +157,14 @@ function RiskBadge({ level }: { level: string }) {
 
   if (level === "medium") {
     return (
-      <Badge tone="warning" className="flex-shrink-0">
+      <Badge tone="warning" className="flex-shrink-0 bg-amber-50 text-amber-700">
         Medium Risk
       </Badge>
     );
   }
 
   return (
-    <Badge tone="default" className="flex-shrink-0">
+    <Badge tone="neutral" className="flex-shrink-0">
       Low Risk
     </Badge>
   );
