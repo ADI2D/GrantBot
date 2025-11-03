@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { Card } from "@/components/ui/card";
 import { LoginForm } from "@/components/auth/login-form";
+import { AccountType, getUserProfile, resolveAccountRedirect } from "@/lib/account";
 
 export default async function LoginPage({
   searchParams,
@@ -11,17 +12,26 @@ export default async function LoginPage({
   const params = await searchParams;
   const supabase = await createServerSupabase();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const missingOrg = Boolean(params?.missingOrg);
   const missingAdmin = params?.admin === "1" || params?.missingAdmin === "1";
 
-  if (session && !missingOrg && !missingAdmin) {
-    redirect("/dashboard");
+  if (user && !missingOrg && !missingAdmin) {
+    const profile = await getUserProfile(supabase, user.id);
+    const metadataType = user.user_metadata?.account_type as AccountType | undefined;
+    const accountType = profile?.accountType ?? metadataType ?? "nonprofit";
+    redirect(resolveAccountRedirect(accountType));
   }
 
-  if (session && (missingOrg || missingAdmin)) {
+  if (user && (missingOrg || missingAdmin)) {
+    const profile = await getUserProfile(supabase, user.id);
+    const metadataType = user.user_metadata?.account_type as AccountType | undefined;
+    const accountType = profile?.accountType ?? metadataType ?? "nonprofit";
+    if (accountType === "freelancer") {
+      redirect("/freelancer/clients");
+    }
     await supabase.auth.signOut();
   }
 

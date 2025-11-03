@@ -35,8 +35,8 @@ export function UserMenu() {
         <Avatar initials={initials} />
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-2 w-48 rounded-2xl border border-slate-100 bg-white p-3 text-sm shadow-lg">
-          <p className="text-slate-600">{session.user.email}</p>
+        <div className="absolute right-0 z-20 mt-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-lg">
+          <p className="max-w-[18rem] truncate text-slate-600">{session.user.email}</p>
           <Button variant="ghost" className="mt-3 w-full justify-start" onClick={handleSignOut}>
             Sign out
           </Button>

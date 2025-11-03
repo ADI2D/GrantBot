@@ -14,8 +14,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { organizationName } = await request.json();
     const adminClient = getServiceSupabaseClient();
+
+    const { data: profile, error: profileError } = await adminClient
+      .from("user_profiles")
+      .select("account_type")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (profileError && profileError.code !== "PGRST116") {
+      throw profileError;
+    }
+
+    if ((profile?.account_type ?? "nonprofit") === "freelancer") {
+      return NextResponse.json({ skipped: true });
+    }
+
+    const { organizationName } = await request.json();
 
     const { data: existingMembership, error: membershipError } = await adminClient
       .from("org_members")

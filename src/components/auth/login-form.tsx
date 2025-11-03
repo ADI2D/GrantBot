@@ -5,6 +5,7 @@ import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { AccountType, resolveAccountRedirect } from "@/lib/account";
 
 export function LoginForm() {
   const supabase = useSupabaseClient();
@@ -14,11 +15,12 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [organizationName, setOrganizationName] = useState("");
+  const [accountType, setAccountType] = useState<AccountType>("nonprofit");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handlePasswordSignIn = async () => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       // Handle rate limit specifically
       if (error.message.includes("rate limit") || error.status === 429) {
@@ -26,13 +28,32 @@ export function LoginForm() {
       }
       throw error;
     }
-    window.location.href = "/dashboard";
+    const userId = data.user?.id;
+    if (!userId) {
+      window.location.href = "/dashboard";
+      return;
+    }
+
+    try {
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("account_type")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const metadataType = data.user.user_metadata?.account_type as AccountType | undefined;
+      const accountType = (profile?.account_type as AccountType | undefined) ?? metadataType ?? "nonprofit";
+      const destination = resolveAccountRedirect(accountType);
+      window.location.href = destination;
+    } catch (profileError) {
+      console.warn("[login] failed to read account type", profileError);
+      window.location.href = "/dashboard";
+    }
   };
 
   const handleMagicLink = async () => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+      options: { emailRedirectTo: `${window.location.origin}/login` },
     });
     if (error) {
       if (error.message.includes("rate limit") || error.status === 429) {
@@ -77,12 +98,20 @@ export function LoginForm() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: { account_type: accountType },
+          },
         });
 
         if (error) throw error;
 
         if (!data.session) {
           setMessage("Check your email to confirm your account.");
+          return;
+        }
+
+        if (accountType === "freelancer") {
+          router.push("/freelancer/clients");
           return;
         }
 
@@ -132,6 +161,33 @@ export function LoginForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {mode === "signup" && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Account type</label>
+            <div className="flex rounded-lg border border-slate-200 p-1 text-sm">
+              {[
+                { label: "Nonprofit", value: "nonprofit" },
+                { label: "Freelancer", value: "freelancer" },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`flex-1 rounded-md px-3 py-1.5 ${
+                    accountType === option.value ? "bg-slate-900 text-white" : "text-slate-500"
+                  }`}
+                  onClick={() => setAccountType(option.value as AccountType)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-slate-500">
+              We&apos;ll email a verification link right after you sign up. Confirm your address before
+              continuing with setup.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">Email</label>
           <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
@@ -158,14 +214,16 @@ export function LoginForm() {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Organization name</label>
-              <Input
-                value={organizationName}
-                onChange={(event) => setOrganizationName(event.target.value)}
-                placeholder="My Nonprofit"
-              />
-            </div>
+            {accountType === "nonprofit" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Organization name</label>
+                <Input
+                  value={organizationName}
+                  onChange={(event) => setOrganizationName(event.target.value)}
+                  placeholder="My Nonprofit"
+                />
+              </div>
+            )}
           </>
         )}
         {message && <p className="text-sm text-slate-500">{message}</p>}
