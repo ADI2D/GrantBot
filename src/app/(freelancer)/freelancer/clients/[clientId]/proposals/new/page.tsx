@@ -36,26 +36,27 @@ export default function NewProposalPage() {
     setCreating(true);
 
     try {
-      // TODO: Implement actual proposal creation
-      // For now, simulate creation
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Create proposal in database
+      const response = await fetch('/api/freelancer/proposals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId,
+          title: proposalTitle,
+          opportunityId: selectedOpportunity || null,
+          dueDate: dueDate || null,
+        }),
+      });
 
-      // TODO: Create proposal in database
-      // const response = await fetch('/api/freelancer/proposals', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     clientId,
-      //     title: proposalTitle,
-      //     opportunityId: selectedOpportunity || null,
-      //     dueDate: dueDate || null,
-      //   }),
-      // });
-      // const { proposalId } = await response.json();
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to create proposal");
+      }
+
+      const { proposal } = await response.json();
 
       // Navigate to proposal editor
-      const mockProposalId = "p-new-" + Date.now();
-      router.push(`/freelancer/proposals/${mockProposalId}`);
+      router.push(`/freelancer/proposals/${proposal.id}`);
     } catch (error) {
       console.error("Creation failed:", error);
       setCreating(false);

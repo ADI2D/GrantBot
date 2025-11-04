@@ -224,27 +224,70 @@ function listSeedProposals(): FreelancerProposalDetail[] {
 }
 
 /**
- * Placeholder implementation for the freelancer clients listing.
- * Once the `freelancer_clients` table and API are wired up we can
- * replace this stub with a Supabase query.
+ * Fetches the list of freelancer clients from the database.
  */
 export async function listFreelancerClients(): Promise<FreelancerClientSummary[]> {
-  return Promise.resolve([
-    {
-      id: "impact-circle",
-      name: "Impact Circle Foundation",
-      status: "active",
-      activeProposals: 4,
-      opportunitiesInPipeline: 9,
-      documentsMissing: 2,
-      lastActivityAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-      annualBudget: 1250000,
-      primaryContact: {
-        name: "Nia Rodriguez",
-        email: "nia@impactcircle.org",
-      },
-      planName: "Growth",
+  try {
+    const supabase = await createServerSupabase();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from("freelancer_clients")
+      .select("*")
+      .eq("freelancer_user_id", user.id)
+      .order("last_activity_at", { ascending: false });
+
+    if (error) {
+      console.error("[freelancer][clients] Failed to list clients:", error);
+      return [];
+    }
+
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      status: row.status as "active" | "on_hold" | "archived",
+      activeProposals: 0, // TODO: Count from proposals table
+      opportunitiesInPipeline: 0, // TODO: Count from opportunities
+      documentsMissing: 0, // TODO: Count documents with status 'missing'
+      lastActivityAt: row.last_activity_at || row.created_at,
+      annualBudget: row.annual_budget || null,
+      primaryContact: row.primary_contact_name || row.primary_contact_email
+        ? {
+            name: row.primary_contact_name || null,
+            email: row.primary_contact_email || null,
+          }
+        : null,
+      billingRate: row.billing_rate || null,
+    }));
+  } catch (error) {
+    console.error("[freelancer][clients] Unexpected error:", error);
+    return [];
+  }
+}
+
+// Legacy mock data kept for reference
+const legacyMockData = [
+  {
+    id: "impact-circle",
+    name: "Impact Circle Foundation",
+    status: "active",
+    activeProposals: 4,
+    opportunitiesInPipeline: 9,
+    documentsMissing: 2,
+    lastActivityAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+    annualBudget: 1250000,
+    primaryContact: {
+      name: "Nia Rodriguez",
+      email: "nia@impactcircle.org",
     },
+    planName: "Growth",
+  },
     {
       id: "harvest-cooperative",
       name: "Unity Harvest Cooperative",
@@ -290,8 +333,7 @@ export async function listFreelancerClients(): Promise<FreelancerClientSummary[]
       },
       planName: "Impact",
     },
-  ]);
-}
+  ];
 
 const detailSeed: Record<string, FreelancerClientDetail> = {
   "impact-circle": {
@@ -613,30 +655,93 @@ function normalizeClientId(value: string) {
 }
 
 export async function getFreelancerClient(clientId: string): Promise<FreelancerClientDetail | null> {
-  const normalized = normalizeClientId(clientId);
-  if (detailSeed[normalized]) {
-    return detailSeed[normalized];
-  }
+  try {
+    const supabase = await createServerSupabase();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  const summary = await listFreelancerClients();
-  const matched = summary.find((client) => normalizeClientId(client.id) === normalized);
-  if (matched) {
-    const seed = detailSeed[normalizeClientId(matched.id)];
-    if (seed) {
-      return seed;
+    if (!user) {
+      return null;
     }
-    console.warn("[freelancer][client] using summary fallback", matched.id);
-    return {
-      ...matched,
-      mission: null,
-      focusAreas: [],
-      proposals: [],
-      documents: [],
-      notes: [],
-    };
-  }
 
-  return null;
+    // Fetch client details
+    const { data: client, error: clientError } = await supabase
+      .from("freelancer_clients")
+      .select("*")
+      .eq("id", clientId)
+      .eq("freelancer_user_id", user.id)
+      .maybeSingle();
+
+    if (clientError) {
+      console.error("[freelancer][client] Failed to fetch client:", clientError);
+      return null;
+    }
+
+    if (!client) {
+      return null;
+    }
+
+    // Fetch documents
+    const { data: documents, error: documentsError } = await supabase
+      .from("freelancer_documents")
+      .select("*")
+      .eq("client_id", clientId)
+      .eq("freelancer_user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (documentsError) {
+      console.error("[freelancer][documents] Failed to fetch documents:", documentsError);
+    }
+
+    // Fetch notes
+    const { data: notes, error: notesError } = await supabase
+      .from("freelancer_notes")
+      .select("*")
+      .eq("client_id", clientId)
+      .eq("freelancer_user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (notesError) {
+      console.error("[freelancer][notes] Failed to fetch notes:", notesError);
+    }
+
+    // Map to FreelancerClientDetail
+    return {
+      id: client.id,
+      name: client.name,
+      status: client.status as "active" | "on_hold" | "archived",
+      activeProposals: 0, // TODO: Count from proposals table
+      opportunitiesInPipeline: 0, // TODO: Count from opportunities
+      documentsMissing: (documents ?? []).filter((d) => d.status === "missing").length,
+      lastActivityAt: client.last_activity_at || client.created_at,
+      annualBudget: client.annual_budget || null,
+      primaryContact: client.primary_contact_name || client.primary_contact_email
+        ? {
+            name: client.primary_contact_name || null,
+            email: client.primary_contact_email || null,
+          }
+        : null,
+      billingRate: client.billing_rate || null,
+      mission: client.mission || null,
+      focusAreas: Array.isArray(client.focus_areas) ? client.focus_areas : [],
+      proposals: [], // TODO: Fetch actual proposals
+      documents: (documents ?? []).map((doc) => ({
+        id: doc.id,
+        name: doc.name,
+        status: doc.status as "ready" | "in_review" | "missing",
+        uploadedAt: doc.created_at,
+      })),
+      notes: (notes ?? []).map((note) => ({
+        id: note.id,
+        content: note.content,
+        createdAt: note.created_at,
+      })),
+    };
+  } catch (error) {
+    console.error("[freelancer][client] Unexpected error:", error);
+    return null;
+  }
 }
 
 export async function listFreelancerProposals(): Promise<FreelancerProposalDetail[]> {

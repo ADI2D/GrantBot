@@ -3,7 +3,7 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Briefcase, Clock } from "lucide-react";
+import { Briefcase, Clock, Target, Activity, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FreelancerTopNav } from "@/components/layout/freelancer-top-nav";
 
@@ -14,9 +14,24 @@ const navItems = [
     icon: Briefcase,
   },
   {
+    label: "Opportunities",
+    href: "/freelancer/opportunities",
+    icon: Target,
+  },
+  {
     label: "Time tracking",
     href: "/freelancer/time-tracking",
     icon: Clock,
+  },
+  {
+    label: "Invoices",
+    href: "/freelancer/invoices",
+    icon: FileText,
+  },
+  {
+    label: "Token usage",
+    href: "/freelancer/usage",
+    icon: Activity,
   },
 ];
 

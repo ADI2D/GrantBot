@@ -49,21 +49,23 @@ export default function AddNotePage() {
     setSaving(true);
 
     try {
-      // TODO: Implement actual note saving to database
-      // For now, simulate save
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Save note to database
+      const response = await fetch("/api/freelancer/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId, content: noteContent }),
+      });
 
-      // TODO: Save note to database
-      // await fetch('/api/freelancer/notes', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ clientId, content: noteContent }),
-      // });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to save note");
+      }
 
       // Navigate back to client detail page
       router.push(`/freelancer/clients/${clientId}`);
     } catch (error) {
       console.error("Save failed:", error);
+      alert(error instanceof Error ? error.message : "Failed to save note");
       setSaving(false);
     }
   };

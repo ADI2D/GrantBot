@@ -138,8 +138,8 @@ export default async function FreelancerClientDetailPage({
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {client.documents.map((doc) => (
             <Link
-              key={doc.name}
-              href={`/freelancer/documents/${encodeURIComponent(doc.name)}`}
+              key={doc.id}
+              href={`/freelancer/documents/${doc.id}`}
               className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:border-blue-200 hover:shadow-hover"
             >
               <span className="truncate text-left">{doc.name}</span>
@@ -193,9 +193,4 @@ function ButtonLink({ href, children, className }: { href: string; children: Rea
       <Link href={href}>{children}</Link>
     </Button>
   );
-}
-
-export async function generateStaticParams() {
-  const clients = await listFreelancerClients();
-  return clients.map((client) => ({ clientId: client.id }));
 }

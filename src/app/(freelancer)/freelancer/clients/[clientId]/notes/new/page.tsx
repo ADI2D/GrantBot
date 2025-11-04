@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Save, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, Bold, Italic, List, CheckSquare } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,9 +34,36 @@ export default function AddNotePage() {
 
   const [noteContent, setNoteContent] = useState("");
   const [saving, setSaving] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleTemplateSelect = (template: string) => {
     setNoteContent(template);
+  };
+
+  const insertFormatting = (before: string, after: string = "", placeholder: string = "text") => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = noteContent.substring(start, end);
+    const textToInsert = selectedText || placeholder;
+
+    const newText =
+      noteContent.substring(0, start) +
+      before +
+      textToInsert +
+      after +
+      noteContent.substring(end);
+
+    setNoteContent(newText);
+
+    // Set cursor position after inserted text
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + before.length + textToInsert.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,16 +76,17 @@ export default function AddNotePage() {
     setSaving(true);
 
     try {
-      // TODO: Implement actual note saving to database
-      // For now, simulate save
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Save note to database
+      const response = await fetch("/api/freelancer/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId, content: noteContent }),
+      });
 
-      // TODO: Save note to database
-      // await fetch('/api/freelancer/notes', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ clientId, content: noteContent }),
-      // });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to save note");
+      }
 
       // Navigate back to client detail page
       router.push(`/freelancer/clients/${clientId}`);
@@ -94,15 +122,57 @@ export default function AddNotePage() {
                   Note content
                 </label>
                 <p className="mt-1 text-xs text-slate-500">
-                  Use templates or write freeform. Markdown formatting supported.
+                  Use quick formatting buttons or templates below.
                 </p>
+
+                {/* Formatting Toolbar */}
+                <div className="mt-2 flex gap-1 rounded-t-lg border border-b-0 border-slate-300 bg-slate-50 p-2">
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting("**", "**", "bold text")}
+                    className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-slate-700 hover:bg-white hover:text-slate-900"
+                    title="Bold"
+                  >
+                    <Bold className="h-3.5 w-3.5" />
+                    Bold
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting("_", "_", "italic text")}
+                    className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-slate-700 hover:bg-white hover:text-slate-900"
+                    title="Italic"
+                  >
+                    <Italic className="h-3.5 w-3.5" />
+                    Italic
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting("- ", "", "list item")}
+                    className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-slate-700 hover:bg-white hover:text-slate-900"
+                    title="Bullet list"
+                  >
+                    <List className="h-3.5 w-3.5" />
+                    List
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting("- [ ] ", "", "task")}
+                    className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-slate-700 hover:bg-white hover:text-slate-900"
+                    title="Checklist"
+                  >
+                    <CheckSquare className="h-3.5 w-3.5" />
+                    Task
+                  </button>
+                </div>
+
                 <Textarea
+                  ref={textareaRef}
                   id="note-content"
                   value={noteContent}
                   onChange={(e) => setNoteContent(e.target.value)}
                   placeholder="Start typing your note here..."
                   rows={16}
-                  className="mt-2 font-mono text-sm"
+                  className="rounded-t-none font-mono text-sm"
                   required
                 />
               </div>
@@ -165,12 +235,13 @@ export default function AddNotePage() {
 
           {/* Tips */}
           <div className="rounded-xl bg-blue-50 p-4 text-sm">
-            <p className="font-semibold text-blue-900">Pro tips</p>
+            <p className="font-semibold text-blue-900">Quick tips</p>
             <ul className="mt-2 space-y-1 text-xs text-blue-800">
-              <li>• Use ** for bold text</li>
-              <li>• Use - for bullet lists</li>
+              <li>• Click formatting buttons to add structure</li>
+              <li>• Select text first to wrap it with formatting</li>
+              <li>• Use templates for common note types</li>
               <li>• Add dates for time-sensitive items</li>
-              <li>• Tag action items clearly</li>
+              <li>• Tag action items with checkboxes</li>
             </ul>
           </div>
         </div>

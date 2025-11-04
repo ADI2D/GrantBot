@@ -22,6 +22,7 @@ export async function middleware(req: NextRequest) {
 
   const pathname = req.nextUrl.pathname;
 
+  // Admin route protection
   if (pathname.startsWith("/admin")) {
     if (!session?.user) {
       return redirectToLogin(req, "admin");
@@ -35,6 +36,48 @@ export async function middleware(req: NextRequest) {
 
     if (!adminRecord) {
       return redirectToLogin(req, "admin");
+    }
+  }
+
+  // Onboarding gate for dashboard routes (except onboarding itself)
+  const isDashboardRoute =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/opportunities") ||
+    pathname.startsWith("/proposals") ||
+    pathname.startsWith("/workspace") ||
+    pathname.startsWith("/analytics") ||
+    pathname.startsWith("/checklists") ||
+    pathname.startsWith("/billing");
+
+  const isOnboardingRoute = pathname.startsWith("/onboarding");
+
+  if (session?.user && (isDashboardRoute || isOnboardingRoute)) {
+    // Get user's org ID from cookie
+    const orgCookie = req.cookies.get("grantbot_selected_org");
+
+    if (orgCookie?.value) {
+      // Check onboarding completion
+      const { data: orgData } = await supabase
+        .from("organizations")
+        .select("onboarding_completion")
+        .eq("id", orgCookie.value)
+        .maybeSingle();
+
+      const onboardingComplete = (orgData?.onboarding_completion ?? 0) >= 1.0;
+
+      // Redirect to onboarding if not complete and trying to access dashboard routes
+      if (!onboardingComplete && isDashboardRoute) {
+        const redirectUrl = req.nextUrl.clone();
+        redirectUrl.pathname = "/onboarding";
+        return NextResponse.redirect(redirectUrl);
+      }
+
+      // Redirect to dashboard if complete and on onboarding page
+      if (onboardingComplete && isOnboardingRoute) {
+        const redirectUrl = req.nextUrl.clone();
+        redirectUrl.pathname = "/dashboard";
+        return NextResponse.redirect(redirectUrl);
+      }
     }
   }
 

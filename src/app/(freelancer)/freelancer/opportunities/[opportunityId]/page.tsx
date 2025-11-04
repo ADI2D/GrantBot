@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, DollarSign, Building2, Target, CheckCircle2, Plus } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Building2, Target, CheckCircle2, Plus, ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -188,12 +188,27 @@ export default async function OpportunityDetailPage({
               </div>
             </div>
           </div>
-          <Button asChild className="bg-blue-600 hover:bg-blue-700">
-            <Link href={`/freelancer/clients`}>
-              <Plus className="mr-2 h-4 w-4" />
-              Draft proposal
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            {opportunity.programWebsite && (
+              <Button asChild variant="secondary">
+                <a
+                  href={opportunity.programWebsite}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View on funder site
+                </a>
+              </Button>
+            )}
+            <Button asChild className="bg-blue-600 hover:bg-blue-700">
+              <Link href={`/freelancer/clients`}>
+                <Plus className="mr-2 h-4 w-4" />
+                Draft proposal
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -346,6 +361,19 @@ export default async function OpportunityDetailPage({
                   Draft proposal
                 </Link>
               </Button>
+              {opportunity.programWebsite && (
+                <Button asChild variant="secondary" size="sm" className="w-full justify-start">
+                  <a
+                    href={opportunity.programWebsite}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View on funder site
+                  </a>
+                </Button>
+              )}
               <Button variant="secondary" size="sm" className="w-full justify-start">
                 Save to client
               </Button>
@@ -388,18 +416,6 @@ export default async function OpportunityDetailPage({
                   <Badge tone="default">{opportunity.focusArea}</Badge>
                 </p>
               </div>
-              {opportunity.programWebsite && (
-                <div>
-                  <a
-                    href={opportunity.programWebsite}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline text-xs"
-                  >
-                    Visit program website →
-                  </a>
-                </div>
-              )}
             </div>
           </Card>
 

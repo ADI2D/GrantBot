@@ -6,11 +6,7 @@ import { HeaderShell } from "@/components/layout/header-shell";
 import { UserMenu } from "@/components/auth/user-menu";
 
 export function FreelancerTopNav() {
-  const left = (
-    <div className="hidden text-xs uppercase tracking-wide text-blue-600 md:block">
-      Freelancer workspace
-    </div>
-  );
+  const left = null;
 
   const right = (
     <>

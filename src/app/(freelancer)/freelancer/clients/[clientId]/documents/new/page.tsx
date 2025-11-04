@@ -60,17 +60,24 @@ export default function UploadDocumentPage() {
     setUploading(true);
 
     try {
-      // TODO: Implement actual file upload to Supabase Storage
-      // For now, simulate upload
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Save document metadata to database
+      const response = await fetch("/api/freelancer/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId,
+          name: documentName,
+          status: documentStatus,
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+          mimeType: selectedFile.type,
+        }),
+      });
 
-      // TODO: Save document metadata to database
-      // const formData = new FormData();
-      // formData.append('file', selectedFile);
-      // formData.append('name', documentName);
-      // formData.append('status', documentStatus);
-      // formData.append('clientId', clientId);
-      // await fetch('/api/freelancer/documents', { method: 'POST', body: formData });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to save document");
+      }
 
       // Navigate back to client detail page
       router.push(`/freelancer/clients/${clientId}`);

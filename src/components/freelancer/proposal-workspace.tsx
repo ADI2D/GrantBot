@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Sparkles, Save, CheckCircle2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Sparkles, Save, CheckCircle2, Plus, Trash2, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import type { FreelancerProposalDetail } from "@/lib/freelancer-clients";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,18 +17,25 @@ import { RichTextToolbar } from "@/components/freelancer/rich-text-toolbar";
 import { FontSize } from "@/lib/editor/font-size-extension";
 
 export function FreelancerProposalWorkspace({ proposal }: { proposal: FreelancerProposalDetail }) {
+  const router = useRouter();
   const [draft, setDraft] = useState(proposal.draft);
   const [checklist, setChecklist] = useState(() => proposal.checklist.map((item) => ({ ...item })));
   const [status, setStatus] = useState(proposal.status);
   const [lastEditedAt, setLastEditedAt] = useState<string | null>(proposal.lastEditedAt ?? null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUnsubmitting, setIsUnsubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [aiBusyPrompt, setAiBusyPrompt] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [selectedSection, setSelectedSection] = useState<string | null>(proposal.sections[0]?.id ?? null);
+  const [newChecklistItem, setNewChecklistItem] = useState("");
+  const [showChecklistInput, setShowChecklistInput] = useState(false);
+  const [isChecklistExpanded, setIsChecklistExpanded] = useState(false);
 
   const completedCount = useMemo(() => checklist.filter((item) => item.completed).length, [checklist]);
-  const isReadOnly = ["submitted", "awarded"].includes(status.toLowerCase());
+  const isReadOnly = ["awarded"].includes(status.toLowerCase());
+  const isSubmitted = status.toLowerCase() === "in review";
 
   const formatTimestamp = (value: string | null) => (value ? new Date(value).toLocaleString() : null);
 
@@ -191,6 +199,88 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
     }
   };
 
+  const handleAddChecklistItem = () => {
+    if (!newChecklistItem.trim()) return;
+
+    const newItem = {
+      id: `chk-${Date.now()}`,
+      label: newChecklistItem.trim(),
+      completed: false,
+    };
+
+    setChecklist((prev) => [...prev, newItem]);
+    setNewChecklistItem("");
+    setShowChecklistInput(false);
+  };
+
+  const handleDeleteChecklistItem = (id: string) => {
+    if (isReadOnly) return;
+    setChecklist((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleUnsubmit = async () => {
+    if (!isSubmitted || isReadOnly) return;
+    setIsUnsubmitting(true);
+    setFeedback(null);
+
+    try {
+      const response = await fetch(`/api/freelancer/proposals/${proposal.id}/unsubmit`, {
+        method: "POST",
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "Failed to unsubmit proposal");
+      }
+
+      if (typeof payload?.status === "string") {
+        setStatus(payload.status);
+      }
+      setFeedback({ type: "success", message: "Proposal moved back to drafting" });
+    } catch (error) {
+      console.error("[freelancer][proposal] unsubmit error", error);
+      setFeedback({
+        type: "error",
+        message: error instanceof Error ? error.message : "Failed to unsubmit proposal",
+      });
+    } finally {
+      setIsUnsubmitting(false);
+    }
+  };
+
+  const handleDeleteProposal = async () => {
+    if (isDeleting) return;
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this proposal? This action cannot be undone."
+    );
+
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    setFeedback(null);
+
+    try {
+      const response = await fetch(`/api/freelancer/proposals/${proposal.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "Failed to delete proposal");
+      }
+
+      // Navigate back to client page
+      router.push(`/freelancer/clients/${proposal.clientId}`);
+    } catch (error) {
+      console.error("[freelancer][proposal] delete error", error);
+      setFeedback({
+        type: "error",
+        message: error instanceof Error ? error.message : "Failed to delete proposal",
+      });
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
@@ -206,34 +296,79 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" disabled={isSaving || isReadOnly} onClick={handleSaveDraft}>
-              {isSaving ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-transparent" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save draft
-                </>
-              )}
-            </Button>
-            <Button
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700"
-              onClick={handleSubmitProposal}
-              disabled={isReadOnly || isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Submitting…
-                </>
-              ) : (
-                "Submit for review"
-              )}
-            </Button>
+            {!isSubmitted && !isReadOnly && (
+              <>
+                <Button variant="secondary" size="sm" disabled={isSaving} onClick={handleSaveDraft}>
+                  {isSaving ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-transparent" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save draft
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={handleSubmitProposal}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Submitting…
+                    </>
+                  ) : (
+                    "Submit for review"
+                  )}
+                </Button>
+              </>
+            )}
+            {isSubmitted && !isReadOnly && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleUnsubmit}
+                disabled={isUnsubmitting}
+              >
+                {isUnsubmitting ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-transparent" />
+                    Moving back...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Move back to drafting
+                  </>
+                )}
+              </Button>
+            )}
+            {!isReadOnly && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleDeleteProposal}
+                disabled={isDeleting}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </>
+                )}
+              </Button>
+            )}
           </div>
           {feedback ? (
             <p
@@ -252,19 +387,63 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
       <div className="grid gap-6 lg:grid-cols-[260px,minmax(0,1fr),260px]">
         {/* Checklist */}
         <Card className="space-y-4 border-slate-200 p-5">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">Checklist</p>
-            <p className="text-xs text-slate-500">
-              {completedCount} of {checklist.length} complete
-            </p>
-          </div>
-          <div className="space-y-3">
+          <button
+            onClick={() => setIsChecklistExpanded(!isChecklistExpanded)}
+            className="w-full flex items-center justify-between text-left group"
+          >
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Checklist</p>
+              <p className="text-xs text-slate-500">
+                {completedCount} of {checklist.length} complete
+              </p>
+            </div>
+            {isChecklistExpanded ? (
+              <ChevronUp className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition" />
+            )}
+          </button>
+
+          {!isChecklistExpanded && checklist.length > 0 && (
+            <div className="space-y-2">
+              {checklist.slice(0, 2).map((item) => (
+                <div
+                  key={item.id}
+                  className={cn(
+                    "flex items-start gap-2 rounded-lg border px-2 py-1.5 text-xs transition",
+                    item.completed ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-white",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={item.completed}
+                    onChange={() => handleChecklistToggle(item.id)}
+                    className="mt-0.5"
+                    disabled={isReadOnly}
+                  />
+                  <span className={cn("flex-1 cursor-pointer", item.completed && "text-blue-700 line-through")}
+                    onClick={() => !isReadOnly && handleChecklistToggle(item.id)}
+                  >
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+              {checklist.length > 2 && (
+                <p className="text-xs text-slate-400 text-center pt-1">
+                  +{checklist.length - 2} more items
+                </p>
+              )}
+            </div>
+          )}
+
+          {isChecklistExpanded && (
+            <div className="space-y-3">
             {checklist.map((item) => (
-              <label
+              <div
                 key={item.id}
                 className={cn(
-                  "flex cursor-pointer items-start gap-2 rounded-xl border px-3 py-2 text-sm transition",
-                  item.completed ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white hover:border-slate-300",
+                  "flex items-start gap-2 rounded-xl border px-3 py-2 text-sm transition",
+                  item.completed ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white",
                 )}
               >
                 <input
@@ -274,19 +453,94 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
                   className="mt-1"
                   disabled={isReadOnly}
                 />
-                <span className={cn("flex-1", item.completed && "text-blue-700 line-through")}>{item.label}</span>
-              </label>
+                <span className={cn("flex-1 cursor-pointer", item.completed && "text-blue-700 line-through")}
+                  onClick={() => !isReadOnly && handleChecklistToggle(item.id)}
+                >
+                  {item.label}
+                </span>
+                {!isReadOnly && (
+                  <button
+                    onClick={() => handleDeleteChecklistItem(item.id)}
+                    className="text-slate-400 hover:text-red-600 transition"
+                    aria-label="Delete item"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
             ))}
+            {checklist.length === 0 && !showChecklistInput && (
+              <p className="text-xs text-slate-500 text-center py-4">
+                No checklist items yet. Add items to track your progress.
+              </p>
+            )}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs text-blue-600"
-            onClick={() => setChecklist((prev) => prev.map((item) => ({ ...item, completed: true })))}
-            disabled={isReadOnly}
-          >
-            Mark all complete
-          </Button>
+
+          {showChecklistInput ? (
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={newChecklistItem}
+                onChange={(e) => setNewChecklistItem(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddChecklistItem();
+                  } else if (e.key === "Escape") {
+                    setShowChecklistInput(false);
+                    setNewChecklistItem("");
+                  }
+                }}
+                placeholder="Enter checklist item..."
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleAddChecklistItem}
+                  disabled={!newChecklistItem.trim()}
+                  className="flex-1"
+                >
+                  Add
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setShowChecklistInput(false);
+                    setNewChecklistItem("");
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {!isReadOnly && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-xs text-blue-600"
+                  onClick={() => setShowChecklistInput(true)}
+                >
+                  <Plus className="mr-1 h-3 w-3" />
+                  Add item
+                </Button>
+              )}
+              {checklist.length > 0 && !isReadOnly && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-xs text-slate-600"
+                  onClick={() => setChecklist((prev) => prev.map((item) => ({ ...item, completed: true })))}
+                >
+                  Mark all complete
+                </Button>
+              )}
+            </div>
+          )}
         </Card>
 
         {/* Editor */}

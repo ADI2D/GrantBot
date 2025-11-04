@@ -34,6 +34,7 @@ const adminNavItems = [
   { label: "Admin Dashboard", href: "/admin", icon: Shield },
   { label: "Customers", href: "/admin/customers", icon: Users },
   { label: "Users", href: "/admin/users", icon: UserCog },
+  { label: "Token Usage", href: "/admin/usage", icon: BarChart3 },
   { label: "Connectors", href: "/admin/connectors", icon: Zap },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
