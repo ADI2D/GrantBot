@@ -31,7 +31,7 @@ export type FreelancerClientDetail = FreelancerClientSummary & {
     name: string;
     status: "ready" | "missing" | "in_review";
   }>;
-  notes: string[];
+  notes: Array<string | { id: string; content: string; createdAt: string }>;
 };
 
 export type FreelancerProposalChecklistItem = {

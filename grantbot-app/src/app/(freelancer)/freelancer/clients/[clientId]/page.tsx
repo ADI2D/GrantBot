@@ -166,9 +166,12 @@ export default async function FreelancerClientDetailPage({
         </div>
         {client.notes.length ? (
           <ul className="list-disc space-y-2 pl-5 text-sm text-slate-600">
-            {client.notes.map((note, index) => (
-              <li key={index}>{note}</li>
-            ))}
+            {client.notes.map((note, index) => {
+              const isObject = typeof note === 'object' && note !== null;
+              const key = isObject && 'id' in note ? note.id : index;
+              const content = isObject && 'content' in note ? note.content : note;
+              return <li key={key}>{content}</li>;
+            })}
           </ul>
         ) : (
           <p className="text-sm text-slate-500">Capture engagement notes, meeting recaps, and to-dos here.</p>
