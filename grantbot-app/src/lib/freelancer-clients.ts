@@ -28,6 +28,7 @@ export type FreelancerClientDetail = FreelancerClientSummary & {
     dueDate: string | null;
   }>;
   documents: Array<{
+    id?: string;
     name: string;
     status: "ready" | "missing" | "in_review";
   }>;
@@ -614,29 +615,114 @@ function normalizeClientId(value: string) {
 
 export async function getFreelancerClient(clientId: string): Promise<FreelancerClientDetail | null> {
   const normalized = normalizeClientId(clientId);
+
+  // Check seed data first
   if (detailSeed[normalized]) {
     return detailSeed[normalized];
   }
 
-  const summary = await listFreelancerClients();
-  const matched = summary.find((client) => normalizeClientId(client.id) === normalized);
-  if (matched) {
-    const seed = detailSeed[normalizeClientId(matched.id)];
-    if (seed) {
-      return seed;
-    }
-    console.warn("[freelancer][client] using summary fallback", matched.id);
-    return {
-      ...matched,
-      mission: null,
-      focusAreas: [],
-      proposals: [],
-      documents: [],
-      notes: [],
-    };
-  }
+  // Try to fetch from database
+  try {
+    const supabase = await createServerSupabase();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  return null;
+    if (!user) {
+      return null;
+    }
+
+    // Fetch client from database
+    const { data: client, error: clientError } = await supabase
+      .from("freelancer_clients")
+      .select("*")
+      .eq("id", clientId)
+      .eq("freelancer_user_id", user.id)
+      .maybeSingle();
+
+    if (clientError || !client) {
+      console.warn("[freelancer][client] Failed to fetch client from database", clientError);
+      // Fall back to seed data search
+      const summary = await listFreelancerClients();
+      const matched = summary.find((c) => normalizeClientId(c.id) === normalized);
+      if (matched) {
+        const seed = detailSeed[normalizeClientId(matched.id)];
+        if (seed) {
+          return seed;
+        }
+      }
+      return null;
+    }
+
+    // Fetch related notes
+    const { data: notes } = await supabase
+      .from("freelancer_notes")
+      .select("id, content, created_at")
+      .eq("client_id", client.id)
+      .order("created_at", { ascending: false });
+
+    // Fetch related documents
+    const { data: documents } = await supabase
+      .from("freelancer_documents")
+      .select("id, name, status")
+      .eq("client_id", client.id)
+      .order("created_at", { ascending: false });
+
+    // Fetch related proposals
+    const { data: proposals } = await supabase
+      .from("freelancer_proposals")
+      .select("id, title, status, due_date")
+      .eq("client_id", client.id)
+      .order("updated_at", { ascending: false });
+
+    // Count active proposals
+    const activeProposals = proposals?.filter(
+      (p) => !["archived", "rejected"].includes(p.status?.toLowerCase() || "")
+    ).length || 0;
+
+    // Transform database result to FreelancerClientDetail
+    return {
+      id: client.id,
+      name: client.name,
+      status: client.status as "active" | "on_hold" | "archived",
+      activeProposals,
+      opportunitiesInPipeline: 0, // TODO: Implement opportunities count
+      documentsMissing: documents?.filter((d) => d.status === "missing").length || 0,
+      lastActivityAt: client.last_activity_at,
+      annualBudget: client.annual_budget,
+      primaryContact: client.primary_contact_name
+        ? {
+            name: client.primary_contact_name,
+            email: client.primary_contact_email || null,
+          }
+        : null,
+      planName: client.plan_name,
+      mission: client.mission,
+      focusAreas: client.focus_areas || [],
+      proposals:
+        proposals?.map((p) => ({
+          id: p.id,
+          title: p.title,
+          status: p.status || "Drafting",
+          dueDate: p.due_date,
+        })) || [],
+      documents:
+        documents?.map((d) => ({
+          id: d.id,
+          name: d.name,
+          status: d.status as "ready" | "missing" | "in_review",
+        })) || [],
+      notes:
+        notes?.map((n) => ({
+          id: n.id,
+          content: n.content,
+          createdAt: n.created_at,
+        })) || [],
+    };
+  } catch (error) {
+    console.warn("[freelancer][client] Unexpected error fetching client", error);
+    return null;
+  }
 }
 
 export async function listFreelancerProposals(): Promise<FreelancerProposalDetail[]> {
