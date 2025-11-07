@@ -173,8 +173,14 @@ export default async function FreelancerClientDetailPage({
             {client.notes.map((note, index) => {
               const isObject = typeof note === 'object' && note !== null;
               const key = isObject && 'id' in note ? note.id : index;
-              const content = isObject && 'content' in note ? note.content : note;
-              return <li key={key}>{content}</li>;
+              let content = isObject && 'content' in note ? note.content : note;
+
+              // Extra safety: if content is still an object, convert to string
+              if (typeof content === 'object' && content !== null) {
+                content = JSON.stringify(content);
+              }
+
+              return <li key={key}>{String(content)}</li>;
             })}
           </ul>
         ) : (
@@ -200,9 +206,4 @@ function ButtonLink({ href, children, className }: { href: string; children: Rea
       <Link href={href}>{children}</Link>
     </Button>
   );
-}
-
-export async function generateStaticParams() {
-  const clients = await listFreelancerClients();
-  return clients.map((client) => ({ clientId: client.id }));
 }
