@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteSupabase } from "@/lib/supabase-server";
+import { Resend } from "resend";
 
 export async function POST(
   request: NextRequest,
@@ -141,66 +142,203 @@ async function sendReviewEmail(params: {
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .content { background-color: #f8fafc; padding: 30px; border-radius: 0 0 8px 8px; }
-    .button { display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-    .message-box { background-color: white; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0; }
-    .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #64748b; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      padding: 40px 30px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      color: #ffffff;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .header p {
+      margin: 8px 0 0 0;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .content h2 {
+      margin: 0 0 20px 0;
+      color: #1e293b;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .content p {
+      margin: 0 0 16px 0;
+      line-height: 1.6;
+      color: #475569;
+      font-size: 16px;
+    }
+    .button {
+      display: inline-block;
+      padding: 14px 32px;
+      background-color: #2563eb;
+      color: #ffffff !important;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      margin: 10px 0;
+    }
+    .button-container {
+      text-align: center;
+      margin: 30px 0;
+    }
+    .info-box {
+      background-color: #f1f5f9;
+      border-left: 4px solid #2563eb;
+      padding: 16px 20px;
+      margin: 24px 0;
+      border-radius: 4px;
+    }
+    .info-box p {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.5;
+    }
+    .info-box p:last-child {
+      margin-bottom: 0;
+    }
+    .info-box strong {
+      color: #1e293b;
+    }
+    .message-box {
+      background-color: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 16px 20px;
+      margin: 24px 0;
+      border-radius: 4px;
+    }
+    .message-box p {
+      margin: 0;
+      color: #78350f;
+      font-size: 15px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .message-box strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #92400e;
+    }
+    .features {
+      margin: 24px 0;
+    }
+    .features ul {
+      margin: 12px 0;
+      padding-left: 20px;
+    }
+    .features li {
+      margin: 8px 0;
+      color: #475569;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .link-box {
+      background-color: #f8fafc;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 20px 0;
+      word-break: break-all;
+    }
+    .link-box a {
+      color: #2563eb;
+      font-size: 13px;
+      text-decoration: none;
+    }
+    .footer {
+      padding: 30px;
+      text-align: center;
+      border-top: 1px solid #e2e8f0;
+      background-color: #f8fafc;
+    }
+    .footer p {
+      margin: 0 0 8px 0;
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+    .footer p:last-child {
+      margin-bottom: 0;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>Proposal Review Request</h1>
+      <h1>📄 Proposal Review Request</h1>
+      <p>You've been invited to provide feedback</p>
     </div>
+
     <div class="content">
-      <p>Hello ${reviewerName},</p>
+      <p>Hello <strong>${reviewerName}</strong>,</p>
 
-      <p>${senderName} has invited you to review a grant proposal:</p>
+      <p>${senderName} has invited you to review a grant proposal and provide your valuable feedback.</p>
 
-      <div class="message-box">
-        <strong>Proposal:</strong> ${proposalTitle}<br>
-        <strong>Client:</strong> ${clientName}
+      <div class="info-box">
+        <p><strong>📋 Proposal Details:</strong></p>
+        <p><strong>Title:</strong> ${proposalTitle}</p>
+        <p><strong>Client:</strong> ${clientName}</p>
       </div>
 
       ${personalMessage ? `
       <div class="message-box">
-        <strong>Personal Message:</strong><br>
-        ${personalMessage}
+        <strong>💬 Personal Message from ${senderName}:</strong>
+        <p>${personalMessage}</p>
       </div>
       ` : ''}
 
-      <p>You can view the proposal and leave feedback by clicking the button below:</p>
-
-      <div style="text-align: center;">
-        <a href="${shareUrl}" class="button">Review Proposal</a>
+      <div class="button-container">
+        <a href="${shareUrl}" class="button">Review Proposal Now</a>
       </div>
 
-      <p style="font-size: 14px; color: #64748b;">
-        Or copy and paste this link into your browser:<br>
+      <div class="features">
+        <p><strong>What you can do:</strong></p>
+        <ul>
+          <li>📖 Read the complete proposal draft</li>
+          <li>💭 Leave comments and suggestions</li>
+          <li>✍️ Provide specific feedback on content</li>
+          <li>🎯 Help improve the proposal quality</li>
+        </ul>
+      </div>
+
+      <p style="font-size: 14px; color: #64748b; margin-top: 30px;">
+        <strong>Can't click the button?</strong> Copy and paste this link into your browser:
+      </p>
+      <div class="link-box">
         <a href="${shareUrl}">${shareUrl}</a>
-      </p>
+      </div>
 
-      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
-
-      <p style="font-size: 14px;">
-        <strong>What you can do:</strong>
-      </p>
-      <ul style="font-size: 14px;">
-        <li>View the complete proposal</li>
-        <li>Leave comments and suggestions</li>
-        <li>Provide feedback on specific sections</li>
-      </ul>
-
-      <p style="font-size: 12px; color: #64748b;">
-        This link will expire in 30 days. If you have any questions, please contact ${senderName}.
+      <p style="font-size: 13px; color: #64748b; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+        ⏰ This review link will expire in 30 days. If you have any questions, please contact ${senderName} directly.
       </p>
     </div>
 
     <div class="footer">
+      <p><strong>GrantBot</strong> - Grant Writing Platform</p>
       <p>This email was sent because ${senderName} shared a proposal with you for review.</p>
     </div>
   </div>
@@ -208,21 +346,35 @@ async function sendReviewEmail(params: {
 </html>
   `;
 
-  // In production, you'd use a service like SendGrid, AWS SES, or Resend
-  // For now, we'll log it
-  console.log("[EMAIL] Would send to:", to);
-  console.log("[EMAIL] Subject:", `Review Request: ${proposalTitle}`);
-  console.log("[EMAIL] Share URL:", shareUrl);
+  // Check if Resend API key is configured
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
-  // TODO: Implement actual email sending
-  // Example with Resend:
-  /*
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  await resend.emails.send({
-    from: 'GrantBot <noreply@yourdomain.com>',
+  if (!resendApiKey) {
+    console.error("[EMAIL] RESEND_API_KEY not configured");
+    console.log("[EMAIL] Would send to:", to);
+    console.log("[EMAIL] Subject:", `Review Request: ${proposalTitle}`);
+    console.log("[EMAIL] Share URL:", shareUrl);
+    throw new Error("Email service not configured. Please add RESEND_API_KEY to environment variables.");
+  }
+
+  // Send email with Resend
+  const resend = new Resend(resendApiKey);
+
+  const { data, error } = await resend.emails.send({
+    from: fromEmail,
     to: [to],
-    subject: `Review Request: ${proposalTitle}`,
+    subject: `📋 Review Request: ${proposalTitle}`,
     html: emailHtml,
   });
-  */
+
+  if (error) {
+    console.error("[EMAIL] Send error:", error);
+    throw new Error(`Failed to send email: ${error.message}`);
+  }
+
+  console.log("[EMAIL] ✅ Email sent successfully to:", to);
+  console.log("[EMAIL] Message ID:", data?.id);
+
+  return data;
 }
