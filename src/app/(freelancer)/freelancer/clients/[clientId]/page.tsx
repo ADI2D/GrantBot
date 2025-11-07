@@ -170,39 +170,13 @@ export default async function FreelancerClientDetailPage({
         </div>
         {client.notes.length ? (
           <ul className="list-disc space-y-2 pl-5 text-sm text-slate-600">
-            {client.notes.map((note, index) => {
-              // Extract safe key and content
-              let key: string | number = index;
-              let displayContent: string = '';
-
-              try {
-                // Handle object notes
-                if (typeof note === 'object' && note !== null) {
-                  key = 'id' in note && typeof note.id === 'string' ? note.id : index;
-
-                  // Extract content property
-                  if ('content' in note) {
-                    const rawContent = note.content;
-                    // Convert to string no matter what
-                    displayContent = typeof rawContent === 'string'
-                      ? rawContent
-                      : JSON.stringify(rawContent);
-                  } else {
-                    // Fallback if no content property
-                    displayContent = JSON.stringify(note);
-                  }
-                } else {
-                  // Handle string notes
-                  displayContent = String(note);
-                }
-              } catch (err) {
-                // Ultimate fallback
-                displayContent = '[Note rendering error]';
-                console.error('Error rendering note:', err, note);
-              }
-
-              return <li key={key}>{displayContent}</li>;
-            })}
+            {client.notes.map((note, index) => (
+              <li key={index}>
+                {typeof note === 'object' && note !== null && 'content' in note
+                  ? String(note.content)
+                  : String(note)}
+              </li>
+            ))}
           </ul>
         ) : (
           <p className="text-sm text-slate-500">Capture engagement notes, meeting recaps, and to-dos here.</p>
