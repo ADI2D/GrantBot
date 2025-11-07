@@ -475,6 +475,7 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
               </p>
             )}
           </div>
+          )}
 
           {showChecklistInput ? (
             <div className="space-y-2">
