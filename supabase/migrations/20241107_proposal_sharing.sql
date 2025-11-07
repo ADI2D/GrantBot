@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS freelancer_proposal_shares (
   reviewer_name TEXT NOT NULL,
   reviewer_email TEXT NOT NULL,
   reviewer_relationship TEXT,
+  proposal_stage TEXT,
 
   -- Access control
   can_comment BOOLEAN DEFAULT true,

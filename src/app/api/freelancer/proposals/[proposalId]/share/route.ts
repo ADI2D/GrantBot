@@ -21,12 +21,12 @@ export async function POST(
 
     // Parse request body
     const body = await request.json();
-    const { reviewerName, reviewerEmail, reviewerRelationship, message } = body;
+    const { reviewerName, reviewerEmail, reviewerRelationship, proposalStage, message } = body;
 
     // Validate required fields
-    if (!reviewerName || !reviewerEmail || !reviewerRelationship) {
+    if (!reviewerName || !reviewerEmail || !reviewerRelationship || !proposalStage) {
       return NextResponse.json(
-        { error: "Reviewer name, email, and relationship are required" },
+        { error: "Reviewer name, email, relationship, and proposal stage are required" },
         { status: 400 }
       );
     }
@@ -59,6 +59,7 @@ export async function POST(
         reviewer_name: reviewerName,
         reviewer_email: reviewerEmail,
         reviewer_relationship: reviewerRelationship,
+        proposal_stage: proposalStage,
         can_comment: true,
         // Expire after 30 days
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),

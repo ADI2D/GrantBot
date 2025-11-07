@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Mail, User, Briefcase, Send } from "lucide-react";
+import { X, Mail, User, Briefcase, Send, FileCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -18,6 +18,7 @@ export interface ShareFormData {
   reviewerName: string;
   reviewerEmail: string;
   reviewerRelationship: string;
+  proposalStage: string;
   message?: string;
 }
 
@@ -33,6 +34,7 @@ export function ShareProposalDialog({
     reviewerName: "",
     reviewerEmail: "",
     reviewerRelationship: "",
+    proposalStage: "",
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -160,6 +162,31 @@ export function ShareProposalDialog({
                 <option value="consultant">Consultant</option>
                 <option value="subject_matter_expert">Subject Matter Expert</option>
                 <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Proposal Stage */}
+          <div>
+            <label htmlFor="proposal-stage" className="block text-sm font-medium text-slate-900">
+              Proposal Stage <span className="text-red-500">*</span>
+            </label>
+            <div className="relative mt-1">
+              <FileCheck className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <select
+                id="proposal-stage"
+                required
+                value={formData.proposalStage}
+                onChange={(e) => setFormData({ ...formData, proposalStage: e.target.value })}
+                className="w-full rounded-lg border border-slate-300 pl-10 pr-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none"
+              >
+                <option value="">Select proposal stage...</option>
+                <option value="initial_draft">Initial Draft</option>
+                <option value="first_review">First Review</option>
+                <option value="second_review">Second Review</option>
+                <option value="final_draft">Final Draft</option>
+                <option value="ready_for_submission">Ready for Submission</option>
+                <option value="final_review">Final Review Before Submission</option>
               </select>
             </div>
           </div>
