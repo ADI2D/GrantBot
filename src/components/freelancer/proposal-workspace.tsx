@@ -7,6 +7,8 @@ import type { FreelancerProposalDetail } from "@/lib/freelancer-clients";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { ShareProposalDialog, type ShareFormData } from "@/components/freelancer/share-proposal-dialog";
+import { ProposalCommentsPanel } from "@/components/freelancer/proposal-comments-panel";
 import { cn } from "@/lib/utils";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -33,6 +35,7 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
   const [newChecklistItem, setNewChecklistItem] = useState("");
   const [showChecklistInput, setShowChecklistInput] = useState(false);
   const [isChecklistExpanded, setIsChecklistExpanded] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   const completedCount = useMemo(() => checklist.filter((item) => item.completed).length, [checklist]);
   const isReadOnly = ["awarded"].includes(status.toLowerCase());
@@ -98,6 +101,54 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
 
   const handleSubmitProposal = async () => {
     if (isReadOnly) return;
+    // Show share dialog instead of immediately submitting
+    setShowShareDialog(true);
+  };
+
+  const handleShareProposal = async (shareData: ShareFormData) => {
+    setIsSubmitting(true);
+    setFeedback(null);
+
+    try {
+      // First, share the proposal
+      const shareResponse = await fetch(`/api/freelancer/proposals/${proposal.id}/share`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(shareData),
+      });
+
+      if (!shareResponse.ok) {
+        const sharePayload = await shareResponse.json().catch(() => null);
+        throw new Error(sharePayload?.error ?? "Failed to share proposal");
+      }
+
+      // Then submit for review
+      const submitResponse = await fetch(`/api/freelancer/proposals/${proposal.id}/submit`, {
+        method: "POST",
+      });
+      const submitPayload = await submitResponse.json().catch(() => null);
+      if (!submitResponse.ok) {
+        throw new Error(submitPayload?.error ?? "Failed to submit proposal");
+      }
+
+      if (typeof submitPayload?.status === "string") {
+        setStatus(submitPayload.status);
+      }
+      if (submitPayload?.lastEditedAt) {
+        setLastEditedAt(submitPayload.lastEditedAt);
+      }
+
+      setShowShareDialog(false);
+      setFeedback({ type: "success", message: "Proposal submitted and shared for review" });
+    } catch (error) {
+      console.error("[freelancer][proposal] share/submit error", error);
+      throw error; // Let dialog handle the error
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSkipShare = async () => {
     setIsSubmitting(true);
     setFeedback(null);
 
@@ -116,13 +167,12 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
       if (payload?.lastEditedAt) {
         setLastEditedAt(payload.lastEditedAt);
       }
+
+      setShowShareDialog(false);
       setFeedback({ type: "success", message: "Proposal submitted for review" });
     } catch (error) {
       console.error("[freelancer][proposal] submit error", error);
-      setFeedback({
-        type: "error",
-        message: error instanceof Error ? error.message : "Failed to submit proposal",
-      });
+      throw error; // Let dialog handle the error
     } finally {
       setIsSubmitting(false);
     }
@@ -633,6 +683,23 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
           </Button>
         </Card>
       </div>
+
+      {/* Comments Panel */}
+      {isSubmitted && (
+        <div className="mt-6">
+          <ProposalCommentsPanel proposalId={proposal.id} />
+        </div>
+      )}
+
+      {/* Share Dialog */}
+      <ShareProposalDialog
+        proposalId={proposal.id}
+        proposalTitle={proposal.title}
+        isOpen={showShareDialog}
+        onClose={() => setShowShareDialog(false)}
+        onShare={handleShareProposal}
+        onSkip={handleSkipShare}
+      />
     </div>
   );
 }
