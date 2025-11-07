@@ -7,14 +7,14 @@ import { UsersManager } from "@/components/admin/users-manager";
 export default async function UsersPage() {
   const supabase = await createServerSupabase();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session?.user) {
+  if (!user) {
     redirect("/login?admin=1");
   }
 
-  await requireSuperAdmin(session.user.id);
+  await requireSuperAdmin(user.id);
 
   return (
     <div className="space-y-8">
@@ -26,7 +26,7 @@ export default async function UsersPage() {
         </p>
       </header>
 
-      <UsersManager currentUserId={session.user.id} />
+      <UsersManager currentUserId={user.id} />
 
       <Card className="p-4 text-xs text-muted">
         <p>

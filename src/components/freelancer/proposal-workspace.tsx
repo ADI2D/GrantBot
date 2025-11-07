@@ -77,6 +77,7 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
     ],
     content: toInitialHtml(proposal.draft),
     editable: !isReadOnly,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       setDraft(editor.getHTML());
     },
