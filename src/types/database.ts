@@ -206,6 +206,52 @@ export type Database = {
           updated_at: string | null;
         };
       };
+      freelancer_clients: {
+        Row: {
+          id: string;
+          freelancer_user_id: string;
+          organization_id: string | null;
+          name: string;
+          status: string;
+          primary_contact_name: string | null;
+          primary_contact_email: string | null;
+          mission: string | null;
+          annual_budget: number | null;
+          focus_areas: string[] | null;
+          plan_name: string | null;
+          billing_rate: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+          last_activity_at: string | null;
+        };
+      };
+      freelancer_notes: {
+        Row: {
+          id: string;
+          freelancer_user_id: string;
+          client_id: string;
+          content: string;
+          note_type: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+      };
+      freelancer_documents: {
+        Row: {
+          id: string;
+          freelancer_user_id: string;
+          client_id: string;
+          name: string;
+          file_path: string | null;
+          file_size: number | null;
+          mime_type: string | null;
+          status: string;
+          notes: string | null;
+          uploaded_at: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+      };
     };
   };
 };

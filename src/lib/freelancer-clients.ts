@@ -12,10 +12,11 @@ export type FreelancerClientSummary = {
   lastActivityAt: string | null;
   annualBudget: number | null;
   primaryContact: {
-    name: string;
+    name: string | null;
     email: string | null;
   } | null;
-  planName: string | null;
+  planName?: string | null;
+  billingRate?: number | null;
 };
 
 export type FreelancerClientDetail = FreelancerClientSummary & {
@@ -28,10 +29,12 @@ export type FreelancerClientDetail = FreelancerClientSummary & {
     dueDate: string | null;
   }>;
   documents: Array<{
+    id: string;
     name: string;
     status: "ready" | "missing" | "in_review";
+    uploadedAt?: string | null;
   }>;
-  notes: string[];
+  notes: Array<string | { id: string; content: string; createdAt: string }>;
 };
 
 export type FreelancerProposalChecklistItem = {
