@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import { getFreelancerClient, listFreelancerClients } from "@/lib/freelancer-clients";
 import { Card } from "@/components/ui/card";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { StatusPill } from "@/components/ui/status-pill";
 import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -40,13 +41,13 @@ export default async function FreelancerClientDetailPage({
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex-1 space-y-2">
-          <Link
-            href="/freelancer/clients"
-            className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back to clients
-          </Link>
+        <div className="flex-1 space-y-3">
+          <Breadcrumb
+            items={[
+              { label: "Clients", href: "/freelancer/clients" },
+              { label: client.name, current: true },
+            ]}
+          />
           <h1 className="text-3xl font-semibold text-slate-900">{client.name}</h1>
           <div className="flex items-center gap-3">
             <StatusPill tone={statusTone[client.status]} className="capitalize">

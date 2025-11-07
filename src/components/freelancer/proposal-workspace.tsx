@@ -6,6 +6,7 @@ import { Sparkles, Save, CheckCircle2, Plus, Trash2, RotateCcw, ChevronDown, Che
 import type { FreelancerProposalDetail } from "@/lib/freelancer-clients";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { cn } from "@/lib/utils";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -284,8 +285,14 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-blue-600">{proposal.clientName}</p>
+        <div className="space-y-3">
+          <Breadcrumb
+            items={[
+              { label: "Clients", href: "/freelancer/clients" },
+              { label: proposal.clientName, href: `/freelancer/clients/${proposal.clientId}` },
+              { label: proposal.title, current: true },
+            ]}
+          />
           <h1 className="text-3xl font-semibold text-slate-900">{proposal.title}</h1>
           <p className="text-sm text-slate-500">
             {status} · {proposal.dueDate ? `Due ${new Date(proposal.dueDate).toLocaleDateString()}` : "No due date"}

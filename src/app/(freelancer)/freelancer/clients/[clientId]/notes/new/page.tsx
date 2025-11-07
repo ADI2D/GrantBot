@@ -2,10 +2,10 @@
 
 import { useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Save, Sparkles, Bold, Italic, List, CheckSquare } from "lucide-react";
-import Link from "next/link";
+import { Save, Sparkles, Bold, Italic, List, CheckSquare } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Textarea } from "@/components/ui/textarea";
 
 const noteTemplates = [
@@ -99,14 +99,15 @@ export default function AddNotePage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       {/* Header */}
-      <div>
-        <Link
-          href={`/freelancer/clients/${clientId}`}
-          className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to client
-        </Link>
-        <h1 className="mt-3 text-3xl font-semibold text-slate-900">Add working note</h1>
+      <div className="space-y-3">
+        <Breadcrumb
+          items={[
+            { label: "Clients", href: "/freelancer/clients" },
+            { label: "Client", href: `/freelancer/clients/${clientId}` },
+            { label: "Add Note", current: true },
+          ]}
+        />
+        <h1 className="text-3xl font-semibold text-slate-900">Add working note</h1>
         <p className="mt-2 text-sm text-slate-600">
           Capture client preferences, meeting notes, and strategy insights.
         </p>
