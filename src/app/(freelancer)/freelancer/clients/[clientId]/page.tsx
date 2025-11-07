@@ -37,11 +37,6 @@ export default async function FreelancerClientDetailPage({
     notFound();
   }
 
-  // Debug logging
-  console.log('[CLIENT PAGE] Client ID:', client.id);
-  console.log('[CLIENT PAGE] Notes count:', client.notes.length);
-  console.log('[CLIENT PAGE] Notes data:', JSON.stringify(client.notes, null, 2));
-
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -176,16 +171,14 @@ export default async function FreelancerClientDetailPage({
         {client.notes.length ? (
           <ul className="list-disc space-y-2 pl-5 text-sm text-slate-600">
             {client.notes.map((note, index) => {
-              const isObj = typeof note === 'object' && note !== null;
-              const hasContent = isObj && 'content' in note;
-              const content = hasContent ? (note as any).content : note;
-              const safeContent = String(content);
-
-              console.log(`[NOTE ${index}] Type: ${typeof note}, IsObj: ${isObj}, HasContent: ${hasContent}, Content: ${safeContent}`);
+              // Handle both string notes (seed data) and object notes (database)
+              const content = typeof note === 'object' && note !== null && 'content' in note
+                ? note.content
+                : note;
 
               return (
                 <li key={index}>
-                  {safeContent}
+                  {String(content)}
                 </li>
               );
             })}
