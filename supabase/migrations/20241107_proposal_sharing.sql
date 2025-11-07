@@ -7,7 +7,7 @@
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS freelancer_proposal_shares (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  proposal_id UUID NOT NULL REFERENCES freelancer_proposals(id) ON DELETE CASCADE,
+  proposal_id TEXT NOT NULL REFERENCES freelancer_proposals(id) ON DELETE CASCADE,
   freelancer_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
 
   -- Share details
@@ -45,7 +45,7 @@ CREATE INDEX IF NOT EXISTS idx_proposal_shares_email
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS freelancer_proposal_comments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  proposal_id UUID NOT NULL REFERENCES freelancer_proposals(id) ON DELETE CASCADE,
+  proposal_id TEXT NOT NULL REFERENCES freelancer_proposals(id) ON DELETE CASCADE,
   share_id UUID REFERENCES freelancer_proposal_shares(id) ON DELETE SET NULL,
 
   -- Comment details
