@@ -709,12 +709,29 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
       console.error("[freelancer][notes] Failed to fetch notes:", notesError);
     }
 
+    // Fetch proposals
+    const { data: proposals, error: proposalsError } = await supabase
+      .from("freelancer_proposals")
+      .select("id, title, status, due_date")
+      .eq("client_id", clientId)
+      .eq("freelancer_user_id", user.id)
+      .order("updated_at", { ascending: false });
+
+    if (proposalsError) {
+      console.error("[freelancer][proposals] Failed to fetch proposals:", proposalsError);
+    }
+
+    // Count active proposals (not archived or rejected)
+    const activeProposalsCount = (proposals ?? []).filter(
+      (p) => !["archived", "rejected", "awarded"].includes(p.status?.toLowerCase() || "")
+    ).length;
+
     // Map to FreelancerClientDetail
     return {
       id: client.id,
       name: client.name,
       status: client.status as "active" | "on_hold" | "archived",
-      activeProposals: 0, // TODO: Count from proposals table
+      activeProposals: activeProposalsCount,
       opportunitiesInPipeline: 0, // TODO: Count from opportunities
       documentsMissing: (documents ?? []).filter((d) => d.status === "missing").length,
       lastActivityAt: client.last_activity_at || client.created_at,
@@ -728,7 +745,12 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
       billingRate: client.billing_rate || null,
       mission: client.mission || null,
       focusAreas: Array.isArray(client.focus_areas) ? client.focus_areas : [],
-      proposals: [], // TODO: Fetch actual proposals
+      proposals: (proposals ?? []).map((p) => ({
+        id: p.id,
+        title: p.title,
+        status: p.status || "Drafting",
+        dueDate: p.due_date,
+      })),
       documents: (documents ?? []).map((doc) => ({
         id: doc.id,
         name: doc.name,
