@@ -40,19 +40,19 @@ export default async function AdminCustomerDetailPage({ params }: PageParams) {
 
     const supabase = await createServerSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) {
+    if (!user) {
       throw new Error("Unauthorized");
     }
 
-    const actorRole = await requireAdminRole(session.user.id, ["super_admin", "support", "developer"]);
+    const actorRole = await requireAdminRole(user.id, ["super_admin", "support", "developer"]);
 
     const serviceClient = getServiceSupabaseClient();
     const { error } = await serviceClient.from("admin_customer_notes").insert({
       organization_id: resolvedOrgId,
-      admin_user_id: session.user.id,
+      admin_user_id: user.id,
       content: noteContent,
     });
 
@@ -61,7 +61,7 @@ export default async function AdminCustomerDetailPage({ params }: PageParams) {
     }
 
     await recordAdminAction({
-      actorUserId: session.user.id,
+      actorUserId: user.id,
       actorRole,
       action: "customer.note.created",
       targetType: "organization",
@@ -88,16 +88,16 @@ export default async function AdminCustomerDetailPage({ params }: PageParams) {
     "use server";
     const supabase = await createServerSupabase();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) {
+    if (!user) {
       throw new Error("Unauthorized");
     }
 
-    const actorRole = await requireAdminRole(session.user.id, ["super_admin", "support"]);
+    const actorRole = await requireAdminRole(user.id, ["super_admin", "support"]);
     await recordAdminAction({
-      actorUserId: session.user.id,
+      actorUserId: user.id,
       actorRole,
       action: "customer.impersonation.started",
       targetType: "organization",

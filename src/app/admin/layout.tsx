@@ -12,10 +12,10 @@ export default async function AdminLayout({
 }) {
   const supabase = await createServerSupabase();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session?.user) {
+  if (!user) {
     redirect("/login?admin=1");
   }
 
@@ -23,7 +23,7 @@ export default async function AdminLayout({
   const { data: adminRecord } = await adminClient
     .from("admin_users")
     .select("role")
-    .eq("user_id", session.user.id)
+    .eq("user_id", user.id)
     .maybeSingle();
 
   if (!adminRecord) {
@@ -32,5 +32,5 @@ export default async function AdminLayout({
 
   const role = adminRecord.role as AdminRole;
 
-  return <AdminShell role={role} email={session.user.email ?? null}>{children}</AdminShell>;
+  return <AdminShell role={role} email={user.email ?? null}>{children}</AdminShell>;
 }
