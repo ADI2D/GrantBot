@@ -128,15 +128,14 @@ const headingLevels = [1, 2, 3, 4];
 const currentHeading = headingLevels.find((level) => editor.isActive("heading", { level })) ?? 0;
 
 const toggleBulletList = () => {
-  const focusChain = editor.chain().focus();
-
   if (editor.isActive("bulletList")) {
-    focusChain.toggleBulletList().run();
+    editor.chain().focus().toggleBulletList().run();
     return;
   }
 
   if (editor.isActive("orderedList")) {
-    focusChain.toggleOrderedList().run();
+    editor.chain().focus().toggleOrderedList().toggleBulletList().run();
+    return;
   }
 
   const converted = convertSelectionToList(editor, "bullet");
@@ -146,15 +145,14 @@ const toggleBulletList = () => {
 };
 
 const toggleOrderedList = () => {
-  const focusChain = editor.chain().focus();
-
   if (editor.isActive("orderedList")) {
-    focusChain.toggleOrderedList().run();
+    editor.chain().focus().toggleOrderedList().run();
     return;
   }
 
   if (editor.isActive("bulletList")) {
-    focusChain.toggleBulletList().run();
+    editor.chain().focus().toggleBulletList().toggleOrderedList().run();
+    return;
   }
 
   const converted = convertSelectionToList(editor, "ordered");
