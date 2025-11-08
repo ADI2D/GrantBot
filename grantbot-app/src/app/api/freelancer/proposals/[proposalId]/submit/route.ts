@@ -23,7 +23,7 @@ export async function POST(
   const { data, error } = await supabase
     .from("freelancer_proposals")
     .update({
-      status: "Submitted",
+      status: "In review",
       submitted_at: timestamp,
       last_edited_at: timestamp,
     })
