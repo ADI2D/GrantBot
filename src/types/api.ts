@@ -16,6 +16,7 @@ export type Opportunity = {
   complianceNotes: string | null;
   applicationUrl?: string | null;
   geographicScope?: string | null;
+  isBookmarked?: boolean;
 };
 
 export type Proposal = {

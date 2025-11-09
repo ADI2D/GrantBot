@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Target, Filter, AlertTriangle, Search, X, DollarSign, Calendar, MapPin } from "lucide-react";
+import { Target, Filter, AlertTriangle, Search, X, DollarSign, Calendar, MapPin, Bookmark, BookmarkCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,7 @@ export default function OpportunitiesPage() {
   const [selectedAmountRange, setSelectedAmountRange] = useState(0);
   const [geographicScope, setGeographicScope] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<"all" | "recommended" | "saved">("all");
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // Debounce search input (500ms delay)
@@ -97,6 +98,33 @@ export default function OpportunitiesPage() {
     },
   });
 
+  const toggleBookmark = useMutation({
+    mutationFn: async ({ opportunityId, isBookmarked }: { opportunityId: string; isBookmarked: boolean }) => {
+      const method = isBookmarked ? "DELETE" : "POST";
+      const url = isBookmarked
+        ? `/api/opportunities/bookmark?orgId=${currentOrgId}&opportunityId=${opportunityId}`
+        : `/api/opportunities/bookmark?orgId=${currentOrgId}`;
+
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: method === "POST" ? JSON.stringify({ opportunityId }) : undefined,
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["opportunities"], exact: false });
+    },
+    onError: (mutationError: unknown) => {
+      const message = mutationError instanceof Error ? mutationError.message : "Unable to update bookmark";
+      setFeedback(message);
+    },
+  });
+
   const hasActiveFilters = debouncedSearch || selectedFocusArea || selectedAmountRange > 0 || geographicScope;
 
   const clearAllFilters = () => {
@@ -110,13 +138,23 @@ export default function OpportunitiesPage() {
   if (isLoading) return <PageLoader label="Searching opportunities" />;
   if (error || !data) return <PageError message={error?.message || "Unable to load opportunities"} />;
 
-  const opportunities = data.opportunities;
+  // Filter opportunities based on view mode
+  let filteredOpportunities = data.opportunities;
+  if (viewMode === "recommended") {
+    // Show only opportunities with high alignment scores (0.7 or higher)
+    filteredOpportunities = filteredOpportunities.filter(opp => (opp.alignmentScore ?? 0) >= 0.7);
+  } else if (viewMode === "saved") {
+    // Show only bookmarked opportunities
+    filteredOpportunities = filteredOpportunities.filter(opp => opp.isBookmarked);
+  }
+
+  const opportunities = filteredOpportunities;
   const now = new Date();
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header className="space-y-1">
+      <header className="space-y-3">
         <p className="text-sm font-semibold text-blue-600">Opportunity Discovery</p>
         <h1 className="text-3xl font-semibold text-slate-900">
           Find funding faster.
@@ -124,6 +162,41 @@ export default function OpportunitiesPage() {
         <p className="text-sm text-slate-600">
           Search {data.opportunities.length.toLocaleString()}+ grant opportunities with instant results. Powered by AI-assisted matching.
         </p>
+
+        {/* View mode toggle */}
+        <div className="flex items-center gap-2 pt-2">
+          <span className="text-sm font-medium text-slate-700">View:</span>
+          <button
+            onClick={() => setViewMode("all")}
+            className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
+              viewMode === "all"
+                ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
+                : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
+            }`}
+          >
+            All Opportunities
+          </button>
+          <button
+            onClick={() => setViewMode("recommended")}
+            className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
+              viewMode === "recommended"
+                ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
+                : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
+            }`}
+          >
+            Recommended
+          </button>
+          <button
+            onClick={() => setViewMode("saved")}
+            className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
+              viewMode === "saved"
+                ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
+                : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
+            }`}
+          >
+            Saved
+          </button>
+        </div>
       </header>
 
       {/* Search Bar */}
@@ -327,6 +400,23 @@ export default function OpportunitiesPage() {
 
                 {/* Actions */}
                 <div className="flex flex-col gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleBookmark.mutate({
+                      opportunityId: opportunity.id,
+                      isBookmarked: opportunity.isBookmarked || false
+                    })}
+                    disabled={toggleBookmark.isPending}
+                    className="justify-start"
+                  >
+                    {opportunity.isBookmarked ? (
+                      <BookmarkCheck className="h-4 w-4 mr-2 text-blue-600" />
+                    ) : (
+                      <Bookmark className="h-4 w-4 mr-2" />
+                    )}
+                    {opportunity.isBookmarked ? "Saved" : "Save"}
+                  </Button>
                   {opportunity.applicationUrl && (
                     <Button
                       variant="secondary"

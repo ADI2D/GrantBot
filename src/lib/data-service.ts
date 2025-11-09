@@ -73,10 +73,15 @@ export async function fetchOpportunities(
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
   const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
 
+  // Get user ID for bookmark lookup
+  const { data: { user } } = await client.auth.getUser();
+  const userId = user?.id;
+
   let query = client
     .from("opportunities")
     .select(
-      "id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope",
+      `id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope,
+      bookmarked_opportunities!left(id)`,
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .neq("status", "closed") // Filter out closed opportunities
@@ -126,7 +131,7 @@ export async function fetchOpportunities(
   }
 
   const now = new Date();
-  const opportunities = (data ?? []).map((item) => ({
+  const opportunities = (data ?? []).map((item: any) => ({
     id: item.id,
     name: item.name,
     focusArea: item.focus_area,
@@ -138,6 +143,7 @@ export async function fetchOpportunities(
     complianceNotes: item.compliance_notes,
     applicationUrl: item.application_url,
     geographicScope: item.geographic_scope,
+    isBookmarked: Array.isArray(item.bookmarked_opportunities) && item.bookmarked_opportunities.length > 0,
   }));
 
   // Sort: Open opportunities first (future deadline), then closed (past deadline)
