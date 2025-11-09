@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteSupabase } from "@/lib/supabase-server";
 import { GrantsGovConnector } from "@/lib/connectors/grants-gov-connector";
+import { USASpendingConnector } from "@/lib/connectors/usaspending-connector";
 import { GrantIngestionPipeline } from "@/lib/ingestion/pipeline";
 
 export async function POST(request: NextRequest) {
@@ -31,6 +32,9 @@ export async function POST(request: NextRequest) {
     const connectors = [];
     if (!source || source === "all" || source === "grants_gov") {
       connectors.push(new GrantsGovConnector());
+    }
+    if (!source || source === "all" || source === "usaspending") {
+      connectors.push(new USASpendingConnector());
     }
 
     if (connectors.length === 0) {
