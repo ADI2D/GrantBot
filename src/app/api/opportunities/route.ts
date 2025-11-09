@@ -17,9 +17,11 @@ export async function GET(request: NextRequest) {
     const orgId = resolveOrgId(request.nextUrl.searchParams.get("orgId"));
 
     // Parse filter parameters from query string
+    const focusAreasParam = request.nextUrl.searchParams.get("focusAreas");
     const filters: OpportunityFilters = {
       search: request.nextUrl.searchParams.get("search") || undefined,
       focusArea: request.nextUrl.searchParams.get("focusArea") || undefined,
+      focusAreas: focusAreasParam ? focusAreasParam.split(",") : undefined,
       minAmount: request.nextUrl.searchParams.get("minAmount")
         ? Number(request.nextUrl.searchParams.get("minAmount"))
         : undefined,

@@ -72,7 +72,7 @@ export default function OpportunitiesPage() {
     const range = amountRanges[selectedAmountRange];
     return {
       search: debouncedSearch || undefined,
-      focusArea: selectedFocusAreas.length === 1 ? selectedFocusAreas[0] : undefined,
+      focusAreas: selectedFocusAreas.length > 0 ? selectedFocusAreas : undefined,
       minAmount: range.min,
       maxAmount: range.max,
       geographicScope: geographicScope || undefined,
@@ -160,33 +160,44 @@ export default function OpportunitiesPage() {
     filteredOpportunities = filteredOpportunities.filter(opp => opp.isBookmarked);
   }
 
-  // Apply client-side focus area filter (if multiple areas selected)
-  if (selectedFocusAreas.length > 0) {
-    filteredOpportunities = filteredOpportunities.filter(opp => {
-      if (!opp.focus_areas || opp.focus_areas.length === 0) return false;
-      // Show if opportunity matches ANY of the selected focus areas
-      return opp.focus_areas.some(area => selectedFocusAreas.includes(area as FocusAreaId));
-    });
-  }
+  // Sort by focus area match score
+  // Priority 1: Match count with selected filters (if filters active)
+  // Priority 2: Match score with org focus areas
+  const opportunities = [...filteredOpportunities].sort((a, b) => {
+    // If user has selected focus area filters, prioritize matches
+    if (selectedFocusAreas.length > 0) {
+      const aMatches = (a.focus_areas || []).filter(area =>
+        selectedFocusAreas.includes(area as FocusAreaId)
+      ).length;
+      const bMatches = (b.focus_areas || []).filter(area =>
+        selectedFocusAreas.includes(area as FocusAreaId)
+      ).length;
 
-  // Sort by focus area match score if org has focus areas
-  const opportunities = orgFocusAreas.length > 0
-    ? [...filteredOpportunities].sort((a, b) => {
-        const aScore = calculateFocusAreaMatchScore(
-          orgFocusAreas,
-          (a.focus_areas || []) as FocusAreaId[]
-        );
-        const bScore = calculateFocusAreaMatchScore(
-          orgFocusAreas,
-          (b.focus_areas || []) as FocusAreaId[]
-        );
-        // Sort by score descending, then by deadline ascending
-        if (aScore !== bScore) return bScore - aScore;
-        const aDeadline = a.deadline ? new Date(a.deadline).getTime() : Infinity;
-        const bDeadline = b.deadline ? new Date(b.deadline).getTime() : Infinity;
-        return aDeadline - bDeadline;
-      })
-    : filteredOpportunities;
+      // If different match counts, sort by that (higher matches first)
+      if (aMatches !== bMatches) {
+        return bMatches - aMatches;
+      }
+    }
+
+    // Secondary sort: by org focus area alignment if org has focus areas
+    if (orgFocusAreas.length > 0) {
+      const aScore = calculateFocusAreaMatchScore(
+        orgFocusAreas,
+        (a.focus_areas || []) as FocusAreaId[]
+      );
+      const bScore = calculateFocusAreaMatchScore(
+        orgFocusAreas,
+        (b.focus_areas || []) as FocusAreaId[]
+      );
+      // Sort by score descending
+      if (aScore !== bScore) return bScore - aScore;
+    }
+
+    // Tertiary sort: by deadline (earliest first, null deadlines last)
+    const aDeadline = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+    const bDeadline = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+    return aDeadline - bDeadline;
+  });
 
   const now = new Date();
 

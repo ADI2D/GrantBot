@@ -15,6 +15,7 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { GrantsGovConnector } from "../src/lib/connectors/grants-gov-connector";
 import { USASpendingConnector } from "../src/lib/connectors/usaspending-connector";
+import { SAMGovConnector } from "../src/lib/connectors/sam-gov-connector";
 import { GrantIngestionPipeline } from "../src/lib/ingestion/pipeline";
 import type { GrantConnector } from "../src/types/connectors";
 
@@ -66,6 +67,11 @@ async function main() {
   // Add USAspending.gov connector
   if (!options.source || options.source === "usaspending") {
     connectors.push(new USASpendingConnector());
+  }
+
+  // Add SAM.gov connector
+  if (!options.source || options.source === "sam_gov") {
+    connectors.push(new SAMGovConnector());
   }
 
   if (connectors.length === 0) {

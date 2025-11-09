@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRouteSupabase } from "@/lib/supabase-server";
 import { GrantsGovConnector } from "@/lib/connectors/grants-gov-connector";
 import { USASpendingConnector } from "@/lib/connectors/usaspending-connector";
+import { SAMGovConnector } from "@/lib/connectors/sam-gov-connector";
 import { GrantIngestionPipeline } from "@/lib/ingestion/pipeline";
 
 export async function POST(request: NextRequest) {
@@ -35,6 +36,9 @@ export async function POST(request: NextRequest) {
     }
     if (!source || source === "all" || source === "usaspending") {
       connectors.push(new USASpendingConnector());
+    }
+    if (!source || source === "all" || source === "sam_gov") {
+      connectors.push(new SAMGovConnector());
     }
 
     if (connectors.length === 0) {

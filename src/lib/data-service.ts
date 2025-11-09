@@ -56,7 +56,8 @@ export async function fetchOrganization(client: Client, orgId: string) {
 
 export type OpportunityFilters = {
   search?: string;
-  focusArea?: string;
+  focusArea?: string; // Deprecated - use focusAreas instead
+  focusAreas?: string[]; // Multiple focus areas (OR logic)
   minAmount?: number;
   maxAmount?: number;
   minDeadline?: string;
@@ -88,10 +89,16 @@ export async function fetchOpportunities(
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .neq("status", "closed") // Filter out closed opportunities
-    .gte("deadline", sixtyDaysAgoStr); // Show past 60 days + future
+    .or(`deadline.gte.${sixtyDaysAgoStr},deadline.is.null`); // Show past 60 days + future + ongoing programs (no deadline)
 
   // Apply filters
-  if (filters?.focusArea) {
+  // Support both single focusArea (deprecated) and multiple focusAreas
+  if (filters?.focusAreas && filters.focusAreas.length > 0) {
+    // Multiple focus areas - use OR logic
+    const focusAreaConditions = filters.focusAreas.map(fa => `focus_area.eq.${fa}`).join(',');
+    query = query.or(focusAreaConditions);
+  } else if (filters?.focusArea) {
+    // Single focus area (deprecated, kept for backwards compatibility)
     query = query.eq("focus_area", filters.focusArea);
   }
 
@@ -124,8 +131,9 @@ export async function fetchOpportunities(
     });
   }
 
-  // Order by deadline (most recent first)
-  query = query.order("deadline", { ascending: false });
+  // Order by deadline (soonest first, NULL deadlines last)
+  // This ensures the 1000 limit shows the most urgent opportunities
+  query = query.order("deadline", { ascending: true, nullsFirst: false });
 
   // Apply pagination (default to showing all, max 1000 for performance)
   const limit = filters?.limit ?? 1000;

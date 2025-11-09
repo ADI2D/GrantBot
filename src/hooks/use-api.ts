@@ -38,7 +38,8 @@ export function useOrganizationProfile() {
 
 export type OpportunitiesFilters = {
   search?: string;
-  focusArea?: string;
+  focusArea?: string; // Deprecated - use focusAreas
+  focusAreas?: string[]; // Multiple focus areas (OR logic)
   minAmount?: number;
   maxAmount?: number;
   minDeadline?: string;
@@ -56,6 +57,9 @@ export function useOpportunitiesData(filters?: OpportunitiesFilters) {
   if (currentOrgId) params.set("orgId", currentOrgId);
   if (filters?.search) params.set("search", filters.search);
   if (filters?.focusArea) params.set("focusArea", filters.focusArea);
+  if (filters?.focusAreas && filters.focusAreas.length > 0) {
+    params.set("focusAreas", filters.focusAreas.join(","));
+  }
   if (filters?.minAmount !== undefined) params.set("minAmount", filters.minAmount.toString());
   if (filters?.maxAmount !== undefined) params.set("maxAmount", filters.maxAmount.toString());
   if (filters?.minDeadline) params.set("minDeadline", filters.minDeadline);
