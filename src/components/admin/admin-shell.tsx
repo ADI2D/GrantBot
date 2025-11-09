@@ -26,16 +26,16 @@ export function AdminShell({
       <aside className="hidden w-64 flex-shrink-0 border-r border-slate-200 bg-white px-5 py-6 lg:flex lg:flex-col">
         <div>
           <Link href="/admin" className="block">
-            <div className="flex w-full items-center justify-center py-4">
+            <div className="flex w-full items-center justify-center px-2 py-6">
               <Image
                 src="/grantspec-logo.png"
                 alt="GrantSpec"
-                width={120}
-                height={120}
-                className="object-contain"
+                width={200}
+                height={200}
+                className="object-contain w-full h-auto"
               />
             </div>
-            <p className="text-center text-sm font-semibold text-slate-900">Admin</p>
+            <p className="text-center text-sm font-semibold text-slate-900 mt-2">Admin</p>
           </Link>
         </div>
 
