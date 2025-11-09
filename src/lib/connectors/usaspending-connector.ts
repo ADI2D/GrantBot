@@ -115,6 +115,9 @@ export class USASpendingConnector extends BaseConnector {
     // Construct opportunity name from CFDA title or description
     const name = cfdaTitle || description.substring(0, 100) || `Award ${awardId}`;
 
+    // Parse dates to Date objects (pipeline expects Date, not string)
+    const deadlineDate = endDate ? this.parseDate(endDate) : undefined;
+
     return {
       source: this.source,
       external_id: awardId,
@@ -123,7 +126,7 @@ export class USASpendingConnector extends BaseConnector {
       focus_area: focusAreas[0] || "other",
       focus_areas: focusAreas,
       amount: amount ? Number(amount) : null,
-      deadline: endDate || null,
+      deadline: deadlineDate,
       status: this.determineStatus(endDate),
       funder_name: funderName,
       application_url: `https://www.usaspending.gov/award/${awardId}`,
