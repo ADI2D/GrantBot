@@ -22,7 +22,7 @@ export async function fetchOrganization(client: Client, orgId: string) {
   const { data, error } = await client
     .from("organizations")
     .select(
-      "id, name, mission, impact_summary, differentiator, annual_budget, onboarding_completion, document_metadata, plan_id",
+      "id, name, mission, impact_summary, differentiator, annual_budget, focus_areas, onboarding_completion, document_metadata, plan_id",
     )
     .eq("id", orgId)
     .limit(1)
@@ -47,6 +47,7 @@ export async function fetchOrganization(client: Client, orgId: string) {
     impactSummary: data.impact_summary,
     differentiator: data.differentiator,
     annualBudget: data.annual_budget,
+    focus_areas: data.focus_areas || [],
     onboardingCompletion: Number(data.onboarding_completion ?? 0),
     documents,
     planId: data.plan_id ?? "starter",

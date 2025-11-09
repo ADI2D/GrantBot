@@ -72,6 +72,7 @@ export type OrganizationProfileResponse = {
     impactSummary: string | null;
     differentiator: string | null;
     annualBudget: number | null;
+    focus_areas?: string[];
     onboardingCompletion: number;
     documents: DocumentMeta[];
     planId: string;

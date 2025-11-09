@@ -54,6 +54,7 @@ export async function PATCH(request: NextRequest) {
         impact_summary: payload.impact,
         differentiator: payload.differentiator,
         annual_budget: annualBudget,
+        focus_areas: payload.focusAreas ?? [],
         document_metadata: payload.documents ?? [],
       })
       .eq("id", orgId);

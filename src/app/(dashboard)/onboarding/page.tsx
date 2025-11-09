@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2 } from "lucide-react";
 import { PageLoader, PageError } from "@/components/ui/page-state";
+import { FocusAreaSelect } from "@/components/ui/focus-area-select";
 import { useOrganizationProfile } from "@/hooks/use-api";
 import { useOrg } from "@/hooks/use-org";
 import { FileUpload } from "@/components/documents/file-upload";
+import { type FocusAreaId } from "@/types/focus-areas";
 
 const steps = [
   { label: "Org profile", description: "Mission, EIN, budget" },
@@ -26,6 +28,7 @@ type OrgProfile = {
   budget: string;
   impact: string;
   differentiator: string;
+  focusAreas: FocusAreaId[];
 };
 
 export default function OnboardingPage() {
@@ -38,6 +41,7 @@ export default function OnboardingPage() {
     budget: "",
     impact: "",
     differentiator: "",
+    focusAreas: [],
   });
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -52,6 +56,7 @@ export default function OnboardingPage() {
           : "",
         impact: data.organization.impactSummary ?? "",
         differentiator: data.organization.differentiator ?? "",
+        focusAreas: (data.organization.focus_areas || []) as FocusAreaId[],
       });
     }
   }, [data]);
@@ -67,6 +72,7 @@ export default function OnboardingPage() {
       impact: string;
       differentiator: string;
       budget: string;
+      focusAreas: FocusAreaId[];
     }) => {
       const response = await fetch(`/api/organization?orgId=${currentOrgId}`, {
         method: "PATCH",
@@ -167,6 +173,20 @@ export default function OnboardingPage() {
                 value={profile.mission}
                 onChange={(event) => handleChange("mission", event.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                Focus Areas
+                <span className="ml-2 text-xs font-normal text-slate-500">(Select all that apply)</span>
+              </label>
+              <FocusAreaSelect
+                selectedAreas={profile.focusAreas}
+                onChange={(areas) => setProfile((prev) => ({ ...prev, focusAreas: areas }))}
+                mode="multi"
+              />
+              <p className="text-xs text-slate-500">
+                Help us match you with relevant grant opportunities by selecting your organization's primary focus areas.
+              </p>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Annual budget summary</label>

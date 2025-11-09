@@ -9,20 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { PageLoader, PageError, EmptyState } from "@/components/ui/page-state";
+import { FocusAreaFilterChips, FocusAreaBadges } from "@/components/ui/focus-area-select";
 import { useOpportunitiesData, type OpportunitiesFilters } from "@/hooks/use-api";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
 import { useOrg } from "@/hooks/use-org";
-
-const focusAreas = [
-  "Education",
-  "Health & Wellness",
-  "Community Development",
-  "Environment",
-  "Arts & Culture",
-  "Research & Innovation",
-  "Disaster Relief",
-  "Other"
-];
+import { type FocusAreaId } from "@/types/focus-areas";
 
 const amountRanges = [
   { label: "Any amount", min: undefined, max: undefined },
@@ -41,7 +32,7 @@ export default function OpportunitiesPage() {
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedFocusArea, setSelectedFocusArea] = useState<string | undefined>();
+  const [selectedFocusAreas, setSelectedFocusAreas] = useState<FocusAreaId[]>([]);
   const [selectedAmountRange, setSelectedAmountRange] = useState(0);
   const [geographicScope, setGeographicScope] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -62,12 +53,12 @@ export default function OpportunitiesPage() {
     const range = amountRanges[selectedAmountRange];
     return {
       search: debouncedSearch || undefined,
-      focusArea: selectedFocusArea,
+      focusArea: selectedFocusAreas.length === 1 ? selectedFocusAreas[0] : undefined,
       minAmount: range.min,
       maxAmount: range.max,
       geographicScope: geographicScope || undefined,
     };
-  }, [debouncedSearch, selectedFocusArea, selectedAmountRange, geographicScope]);
+  }, [debouncedSearch, selectedFocusAreas, selectedAmountRange, geographicScope]);
 
   // Fetch opportunities with filters
   const { data, isLoading, error } = useOpportunitiesData(filters);
@@ -125,12 +116,12 @@ export default function OpportunitiesPage() {
     },
   });
 
-  const hasActiveFilters = debouncedSearch || selectedFocusArea || selectedAmountRange > 0 || geographicScope;
+  const hasActiveFilters = debouncedSearch || selectedFocusAreas.length > 0 || selectedAmountRange > 0 || geographicScope;
 
   const clearAllFilters = () => {
     setSearchQuery("");
     setDebouncedSearch("");
-    setSelectedFocusArea(undefined);
+    setSelectedFocusAreas([]);
     setSelectedAmountRange(0);
     setGeographicScope("");
   };
@@ -222,32 +213,10 @@ export default function OpportunitiesPage() {
           </div>
 
           {/* Quick filter chips */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-slate-700">Focus Area:</span>
-            <button
-              onClick={() => setSelectedFocusArea(undefined)}
-              className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                !selectedFocusArea
-                  ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
-                  : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
-              }`}
-            >
-              All
-            </button>
-            {focusAreas.map((area) => (
-              <button
-                key={area}
-                onClick={() => setSelectedFocusArea(area === selectedFocusArea ? undefined : area)}
-                className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                  selectedFocusArea === area
-                    ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
-                    : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
-                }`}
-              >
-                {area}
-              </button>
-            ))}
-          </div>
+          <FocusAreaFilterChips
+            selectedAreas={selectedFocusAreas}
+            onChange={setSelectedFocusAreas}
+          />
 
           {/* Advanced filters toggle */}
           <div className="flex items-center justify-between border-t border-slate-100 pt-4">
@@ -354,6 +323,13 @@ export default function OpportunitiesPage() {
                     )}
                   </div>
 
+                  {/* Focus area badges */}
+                  {opportunity.focus_areas && opportunity.focus_areas.length > 0 && (
+                    <div className="mb-3">
+                      <FocusAreaBadges areaIds={opportunity.focus_areas as FocusAreaId[]} maxVisible={4} />
+                    </div>
+                  )}
+
                   {/* Metadata */}
                   <div className="mb-4 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
                     {opportunity.funderName && (
@@ -366,12 +342,6 @@ export default function OpportunitiesPage() {
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4" />
                         <span className="font-semibold text-emerald-600">{formatCurrency(opportunity.amount)}</span>
-                      </div>
-                    )}
-                    {opportunity.focusArea && (
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4" />
-                        {opportunity.focusArea}
                       </div>
                     )}
                     {deadline && (
