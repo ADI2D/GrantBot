@@ -7,10 +7,26 @@ type AnySupabase = SupabaseClient<Database, any, any>;
 
 export async function createServerSupabase(): Promise<AnySupabase> {
   const cookieStore = await cookies();
-  return createServerComponentClient<Database>({ cookies: () => cookieStore }) as AnySupabase;
+  return createServerComponentClient<Database>({
+    cookies: () => cookieStore,
+    supabaseOptions: {
+      db: { schema: 'public' },
+      global: {
+        headers: { 'Prefer': 'return=representation' }
+      }
+    }
+  }) as AnySupabase;
 }
 
 export async function createRouteSupabase(): Promise<AnySupabase> {
   const cookieStore = await cookies();
-  return createRouteHandlerClient<Database>({ cookies: () => cookieStore }) as AnySupabase;
+  return createRouteHandlerClient<Database>({
+    cookies: () => cookieStore,
+    supabaseOptions: {
+      db: { schema: 'public' },
+      global: {
+        headers: { 'Prefer': 'return=representation' }
+      }
+    }
+  }) as AnySupabase;
 }

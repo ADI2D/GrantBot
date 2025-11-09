@@ -136,11 +136,14 @@ export async function fetchOpportunities(
     query = query.range(offset, offset + limit - 1);
   }
 
-  const { data, error} = await query;
+  const { data, error, count} = await query;
 
   if (error) {
     throw new Error(`Failed to load opportunities: ${error.message}`);
   }
+
+  // Debug: Log the actual count returned
+  console.log(`[fetchOpportunities] Returned ${data?.length ?? 0} opportunities (requested limit: ${limit})`);
 
   const now = new Date();
   const opportunities = (data ?? []).map((item: any) => ({
