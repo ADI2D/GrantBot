@@ -53,7 +53,9 @@ export function LoginForm() {
   const handleMagicLink = async () => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/login` },
+      options: {
+        emailRedirectTo: `${window.location.origin}/api/auth/callback?next=/dashboard`,
+      },
     });
     if (error) {
       if (error.message.includes("rate limit") || error.status === 429) {
