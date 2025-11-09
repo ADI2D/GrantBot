@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
     const minAmount = searchParams.get("minAmount");
     const maxAmount = searchParams.get("maxAmount");
     const clientId = searchParams.get("clientId");
+    const geographicScope = searchParams.get("geographicScope");
+    const limit = searchParams.get("limit") ? Number(searchParams.get("limit")) : 1000;
+    const offset = searchParams.get("offset") ? Number(searchParams.get("offset")) : 0;
 
     // Get client profile parameters for AI matching
     const enableMatching = searchParams.get("enableMatching") === "true";
@@ -46,7 +49,8 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("opportunities")
       .select(
-        "id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope"
+        `id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope,
+        bookmarked_opportunities!left(id)`
       )
       .gte("deadline", sixtyDaysAgoStr)
       .neq("status", "closed")
@@ -69,6 +73,10 @@ export async function GET(request: NextRequest) {
       query = query.lte("amount", parseInt(maxAmount));
     }
 
+    if (geographicScope) {
+      query = query.ilike("geographic_scope", `%${geographicScope}%`);
+    }
+
     // Apply full-text search if query provided
     if (search && search.trim()) {
       query = query.textSearch("search_vector", search, {
@@ -77,7 +85,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const { data, error } = await query.limit(100);
+    // Apply pagination
+    query = query.limit(limit);
+    if (offset > 0) {
+      query = query.range(offset, offset + limit - 1);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("[freelancer][opportunities] Query error:", error);
@@ -128,9 +142,13 @@ export async function GET(request: NextRequest) {
           clientIds: [], // Populated client-side based on filters
           matchReason,
           applicationUrl: opp.application_url,
+          geographicScope: opp.geographic_scope,
+          isBookmarked: Array.isArray((opp as any).bookmarked_opportunities) && (opp as any).bookmarked_opportunities.length > 0,
         };
       })
     );
+
+    console.log(`[freelancer][opportunities] Returned ${opportunities.length} opportunities (requested limit: ${limit})`);
 
     return NextResponse.json({ opportunities });
   } catch (error) {
