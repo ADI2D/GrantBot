@@ -25,18 +25,17 @@ export function AdminShell({
     <div className="flex min-h-screen bg-slate-50">
       <aside className="hidden w-64 flex-shrink-0 border-r border-slate-200 bg-white px-5 py-6 lg:flex lg:flex-col">
         <div>
-          <Link href="/admin" className="flex items-center gap-2">
-            <Image
-              src="/grantspec-logo.png"
-              alt="GrantSpec"
-              width={32}
-              height={32}
-              className="object-contain"
-            />
-            <div>
-              <p className="text-base font-semibold text-slate-900">GrantSpec Admin</p>
-              <p className="text-xs text-slate-500">Internal operations</p>
+          <Link href="/admin" className="block">
+            <div className="flex w-full items-center justify-center py-4">
+              <Image
+                src="/grantspec-logo.png"
+                alt="GrantSpec"
+                width={120}
+                height={120}
+                className="object-contain"
+              />
             </div>
+            <p className="text-center text-sm font-semibold text-slate-900">Admin</p>
           </Link>
         </div>
 

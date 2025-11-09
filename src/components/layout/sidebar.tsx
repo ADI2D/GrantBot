@@ -46,19 +46,15 @@ export function Sidebar() {
   return (
     <aside className="hidden w-64 flex-col gap-6 border-r border-slate-100 bg-white px-5 py-6 lg:flex">
       <div>
-        <Link className="flex items-center gap-2" href="/dashboard">
-          <div className="flex h-10 w-10 items-center justify-center">
+        <Link className="block" href="/dashboard">
+          <div className="flex w-full items-center justify-center py-4">
             <Image
               src="/grantspec-logo.png"
               alt="GrantSpec"
-              width={40}
-              height={40}
+              width={120}
+              height={120}
               className="object-contain"
             />
-          </div>
-          <div>
-            <p className="text-base font-semibold text-slate-900">GrantSpec</p>
-            <p className="text-xs text-slate-500">AI Grant Workspace</p>
           </div>
         </Link>
       </div>
