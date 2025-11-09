@@ -13,7 +13,7 @@ import { FocusAreaFilterChips, FocusAreaBadges } from "@/components/ui/focus-are
 import { useOpportunitiesData, type OpportunitiesFilters } from "@/hooks/use-api";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
 import { useOrg } from "@/hooks/use-org";
-import { type FocusAreaId } from "@/types/focus-areas";
+import { type FocusAreaId, calculateFocusAreaMatchScore } from "@/types/focus-areas";
 
 const amountRanges = [
   { label: "Any amount", min: undefined, max: undefined },
@@ -29,6 +29,9 @@ export default function OpportunitiesPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
 
+  // Get organization focus areas for scoring
+  const [orgFocusAreas, setOrgFocusAreas] = useState<FocusAreaId[]>([]);
+
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -38,6 +41,22 @@ export default function OpportunitiesPage() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"all" | "recommended" | "saved">("all");
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  // Fetch organization focus areas for matching
+  useEffect(() => {
+    const fetchOrgFocusAreas = async () => {
+      try {
+        const response = await fetch(`/api/organization?orgId=${currentOrgId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setOrgFocusAreas((data.organization?.focus_areas || []) as FocusAreaId[]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch org focus areas:", error);
+      }
+    };
+    fetchOrgFocusAreas();
+  }, [currentOrgId]);
 
   // Debounce search input (500ms delay)
   useEffect(() => {
@@ -129,8 +148,10 @@ export default function OpportunitiesPage() {
   if (isLoading) return <PageLoader label="Searching opportunities" />;
   if (error || !data) return <PageError message={error?.message || "Unable to load opportunities"} />;
 
-  // Filter opportunities based on view mode
+  // Filter opportunities based on view mode and focus areas
   let filteredOpportunities = data.opportunities;
+
+  // Apply view mode filter
   if (viewMode === "recommended") {
     // Show only opportunities with high alignment scores (0.7 or higher)
     filteredOpportunities = filteredOpportunities.filter(opp => (opp.alignmentScore ?? 0) >= 0.7);
@@ -139,7 +160,34 @@ export default function OpportunitiesPage() {
     filteredOpportunities = filteredOpportunities.filter(opp => opp.isBookmarked);
   }
 
-  const opportunities = filteredOpportunities;
+  // Apply client-side focus area filter (if multiple areas selected)
+  if (selectedFocusAreas.length > 0) {
+    filteredOpportunities = filteredOpportunities.filter(opp => {
+      if (!opp.focus_areas || opp.focus_areas.length === 0) return false;
+      // Show if opportunity matches ANY of the selected focus areas
+      return opp.focus_areas.some(area => selectedFocusAreas.includes(area as FocusAreaId));
+    });
+  }
+
+  // Sort by focus area match score if org has focus areas
+  const opportunities = orgFocusAreas.length > 0
+    ? [...filteredOpportunities].sort((a, b) => {
+        const aScore = calculateFocusAreaMatchScore(
+          orgFocusAreas,
+          (a.focus_areas || []) as FocusAreaId[]
+        );
+        const bScore = calculateFocusAreaMatchScore(
+          orgFocusAreas,
+          (b.focus_areas || []) as FocusAreaId[]
+        );
+        // Sort by score descending, then by deadline ascending
+        if (aScore !== bScore) return bScore - aScore;
+        const aDeadline = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+        const bDeadline = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+        return aDeadline - bDeadline;
+      })
+    : filteredOpportunities;
+
   const now = new Date();
 
   return (
@@ -321,6 +369,21 @@ export default function OpportunitiesPage() {
                     {opportunity.alignmentScore && opportunity.alignmentScore >= 0.8 && (
                       <Badge tone="success">{formatPercent(opportunity.alignmentScore)} Match</Badge>
                     )}
+                    {/* Focus area match score badge */}
+                    {orgFocusAreas.length > 0 && opportunity.focus_areas && opportunity.focus_areas.length > 0 && (() => {
+                      const matchScore = calculateFocusAreaMatchScore(
+                        orgFocusAreas,
+                        opportunity.focus_areas as FocusAreaId[]
+                      );
+                      if (matchScore >= 75) {
+                        return <Badge tone="success">{Math.round(matchScore)}% Focus Match</Badge>;
+                      } else if (matchScore >= 50) {
+                        return <Badge tone="info">{Math.round(matchScore)}% Focus Match</Badge>;
+                      } else if (matchScore > 0) {
+                        return <Badge tone="neutral">{Math.round(matchScore)}% Focus Match</Badge>;
+                      }
+                      return null;
+                    })()}
                   </div>
 
                   {/* Focus area badges */}
