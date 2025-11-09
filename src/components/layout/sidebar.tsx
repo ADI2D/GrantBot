@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutGrid,
@@ -46,8 +47,14 @@ export function Sidebar() {
     <aside className="hidden w-64 flex-col gap-6 border-r border-slate-100 bg-white px-5 py-6 lg:flex">
       <div>
         <Link className="flex items-center gap-2" href="/dashboard">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white font-semibold">
-            GB
+          <div className="flex h-10 w-10 items-center justify-center">
+            <Image
+              src="/grantspec-logo.png"
+              alt="GrantSpec"
+              width={40}
+              height={40}
+              className="object-contain"
+            />
           </div>
           <div>
             <p className="text-base font-semibold text-slate-900">GrantSpec</p>

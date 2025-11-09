@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
@@ -24,10 +25,19 @@ export function AdminShell({
     <div className="flex min-h-screen bg-slate-50">
       <aside className="hidden w-64 flex-shrink-0 border-r border-slate-200 bg-white px-5 py-6 lg:flex lg:flex-col">
         <div>
-          <Link href="/admin" className="block text-lg font-semibold text-slate-900">
-            GrantSpec Admin
+          <Link href="/admin" className="flex items-center gap-2">
+            <Image
+              src="/grantspec-logo.png"
+              alt="GrantSpec"
+              width={32}
+              height={32}
+              className="object-contain"
+            />
+            <div>
+              <p className="text-base font-semibold text-slate-900">GrantSpec Admin</p>
+              <p className="text-xs text-slate-500">Internal operations</p>
+            </div>
           </Link>
-          <p className="mt-1 text-xs text-slate-500">Internal operations</p>
         </div>
 
         {/* Back to Main App */}
@@ -60,7 +70,7 @@ export function AdminShell({
         </nav>
         <div className="rounded-2xl border border-slate-200 bg-slate-100 p-4 text-xs text-slate-600">
           <p className="font-semibold text-slate-800">Need help?</p>
-          <p>Contact the product team in Slack or hello@grantbot.ai.</p>
+          <p>Contact the product team in Slack or hello@grantspec.com.</p>
         </div>
       </aside>
       <main className="flex-1">

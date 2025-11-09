@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Briefcase, Clock, Target, Activity, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,10 +43,19 @@ export function FreelancerShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-slate-50">
       <div className="flex min-h-screen">
         <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white p-6 lg:flex">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">GrantSpec</p>
-            <h1 className="text-lg font-semibold text-slate-900">Freelancer</h1>
-          </div>
+          <Link href="/freelancer/clients" className="flex items-center gap-2">
+            <Image
+              src="/grantspec-logo.png"
+              alt="GrantSpec"
+              width={32}
+              height={32}
+              className="object-contain"
+            />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">GrantSpec</p>
+              <h1 className="text-base font-semibold text-slate-900">Freelancer</h1>
+            </div>
+          </Link>
 
           <nav className="mt-8 space-y-1">
             {navItems.map((item) => {
