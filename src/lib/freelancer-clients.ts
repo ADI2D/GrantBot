@@ -227,7 +227,7 @@ function listSeedProposals(): FreelancerProposalDetail[] {
 }
 
 /**
- * Fetches the list of freelancer clients from the database.
+ * Fetches the list of freelancer clients from the database with real analytics.
  */
 export async function listFreelancerClients(): Promise<FreelancerClientSummary[]> {
   try {
@@ -240,24 +240,84 @@ export async function listFreelancerClients(): Promise<FreelancerClientSummary[]
       return [];
     }
 
-    const { data, error } = await supabase
+    // Fetch all clients for this user
+    const { data: clients, error: clientsError } = await supabase
       .from("freelancer_clients")
       .select("*")
       .eq("freelancer_user_id", user.id)
       .order("last_activity_at", { ascending: false });
 
-    if (error) {
-      console.error("[freelancer][clients] Failed to list clients:", error);
+    if (clientsError) {
+      console.error("[freelancer][clients] Failed to list clients:", clientsError);
       return [];
     }
 
-    return (data ?? []).map((row) => ({
+    if (!clients || clients.length === 0) {
+      return [];
+    }
+
+    // Fetch all proposals for this user (single query for all clients)
+    const { data: proposals } = await supabase
+      .from("freelancer_proposals")
+      .select("client_id, status")
+      .eq("freelancer_user_id", user.id);
+
+    // Fetch all documents for this user (single query for all clients)
+    const { data: documents } = await supabase
+      .from("freelancer_documents")
+      .select("client_id, status")
+      .eq("freelancer_user_id", user.id);
+
+    // Get organization IDs from clients to fetch opportunities
+    const orgIds = clients
+      .map((c) => c.organization_id)
+      .filter((id): id is string => Boolean(id));
+
+    // Fetch opportunities for linked organizations (if any)
+    let opportunities: Array<{ organization_id: string; status: string | null }> = [];
+    if (orgIds.length > 0) {
+      const { data: opps } = await supabase
+        .from("opportunities")
+        .select("organization_id, status")
+        .in("organization_id", orgIds)
+        .in("status", ["recommended", "in_review", "shortlisted", "drafting"]);
+
+      opportunities = opps ?? [];
+    }
+
+    // Count analytics per client
+    const proposalsByClient = new Map<string, number>();
+    const documentsByClient = new Map<string, number>();
+    const opportunitiesByOrg = new Map<string, number>();
+
+    // Count active proposals (not archived, rejected, or awarded)
+    (proposals ?? []).forEach((p) => {
+      const status = p.status?.toLowerCase() || "";
+      if (!["archived", "rejected", "awarded"].includes(status)) {
+        proposalsByClient.set(p.client_id, (proposalsByClient.get(p.client_id) || 0) + 1);
+      }
+    });
+
+    // Count missing documents
+    (documents ?? []).forEach((d) => {
+      if (d.status === "missing") {
+        documentsByClient.set(d.client_id, (documentsByClient.get(d.client_id) || 0) + 1);
+      }
+    });
+
+    // Count opportunities by organization
+    opportunities.forEach((o) => {
+      opportunitiesByOrg.set(o.organization_id, (opportunitiesByOrg.get(o.organization_id) || 0) + 1);
+    });
+
+    // Map clients with real analytics
+    return clients.map((row) => ({
       id: row.id,
       name: row.name,
       status: row.status as "active" | "on_hold" | "archived",
-      activeProposals: 0, // TODO: Count from proposals table
-      opportunitiesInPipeline: 0, // TODO: Count from opportunities
-      documentsMissing: 0, // TODO: Count documents with status 'missing'
+      activeProposals: proposalsByClient.get(row.id) || 0,
+      opportunitiesInPipeline: row.organization_id ? (opportunitiesByOrg.get(row.organization_id) || 0) : 0,
+      documentsMissing: documentsByClient.get(row.id) || 0,
       lastActivityAt: row.last_activity_at || row.created_at,
       annualBudget: row.annual_budget || null,
       primaryContact: row.primary_contact_name || row.primary_contact_email
@@ -726,13 +786,25 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
       (p) => !["archived", "rejected", "awarded"].includes(p.status?.toLowerCase() || "")
     ).length;
 
+    // Fetch opportunities for linked organization (if any)
+    let opportunitiesCount = 0;
+    if (client.organization_id) {
+      const { data: opps } = await supabase
+        .from("opportunities")
+        .select("id")
+        .eq("organization_id", client.organization_id)
+        .in("status", ["recommended", "in_review", "shortlisted", "drafting"]);
+
+      opportunitiesCount = (opps ?? []).length;
+    }
+
     // Map to FreelancerClientDetail
     return {
       id: client.id,
       name: client.name,
       status: client.status as "active" | "on_hold" | "archived",
       activeProposals: activeProposalsCount,
-      opportunitiesInPipeline: 0, // TODO: Count from opportunities
+      opportunitiesInPipeline: opportunitiesCount,
       documentsMissing: (documents ?? []).filter((d) => d.status === "missing").length,
       lastActivityAt: client.last_activity_at || client.created_at,
       annualBudget: client.annual_budget || null,
