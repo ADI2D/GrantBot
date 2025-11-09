@@ -7,7 +7,8 @@ export type KpiTile = {
 export type Opportunity = {
   id: string;
   name: string;
-  focusArea: string | null;
+  focusArea: string | null; // Legacy single focus area (deprecated, use focus_areas)
+  focus_areas?: string[]; // New array of focus area IDs
   funderName?: string | null;
   amount: number | null;
   deadline: string | null;
@@ -23,7 +24,8 @@ export type Proposal = {
   id: string;
   opportunityId: string | null;
   opportunityName: string;
-  focusArea: string | null;
+  focusArea: string | null; // Legacy single focus area (deprecated)
+  focus_areas?: string[]; // New array of focus area IDs
   ownerName: string | null;
   status: string;
   progress: number;

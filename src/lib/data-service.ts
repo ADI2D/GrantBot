@@ -82,7 +82,7 @@ export async function fetchOpportunities(
   let query = client
     .from("opportunities")
     .select(
-      `id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope,
+      `id, name, focus_area, focus_areas, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope,
       bookmarked_opportunities!left(id)`,
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
@@ -149,7 +149,8 @@ export async function fetchOpportunities(
   const opportunities = (data ?? []).map((item: any) => ({
     id: item.id,
     name: item.name,
-    focusArea: item.focus_area,
+    focusArea: item.focus_area, // Legacy field
+    focus_areas: item.focus_areas || [], // New array field
     funderName: item.funder_name,
     amount: item.amount,
     deadline: item.deadline,
