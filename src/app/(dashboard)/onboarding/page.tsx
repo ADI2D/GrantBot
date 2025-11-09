@@ -109,7 +109,7 @@ export default function OnboardingPage() {
             Capture your institutional knowledge once.
           </h1>
           <p className="text-sm text-slate-600">
-            GrantBot reuses this data across every AI draft, compliance checklist, and board report.
+            GrantSpec reuses this data across every AI draft, compliance checklist, and board report.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -147,7 +147,7 @@ export default function OnboardingPage() {
           </div>
           <div className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
             <p className="font-semibold text-slate-800">Need concierge onboarding?</p>
-            <p>Upload existing decks or PDFs and GrantBot will pre-fill your workspace.</p>
+            <p>Upload existing decks or PDFs and GrantSpec will pre-fill your workspace.</p>
           </div>
         </Card>
 

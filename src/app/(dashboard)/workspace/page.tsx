@@ -301,7 +301,7 @@ export default function WorkspacePage() {
           </Button>
           <Button className="gap-2" disabled={proposal?.archived}>
             <Sparkles className="h-4 w-4" />
-            Ask GrantBot
+            Ask GrantSpec
           </Button>
         </div>
       </header>

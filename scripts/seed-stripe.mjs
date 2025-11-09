@@ -77,7 +77,7 @@ let customerId = org.stripe_customer_id ?? null;
 if (!customerId) {
   console.log("Creating Stripe customer…");
   const customer = await stripe.customers.create({
-    name: org.name ?? `GrantBot Org ${orgId.slice(0, 6)}`,
+    name: org.name ?? `GrantSpec Org ${orgId.slice(0, 6)}`,
     metadata: { organization_id: orgId },
   });
   customerId = customer.id;

@@ -30,7 +30,7 @@ export default function DashboardPage() {
       )}
       <section className="grid gap-6 rounded-3xl border border-slate-100 bg-gradient-to-br from-white via-blue-50/70 to-slate-50 p-6 shadow-sm lg:grid-cols-[2fr,1fr]">
         <div>
-          <p className="text-sm font-semibold text-blue-600">GrantBot Pulse</p>
+          <p className="text-sm font-semibold text-blue-600">GrantSpec Pulse</p>
           <h1 className="mt-2 text-3xl font-bold text-slate-900">
             {organization.name}: keep the win-rate momentum.
           </h1>
@@ -188,7 +188,7 @@ export default function DashboardPage() {
             {tasks.length === 0 && (
               <EmptyState
                 title="No tasks assigned"
-                description="GrantBot will surface blockers once proposals are in play."
+                description="GrantSpec will surface blockers once proposals are in play."
               />
             )}
             {tasks.map((task) => (

@@ -170,7 +170,7 @@ export default function SharedProposalPage() {
             {proposal.opportunityName}
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            Shared by {proposal.ownerName ?? "GrantBot user"}
+            Shared by {proposal.ownerName ?? "GrantSpec user"}
           </p>
           <div className="mt-4 flex items-center justify-center gap-3">
             <Badge tone="info">{proposal.status.replaceAll("_", " ")}</Badge>

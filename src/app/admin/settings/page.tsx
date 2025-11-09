@@ -19,7 +19,7 @@ export default async function AdminSettingsPage() {
         <p className="text-xs uppercase text-slate-500">Configuration</p>
         <h1 className="text-2xl font-semibold text-slate-900">Admin Settings</h1>
         <p className="text-sm text-slate-500">
-          Manage admin roles, feature flags, and environment-wide preferences for the GrantBot platform.
+          Manage admin roles, feature flags, and environment-wide preferences for the GrantSpec platform.
         </p>
       </header>
 

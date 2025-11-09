@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Seed GrantBot with admin + subscriber users.
+ * Seed GrantSpec with admin + subscriber users.
  *
  * Usage:
  *   node --env-file .env.local scripts/seed-users.mjs <org-id> <admin-email> <subscriber-email> [admin-password] [subscriber-password]

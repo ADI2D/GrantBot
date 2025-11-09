@@ -26,7 +26,7 @@ export default async function AdminBillingPage() {
         <p className="text-xs uppercase tracking-[0.2em] text-muted">Revenue controls</p>
         <h1 className="text-3xl font-semibold text-primary">Billing</h1>
         <p className="text-sm text-muted">
-          Manage plans, Stripe sync status, and manual adjustments for GrantBot customers.
+          Manage plans, Stripe sync status, and manual adjustments for GrantSpec customers.
         </p>
       </header>
 

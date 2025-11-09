@@ -25,7 +25,7 @@ export function AdminShell({
       <aside className="hidden w-64 flex-shrink-0 border-r border-slate-200 bg-white px-5 py-6 lg:flex lg:flex-col">
         <div>
           <Link href="/admin" className="block text-lg font-semibold text-slate-900">
-            GrantBot Admin
+            GrantSpec Admin
           </Link>
           <p className="mt-1 text-xs text-slate-500">Internal operations</p>
         </div>

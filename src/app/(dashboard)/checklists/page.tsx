@@ -22,7 +22,7 @@ export default function ChecklistsPage() {
           <p className="text-sm font-semibold text-blue-600">Compliance center</p>
           <h1 className="text-3xl font-semibold text-slate-900">Avoid preventable rejections.</h1>
           <p className="text-sm text-slate-600">
-            GrantBot interprets each RFP and highlights requirements, missing docs, and risk areas.
+            GrantSpec interprets each RFP and highlights requirements, missing docs, and risk areas.
           </p>
         </div>
         <div className="flex items-center gap-3">

@@ -19,12 +19,12 @@ const bodyFont = Merriweather({
 });
 
 export const metadata: Metadata = {
-  title: "GrantBot | AI Grant Workspace",
+  title: "GrantSpec | AI Grant Workspace",
   description:
-    "GrantBot helps small nonprofits ship fundable grant proposals with AI drafting, workflows, and performance insights.",
-  metadataBase: new URL("https://grantbot.local"),
+    "GrantSpec helps small nonprofits ship fundable grant proposals with AI drafting, workflows, and performance insights.",
+  metadataBase: new URL("https://grantspec.local"),
   openGraph: {
-    title: "GrantBot",
+    title: "GrantSpec",
     description:
       "AI-assisted grant writing workspace designed for small nonprofits.",
     type: "website",

@@ -94,7 +94,7 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <Card className="w-full max-w-md p-8">
         <div className="space-y-2 text-center">
-          <p className="text-sm font-semibold text-blue-600">GrantBot Access</p>
+          <p className="text-sm font-semibold text-blue-600">GrantSpec Access</p>
           <h1 className="text-2xl font-semibold text-slate-900">Reset password</h1>
           <p className="text-sm text-slate-500">
             Enter a new password below. If you reached this page unexpectedly, return to the login

@@ -316,7 +316,7 @@ export default async function AdminCustomerDetailPage({ params }: PageParams) {
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Internal notes</h2>
-          <p className="text-sm text-slate-500">Share context with other team members. Notes are private to GrantBot staff.</p>
+          <p className="text-sm text-slate-500">Share context with other team members. Notes are private to GrantSpec staff.</p>
 
           <form action={addNote} className="mt-4 space-y-3">
             <textarea

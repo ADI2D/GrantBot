@@ -33,7 +33,7 @@ export default async function AdminDashboardPage() {
       <section className="space-y-2">
         <p className="text-xs uppercase tracking-[0.2em] text-muted">Executive view</p>
         <h1 className="text-3xl font-semibold text-primary">Operational overview</h1>
-        <p className="text-sm text-muted">Key metrics for the GrantBot workspace.</p>
+        <p className="text-sm text-muted">Key metrics for the GrantSpec workspace.</p>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <DashboardCard title="Active organizations" value={orgCount} caption="Total orgs in Supabase" />
           <DashboardCard title="Members" value={memberCount} caption="Total seats across orgs" />

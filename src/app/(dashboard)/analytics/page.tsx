@@ -81,7 +81,7 @@ export default function AnalyticsPage() {
           <div>
             <p className="text-xs uppercase text-slate-500">Learning loop</p>
             <h2 className="text-lg font-semibold text-slate-900">
-              Key insights powering GrantBot prompts
+              Key insights powering GrantSpec prompts
             </h2>
           </div>
           <Button variant="secondary">Share with board</Button>

@@ -121,7 +121,7 @@ export class GrantsGovConnector extends BaseConnector {
     // Step 1: Get the download page to find today's ZIP filename
     const pageResponse = await fetch(this.XML_EXTRACT_PAGE, {
       headers: {
-        "User-Agent": "GrantBot/1.0 (grant discovery application)",
+        "User-Agent": "GrantSpec/1.0 (grant discovery application)",
       },
     });
 
@@ -150,7 +150,7 @@ export class GrantsGovConnector extends BaseConnector {
     // Step 3: Download the ZIP file
     const zipResponse = await fetch(zipUrl, {
       headers: {
-        "User-Agent": "GrantBot/1.0 (grant discovery application)",
+        "User-Agent": "GrantSpec/1.0 (grant discovery application)",
       },
     });
 
@@ -198,7 +198,7 @@ export class GrantsGovConnector extends BaseConnector {
   private async fetchRSSFeed(since?: Date): Promise<RawGrant[]> {
     const response = await fetch(this.RSS_FEED_URL, {
       headers: {
-        "User-Agent": "GrantBot/1.0 (grant discovery application)",
+        "User-Agent": "GrantSpec/1.0 (grant discovery application)",
       },
     });
 
@@ -715,7 +715,7 @@ export class GrantsGovConnector extends BaseConnector {
       const response = await fetch(this.XML_FEED_URL, {
         method: "HEAD",
         headers: {
-          "User-Agent": "GrantBot/1.0 (grant discovery application)",
+          "User-Agent": "GrantSpec/1.0 (grant discovery application)",
         },
       });
       return response.ok;

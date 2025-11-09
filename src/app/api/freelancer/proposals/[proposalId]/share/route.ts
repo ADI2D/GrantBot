@@ -338,7 +338,7 @@ async function sendReviewEmail(params: {
     </div>
 
     <div class="footer">
-      <p><strong>GrantBot</strong> - Grant Writing Platform</p>
+      <p><strong>GrantSpec</strong> - Grant Writing Platform</p>
       <p>This email was sent because ${senderName} shared a proposal with you for review.</p>
     </div>
   </div>

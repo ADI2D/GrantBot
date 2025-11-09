@@ -11,7 +11,7 @@ export default async function AdminAnalyticsPage() {
         <p className="text-xs uppercase tracking-[0.2em] text-muted">Insights</p>
         <h1 className="text-3xl font-semibold text-primary">Analytics</h1>
         <p className="text-sm text-muted">
-          Monitor growth, retention, and outcomes across every GrantBot organization.
+          Monitor growth, retention, and outcomes across every GrantSpec organization.
         </p>
       </header>
 

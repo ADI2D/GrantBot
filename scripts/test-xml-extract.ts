@@ -14,7 +14,7 @@ async function testXMLExtract() {
 
     const response = await fetch(URL, {
       headers: {
-        "User-Agent": "GrantBot/1.0 (grant discovery application)",
+        "User-Agent": "GrantSpec/1.0 (grant discovery application)",
       },
     });
 

@@ -69,7 +69,7 @@ export default function BillingPage() {
     plans[0] ?? {
       id: "starter",
       name: "Starter",
-      description: "GrantBot starter plan",
+      description: "GrantSpec starter plan",
       monthlyPriceCents: 24900,
       maxProposalsPerMonth: 2,
     };
@@ -81,7 +81,7 @@ export default function BillingPage() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-blue-600">Billing & Limits</p>
-          <h1 className="text-3xl font-semibold text-slate-900">Manage your GrantBot plan.</h1>
+          <h1 className="text-3xl font-semibold text-slate-900">Manage your GrantSpec plan.</h1>
           <p className="text-sm text-slate-600">
             Track usage, review plan benefits, and access the Stripe customer portal to update payment
             details.
@@ -95,7 +95,7 @@ export default function BillingPage() {
           <div>
             <p className="text-xs uppercase text-slate-500">Current plan</p>
             <h2 className="text-lg font-semibold text-slate-900">{activePlan.name}</h2>
-            <p className="text-sm text-slate-500">{activePlan.description ?? "GrantBot starter plan"}</p>
+            <p className="text-sm text-slate-500">{activePlan.description ?? "GrantSpec starter plan"}</p>
             <p className="mt-2 text-xs text-slate-500">
               {formatCurrency(data.planPriceCents / 100)} / month • Stripe price {data.planStripePriceId ?? "n/a"}
             </p>

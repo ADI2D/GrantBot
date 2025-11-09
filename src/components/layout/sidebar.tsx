@@ -50,7 +50,7 @@ export function Sidebar() {
             GB
           </div>
           <div>
-            <p className="text-base font-semibold text-slate-900">GrantBot</p>
+            <p className="text-base font-semibold text-slate-900">GrantSpec</p>
             <p className="text-xs text-slate-500">AI Grant Workspace</p>
           </div>
         </Link>

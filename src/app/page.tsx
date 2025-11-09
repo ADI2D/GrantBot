@@ -30,13 +30,13 @@ export default function Home() {
             href="/dashboard"
             className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600"
           >
-            GrantBot MVP • 90-day build
+            GrantSpec MVP • 90-day build
           </Link>
           <h1 className="text-4xl font-semibold text-slate-900 sm:text-5xl">
             Win more grants with an AI workspace built for small nonprofits.
           </h1>
           <p className="mx-auto max-w-2xl text-base text-slate-600">
-            GrantBot combines automated research, proposal drafting, collaboration, and analytics so lean teams produce board-ready submissions in under 48 hours.
+            GrantSpec combines automated research, proposal drafting, collaboration, and analytics so lean teams produce board-ready submissions in under 48 hours.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Button asChild className="gap-2">
