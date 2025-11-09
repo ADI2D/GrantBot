@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteSupabase } from "@/lib/supabase-server";
+import { requireAdminRole } from "@/lib/admin-auth";
 import { GrantsGovConnector } from "@/lib/connectors/grants-gov-connector";
 import { USASpendingConnector } from "@/lib/connectors/usaspending-connector";
 import { SAMGovConnector } from "@/lib/connectors/sam-gov-connector";
@@ -23,8 +24,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // TODO: Check if user is admin (for now, any authenticated user can trigger)
-    // In production, add: WHERE role = 'admin'
+    // Verify user is a super admin
+    await requireAdminRole(user.id, ["super_admin"]);
 
     const body = await request.json();
     const { source, force } = body; // source: specific connector or 'all', force: full refresh

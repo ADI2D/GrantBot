@@ -7,6 +7,10 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "seed:db": "node --env-file .env.local scripts/seed-database.mjs",
     "seed:stripe": "node --env-file .env.local scripts/seed-stripe.mjs",
     "seed:users": "node --env-file .env.local scripts/seed-users.mjs",
@@ -57,14 +61,22 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/adm-zip": "^0.5.5",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.1.0",
+    "@vitest/coverage-v8": "^4.0.8",
+    "@vitest/ui": "^4.0.8",
     "eslint": "^9",
     "eslint-config-next": "16.0.0",
+    "jsdom": "^27.1.0",
     "stripe": "^19.1.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.8"
   }
 }
