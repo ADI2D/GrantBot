@@ -35,7 +35,7 @@ export function AdminShell({
                 className="object-contain w-full h-auto"
               />
             </div>
-            <p className="text-center text-lg font-bold uppercase mt-1" style={{ color: '#4A9B7F' }}>Admin</p>
+            <p className="text-center text-base font-bold uppercase mt-0" style={{ color: '#4A9B7F' }}>Admin</p>
           </Link>
         </div>
 
