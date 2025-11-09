@@ -17,6 +17,8 @@ export type FreelancerClientSummary = {
   } | null;
   planName?: string | null;
   billingRate?: number | null;
+  likeUs?: boolean;
+  categories?: string[];
 };
 
 export type FreelancerClientDetail = FreelancerClientSummary & {
@@ -267,6 +269,8 @@ export async function listFreelancerClients(): Promise<FreelancerClientSummary[]
           }
         : null,
       billingRate: row.billing_rate || null,
+      likeUs: row.like_us || false,
+      categories: Array.isArray(row.categories) ? row.categories : [],
     }));
   } catch (error) {
     console.error("[freelancer][clients] Unexpected error:", error);

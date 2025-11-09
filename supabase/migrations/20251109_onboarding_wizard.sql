@@ -2,6 +2,11 @@
 -- Onboarding Wizard: Enhanced fields for nonprofits and freelancers
 -- ============================================================================
 
+-- Add onboarding progress tracking to user_profiles
+alter table public.user_profiles add column if not exists onboarding_progress jsonb default null;
+
+comment on column public.user_profiles.onboarding_progress is 'Stores partial onboarding data: {step, data, completion, updated_at}';
+
 -- Add onboarding fields to organizations table
 alter table public.organizations add column if not exists ein text;
 alter table public.organizations add column if not exists founded_year integer;
@@ -127,12 +132,19 @@ create table if not exists public.freelancer_clients (
   grants_submitted integer default 0,
   grants_awarded integer default 0,
 
+  -- Client categorization (added for onboarding wizard)
+  like_us boolean default false,
+  categories jsonb default '[]'::jsonb, -- Array of focus area IDs
+
   -- Notes
   notes text,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+comment on column public.freelancer_clients.like_us is 'Mark if this is an ideal client type';
+comment on column public.freelancer_clients.categories is 'Array of focus area IDs for this client type';
 
 comment on table public.freelancer_clients is 'Client relationships for freelancer grant writers';
 

@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, SortDesc } from "lucide-react";
+import { Search, SortDesc, Heart } from "lucide-react";
 import type { FreelancerClientSummary } from "@/lib/freelancer-clients";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { FOCUS_AREAS, type FocusAreaId } from "@/types/focus-areas";
 
 type Props = {
   clients: FreelancerClientSummary[];
@@ -74,16 +75,51 @@ export function ClientGrid({ clients }: Props) {
           {filtered.map((client) => (
             <Card
               key={client.id}
-              className="group flex h-24 items-center justify-center border-slate-200 bg-white text-center transition hover:border-blue-200 hover:shadow-hover"
+              className={cn(
+                "group relative flex flex-col border-slate-200 bg-white transition hover:border-blue-200 hover:shadow-hover",
+                client.likeUs && "ring-2 ring-purple-200 border-purple-300"
+              )}
             >
+              {client.likeUs && (
+                <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-purple-100 rounded-full">
+                  <Heart className="h-3 w-3 fill-purple-600 text-purple-600" />
+                  <span className="text-xs font-semibold text-purple-700">Like Us</span>
+                </div>
+              )}
+
               <Link
                 href={`/freelancer/clients/${encodeURIComponent(client.id)}`}
-                className="relative flex h-full w-full items-center justify-center px-6 text-lg font-semibold text-slate-800"
+                className="flex-1 flex flex-col p-4"
               >
-                <span className={cn("truncate", client.name.length > 26 ? "text-base" : "text-lg")}>
-                  {client.name}
-                </span>
-                <span className="pointer-events-none absolute inset-x-0 bottom-3 mx-auto text-xs font-semibold uppercase tracking-wide text-blue-600 opacity-0 transition group-hover:opacity-100">
+                <div className="flex-1 flex items-center justify-center text-center mb-2">
+                  <span className={cn("truncate font-semibold text-slate-800", client.name.length > 26 ? "text-base" : "text-lg")}>
+                    {client.name}
+                  </span>
+                </div>
+
+                {client.categories && client.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-1 justify-center mt-auto">
+                    {client.categories.slice(0, 3).map((catId) => {
+                      const category = FOCUS_AREAS[catId as FocusAreaId];
+                      return (
+                        <span
+                          key={catId}
+                          className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full"
+                          title={category?.description}
+                        >
+                          {category?.label || catId}
+                        </span>
+                      );
+                    })}
+                    {client.categories.length > 3 && (
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">
+                        +{client.categories.length - 3}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                <span className="pointer-events-none text-xs font-semibold uppercase tracking-wide text-blue-600 opacity-0 transition group-hover:opacity-100 text-center mt-2">
                   View client →
                 </span>
               </Link>

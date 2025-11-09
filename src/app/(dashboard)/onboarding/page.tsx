@@ -1,238 +1,160 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import OnboardingWizard, { type OnboardingStep } from "@/components/onboarding/onboarding-wizard";
 import { PageLoader, PageError } from "@/components/ui/page-state";
-import { FocusAreaSelect } from "@/components/ui/focus-area-select";
-import { useOrganizationProfile } from "@/hooks/use-api";
-import { useOrg } from "@/hooks/use-org";
-import { FileUpload } from "@/components/documents/file-upload";
-import { type FocusAreaId } from "@/types/focus-areas";
 
-const steps = [
-  { label: "Org profile", description: "Mission, EIN, budget" },
-  { label: "Programs", description: "Service areas & metrics" },
-  { label: "Supporting docs", description: "Financials, 990, board" },
-  { label: "AI preferences", description: "Tone, reviewers, guardrails" },
+// Import nonprofit steps
+import BasicInfoStep from "@/components/onboarding/steps/nonprofit/basic-info";
+import MissionImpactStep from "@/components/onboarding/steps/nonprofit/mission-impact";
+import BudgetFinanceStep from "@/components/onboarding/steps/nonprofit/budget-finance";
+import ProgramsMetricsStep from "@/components/onboarding/steps/nonprofit/programs-metrics";
+import DocumentsReviewStep from "@/components/onboarding/steps/nonprofit/documents-review";
+
+// Import freelancer steps
+import BasicProfileStep from "@/components/onboarding/steps/freelancer/basic-profile";
+import ExpertiseStep from "@/components/onboarding/steps/freelancer/expertise";
+import PortfolioStep from "@/components/onboarding/steps/freelancer/portfolio";
+import ClientsStep from "@/components/onboarding/steps/freelancer/clients";
+
+const nonprofitSteps: OnboardingStep[] = [
+  {
+    id: "basic-info",
+    title: "Basic Info",
+    description: "Tell us about your organization",
+    component: BasicInfoStep,
+  },
+  {
+    id: "mission-impact",
+    title: "Mission & Impact",
+    description: "Share your mission and focus areas",
+    component: MissionImpactStep,
+  },
+  {
+    id: "budget-finance",
+    title: "Budget & Finance",
+    description: "Financial information and past funding",
+    component: BudgetFinanceStep,
+  },
+  {
+    id: "programs-metrics",
+    title: "Programs & Metrics",
+    description: "Your programs and impact data",
+    component: ProgramsMetricsStep,
+  },
+  {
+    id: "documents-review",
+    title: "Documents & Review",
+    description: "Upload documents and review your profile",
+    component: DocumentsReviewStep,
+  },
 ];
 
-type OrgProfile = {
-  organizationName: string;
-  mission: string;
-  budget: string;
-  impact: string;
-  differentiator: string;
-  focusAreas: FocusAreaId[];
-};
+const freelancerSteps: OnboardingStep[] = [
+  {
+    id: "basic-profile",
+    title: "Basic Profile",
+    description: "Your professional information",
+    component: BasicProfileStep,
+  },
+  {
+    id: "expertise",
+    title: "Expertise",
+    description: "Your specializations and credentials",
+    component: ExpertiseStep,
+  },
+  {
+    id: "portfolio",
+    title: "Portfolio",
+    description: "Showcase your past work",
+    component: PortfolioStep,
+  },
+  {
+    id: "clients",
+    title: "Clients",
+    description: "Your client list and relationships",
+    component: ClientsStep,
+  },
+];
 
 export default function OnboardingPage() {
-  const { data, isLoading, error } = useOrganizationProfile();
-  const { currentOrgId } = useOrg();
-  const queryClient = useQueryClient();
-  const [profile, setProfile] = useState<OrgProfile>({
-    organizationName: "",
-    mission: "",
-    budget: "",
-    impact: "",
-    differentiator: "",
-    focusAreas: [],
-  });
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const router = useRouter();
+  const [accountType, setAccountType] = useState<"nonprofit" | "freelancer" | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [savedProgress, setSavedProgress] = useState<any>(null);
 
   useEffect(() => {
-    if (data?.organization) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- prefill the form once when data loads
-      setProfile({
-        organizationName: data.organization.name,
-        mission: data.organization.mission ?? "",
-        budget: data.organization.annualBudget
-          ? `$${Number(data.organization.annualBudget).toLocaleString()} annual operating budget`
-          : "",
-        impact: data.organization.impactSummary ?? "",
-        differentiator: data.organization.differentiator ?? "",
-        focusAreas: (data.organization.focus_areas || []) as FocusAreaId[],
-      });
-    }
-  }, [data]);
+    // Fetch user's account type and saved progress
+    const fetchUserData = async () => {
+      try {
+        // Get user profile to determine account type
+        const profileResponse = await fetch("/api/user/profile");
+        if (!profileResponse.ok) {
+          throw new Error("Failed to fetch user profile");
+        }
+        const profileData = await profileResponse.json();
+        setAccountType(profileData.accountType);
 
-  const handleChange = (field: keyof OrgProfile, value: string) => {
-    setProfile((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const mutation = useMutation({
-    mutationFn: async (payload: {
-      organizationName: string;
-      mission: string;
-      impact: string;
-      differentiator: string;
-      budget: string;
-      focusAreas: FocusAreaId[];
-    }) => {
-      const response = await fetch(`/api/organization?orgId=${currentOrgId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        throw new Error(await response.text());
+        // Get saved onboarding progress
+        const progressResponse = await fetch("/api/onboarding/progress");
+        if (progressResponse.ok) {
+          const progressData = await progressResponse.json();
+          if (progressData.progress) {
+            setSavedProgress(progressData.progress);
+          }
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load onboarding data");
+      } finally {
+        setIsLoading(false);
       }
-      return response.json();
-    },
-    onSuccess: () => {
-      setStatusMessage("Profile updated");
-      queryClient.invalidateQueries({ queryKey: ["organization", currentOrgId] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard", currentOrgId] });
-      setTimeout(() => setStatusMessage(null), 3000);
-    },
-    onError: (mutationError) => {
-      setStatusMessage(mutationError instanceof Error ? mutationError.message : "Save failed");
-      setTimeout(() => setStatusMessage(null), 3000);
-    },
-  });
+    };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    mutation.mutate(profile);
+    fetchUserData();
+  }, []);
+
+  const handleComplete = async (data: Record<string, any>) => {
+    const response = await fetch("/api/onboarding/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accountType, data }),
+    });
+
+    if (response.ok) {
+      // Redirect to appropriate dashboard based on account type
+      if (accountType === "nonprofit") {
+        router.push("/dashboard");
+      } else {
+        router.push("/freelancer/opportunities");
+      }
+    } else {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to complete onboarding");
+    }
   };
 
-  if (isLoading) return <PageLoader label="Loading profile" />;
-  if (error || !data) return <PageError message={error?.message || "Unable to load profile"} />;
+  if (isLoading) {
+    return <PageLoader label="Loading onboarding..." />;
+  }
 
-  const completion = Math.round(data.organization.onboardingCompletion * 100);
+  if (error) {
+    return <PageError message={error} />;
+  }
+
+  if (!accountType) {
+    return <PageError message="Unable to determine account type. Please contact support." />;
+  }
+
+  const steps = accountType === "nonprofit" ? nonprofitSteps : freelancerSteps;
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-blue-600">Onboarding</p>
-          <h1 className="text-3xl font-semibold text-slate-900">
-            Capture your institutional knowledge once.
-          </h1>
-          <p className="text-sm text-slate-600">
-            GrantSpec reuses this data across every AI draft, compliance checklist, and board report.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Badge tone="info">{completion}% complete</Badge>
-          {statusMessage && <p className="text-sm text-slate-500">{statusMessage}</p>}
-          <Button type="submit" form="onboarding-form" disabled={mutation.isPending}>
-            {mutation.isPending ? "Saving..." : "Save progress"}
-          </Button>
-        </div>
-      </header>
-
-      <section className="grid gap-6 lg:grid-cols-[320px,1fr]">
-        <Card className="p-6">
-          <p className="text-xs uppercase text-slate-500">Implementation plan</p>
-          <div className="mt-4 space-y-4">
-            {steps.map((step, index) => (
-              <div key={step.label} className="flex items-start gap-3">
-                <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold ${
-                    completion / 25 > index
-                      ? "bg-blue-600 text-white"
-                      : completion / 25 === index
-                        ? "bg-blue-50 text-blue-700"
-                        : "bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {index + 1}
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-900">{step.label}</p>
-                  <p className="text-sm text-slate-500">{step.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-            <p className="font-semibold text-slate-800">Need concierge onboarding?</p>
-            <p>Upload existing decks or PDFs and GrantSpec will pre-fill your workspace.</p>
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <form id="onboarding-form" className="space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Organization name</label>
-              <Input
-                value={profile.organizationName}
-                onChange={(event) => handleChange("organizationName", event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Mission statement</label>
-              <Textarea
-                rows={3}
-                value={profile.mission}
-                onChange={(event) => handleChange("mission", event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                Focus Areas
-                <span className="ml-2 text-xs font-normal text-slate-500">(Select all that apply)</span>
-              </label>
-              <FocusAreaSelect
-                selectedAreas={profile.focusAreas}
-                onChange={(areas) => setProfile((prev) => ({ ...prev, focusAreas: areas }))}
-                mode="multi"
-              />
-              <p className="text-xs text-slate-500">
-                Help us match you with relevant grant opportunities by selecting your organization's primary focus areas.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Annual budget summary</label>
-              <Textarea
-                rows={2}
-                value={profile.budget}
-                onChange={(event) => handleChange("budget", event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Impact snapshot</label>
-              <Textarea
-                rows={3}
-                value={profile.impact}
-                onChange={(event) => handleChange("impact", event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Differentiators & lived experience</label>
-              <Textarea
-                rows={2}
-                value={profile.differentiator}
-                onChange={(event) => handleChange("differentiator", event.target.value)}
-              />
-            </div>
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4">
-              <FileUpload
-                orgId={currentOrgId}
-                documents={data?.organization?.documents || []}
-                onUploadSuccess={() => {
-                  queryClient.invalidateQueries({ queryKey: ["organization", currentOrgId] });
-                }}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                Changes save to Supabase
-              </div>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? "Saving..." : "Mark section complete"}
-              </Button>
-            </div>
-          </form>
-        </Card>
-      </section>
-    </div>
+    <OnboardingWizard
+      steps={steps}
+      accountType={accountType}
+      onComplete={handleComplete}
+      initialData={savedProgress?.data}
+    />
   );
 }
