@@ -61,6 +61,8 @@ export type OpportunityFilters = {
   minDeadline?: string;
   maxDeadline?: string;
   geographicScope?: string;
+  limit?: number;
+  offset?: number;
 };
 
 export async function fetchOpportunities(
@@ -123,6 +125,11 @@ export async function fetchOpportunities(
 
   // Order by deadline (most recent first)
   query = query.order("deadline", { ascending: false });
+
+  // Apply pagination (default to showing all, max 1000 for performance)
+  const limit = filters?.limit ?? 1000;
+  const offset = filters?.offset ?? 0;
+  query = query.range(offset, offset + limit - 1);
 
   const { data, error} = await query;
 

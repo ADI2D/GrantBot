@@ -29,6 +29,12 @@ export async function GET(request: NextRequest) {
       minDeadline: request.nextUrl.searchParams.get("minDeadline") || undefined,
       maxDeadline: request.nextUrl.searchParams.get("maxDeadline") || undefined,
       geographicScope: request.nextUrl.searchParams.get("geographicScope") || undefined,
+      limit: request.nextUrl.searchParams.get("limit")
+        ? Number(request.nextUrl.searchParams.get("limit"))
+        : undefined,
+      offset: request.nextUrl.searchParams.get("offset")
+        ? Number(request.nextUrl.searchParams.get("offset"))
+        : undefined,
     };
 
     const opportunities = await fetchOpportunities(supabase, orgId, filters);

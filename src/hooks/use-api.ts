@@ -44,6 +44,8 @@ export type OpportunitiesFilters = {
   minDeadline?: string;
   maxDeadline?: string;
   geographicScope?: string;
+  limit?: number;
+  offset?: number;
 };
 
 export function useOpportunitiesData(filters?: OpportunitiesFilters) {
@@ -59,6 +61,8 @@ export function useOpportunitiesData(filters?: OpportunitiesFilters) {
   if (filters?.minDeadline) params.set("minDeadline", filters.minDeadline);
   if (filters?.maxDeadline) params.set("maxDeadline", filters.maxDeadline);
   if (filters?.geographicScope) params.set("geographicScope", filters.geographicScope);
+  if (filters?.limit !== undefined) params.set("limit", filters.limit.toString());
+  if (filters?.offset !== undefined) params.set("offset", filters.offset.toString());
 
   const queryString = params.toString();
 
