@@ -421,6 +421,8 @@ export class GrantsGovConnector extends BaseConnector {
 
       // Filter to only ACTIVE opportunities (not archived, with future deadlines)
       const now = new Date();
+
+
       const activeOpportunities = opportunities.filter((opp) => {
         // Skip if already archived
         if (opp.ArchiveDate) {
@@ -473,20 +475,58 @@ export class GrantsGovConnector extends BaseConnector {
   }
 
   /**
-   * Parse Grants.gov date format (MMDDYYYY)
-   * Example: "10312025" -> October 31, 2025
+   * Parse Grants.gov date format (MMDDYYYY or MDDYYYY or MMDYYYY)
+   * Examples:
+   *   "10312025" -> October 31, 2025
+   *   "9042014"  -> September 4, 2014
+   *   "1152025"  -> January 15, 2025
    */
-  private parseGrantsGovDate(dateStr: string | undefined): Date | undefined {
-    if (!dateStr || typeof dateStr !== 'string') return undefined;
+  private parseGrantsGovDate(dateStr: string | number | undefined): Date | undefined {
+    if (!dateStr) return undefined;
+
+    // Convert to string if it's a number
+    const dateString = String(dateStr);
 
     // Remove any non-numeric characters
-    const cleaned = dateStr.replace(/\D/g, '');
+    const cleaned = dateString.replace(/\D/g, '');
 
-    if (cleaned.length !== 8) return undefined;
+    // Accept 7 or 8 digit dates
+    if (cleaned.length !== 7 && cleaned.length !== 8) return undefined;
 
-    const month = parseInt(cleaned.substring(0, 2), 10);
-    const day = parseInt(cleaned.substring(2, 4), 10);
-    const year = parseInt(cleaned.substring(4, 8), 10);
+    // For 7-digit dates, parse as MDDYYYY or MMDYYYY
+    // For 8-digit dates, parse as MMDDYYYY
+    let month: number, day: number, year: number;
+
+    if (cleaned.length === 8) {
+      // MMDDYYYY format
+      month = parseInt(cleaned.substring(0, 2), 10);
+      day = parseInt(cleaned.substring(2, 4), 10);
+      year = parseInt(cleaned.substring(4, 8), 10);
+    } else {
+      // 7 digits: could be MDDYYYY or MMDYYYY
+      // Try MDDYYYY first (single digit month)
+      const month1 = parseInt(cleaned.substring(0, 1), 10);
+      const day1 = parseInt(cleaned.substring(1, 3), 10);
+      const year1 = parseInt(cleaned.substring(3, 7), 10);
+
+      // Try MMDYYYY (single digit day)
+      const month2 = parseInt(cleaned.substring(0, 2), 10);
+      const day2 = parseInt(cleaned.substring(2, 3), 10);
+      const year2 = parseInt(cleaned.substring(3, 7), 10);
+
+      // Check which interpretation is valid
+      if (month1 >= 1 && month1 <= 12 && day1 >= 1 && day1 <= 31) {
+        month = month1;
+        day = day1;
+        year = year1;
+      } else if (month2 >= 1 && month2 <= 12 && day2 >= 1 && day2 <= 31) {
+        month = month2;
+        day = day2;
+        year = year2;
+      } else {
+        return undefined; // Neither interpretation is valid
+      }
+    }
 
     // Validate
     if (month < 1 || month > 12 || day < 1 || day > 31 || year < 2000 || year > 2100) {
