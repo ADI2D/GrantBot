@@ -53,7 +53,7 @@ export function FreelancerShell({ children }: { children: ReactNode }) {
                 className="object-contain w-full h-auto"
               />
             </div>
-            <h1 className="text-center text-2xl font-bold text-[#4A9B7F] mt-1">Freelancer</h1>
+            <h1 className="text-center text-lg font-bold uppercase mt-1" style={{ color: '#4A9B7F' }}>Freelancer</h1>
           </Link>
 
           <nav className="mt-8 space-y-1">
