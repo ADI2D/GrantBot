@@ -26,7 +26,7 @@ export function AdminShell({
       <aside className="hidden w-64 flex-shrink-0 border-r border-slate-200 bg-white px-5 py-6 lg:flex lg:flex-col">
         <div>
           <Link href="/admin" className="block">
-            <div className="flex w-full items-center justify-center px-2 py-6">
+            <div className="flex w-full items-center justify-center px-2 py-2">
               <Image
                 src="/grantspec-logo.png"
                 alt="GrantSpec"
@@ -35,7 +35,7 @@ export function AdminShell({
                 className="object-contain w-full h-auto"
               />
             </div>
-            <p className="text-center text-sm font-semibold text-slate-900 mt-2">Admin</p>
+            <p className="text-center text-2xl font-bold text-[#4A9B7F] mt-1">Admin</p>
           </Link>
         </div>
 
