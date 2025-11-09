@@ -107,6 +107,8 @@ export async function POST(request: NextRequest) {
       metadata: { opportunityId, ownerName },
     });
 
+    // Note: Client-side tracking via PostHog happens in the UI
+    // This server-side endpoint just creates the proposal
     return NextResponse.json({ proposal: newProposal });
   } catch (error) {
     console.error("[proposals][POST] Error creating proposal:", error);

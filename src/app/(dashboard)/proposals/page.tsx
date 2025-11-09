@@ -12,6 +12,7 @@ import { formatDate } from "@/lib/format";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useOrg } from "@/hooks/use-org";
 import type { Proposal as ProposalSummary } from "@/types/api";
+import { trackEvent, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 type ViewMode = "active" | "deleted";
 
@@ -103,6 +104,13 @@ export default function ProposalsPage() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      // Track export
+      trackEvent(ANALYTICS_EVENTS.PROPOSAL_EXPORTED, {
+        proposalId,
+        format,
+        organizationId: currentOrgId,
+      });
     } catch (error) {
       console.error("Export error:", error);
       alert(`Failed to export ${format.toUpperCase()}`);
@@ -126,6 +134,13 @@ export default function ProposalsPage() {
       if (!response.ok) {
         throw new Error("Failed to delete proposal");
       }
+
+      // Track deletion
+      trackEvent(ANALYTICS_EVENTS.PROPOSAL_DELETED, {
+        proposalId,
+        proposalName,
+        organizationId: currentOrgId,
+      });
 
       // Refresh proposals list
       queryClient.invalidateQueries({ queryKey: ["proposals"], exact: false });
@@ -158,6 +173,14 @@ export default function ProposalsPage() {
       if (!response.ok) {
         throw new Error(`Failed to ${action} proposal`);
       }
+
+      // Track archiving
+      trackEvent(ANALYTICS_EVENTS.PROPOSAL_ARCHIVED, {
+        proposalId,
+        proposalName,
+        archived: !currentlyArchived,
+        organizationId: currentOrgId,
+      });
 
       // Refresh proposals list
       queryClient.invalidateQueries({ queryKey: ["proposals"], exact: false });
