@@ -273,6 +273,21 @@ describe('Focus Areas', () => {
       expect(sorted[1].id).toBe(1);
     });
 
+    it('should handle undefined focus_areas in tie-breaking logic', () => {
+      const opps = [
+        { id: 1, name: 'Undefined areas' }, // No focus_areas property
+        { id: 2, name: 'Empty array', focus_areas: [] as FocusAreaId[] },
+        { id: 3, name: 'Has areas', focus_areas: ['education'] as FocusAreaId[] },
+      ];
+
+      const sorted = sortByFocusAreaMatch(opps, ['education']);
+
+      // Item with matching areas first, then items without
+      expect(sorted[0].id).toBe(3);
+      // Items 1 and 2 both have 0 score and 0 overlap
+      expect([sorted[1].id, sorted[2].id].sort()).toEqual([1, 2]);
+    });
+
     it('should prefer opportunities with more overlapping areas when scores equal', () => {
       const opps = [
         { id: 1, focus_areas: ['education'] as FocusAreaId[] },
@@ -299,6 +314,52 @@ describe('Focus Areas', () => {
       // All have same score (50%) and overlap (1)
       // Order should be based on original positions
       expect(sorted.map(o => o.id)).toEqual([1, 2, 3]);
+    });
+
+    it('should handle very large arrays efficiently', () => {
+      const largeArray = Array.from({ length: 1000 }, (_, i) => ({
+        id: i,
+        focus_areas: i % 2 === 0 ? (['education'] as FocusAreaId[]) : (['health'] as FocusAreaId[]),
+      }));
+
+      const sorted = sortByFocusAreaMatch(largeArray, ['education']);
+
+      // All education items should come first
+      expect(sorted[0].focus_areas).toContain('education');
+      expect(sorted.length).toBe(1000);
+    });
+  });
+
+  describe('Edge cases and robustness', () => {
+    it('should have all focus areas with non-empty labels', () => {
+      Object.values(FOCUS_AREAS).forEach(area => {
+        expect(area.label.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should have all focus areas with descriptions', () => {
+      Object.values(FOCUS_AREAS).forEach(area => {
+        expect(area.description.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should handle getFocusAreaLabels filtering correctly', () => {
+      // getFocusAreaLabels uses .filter(Boolean) to remove falsy values
+      const labels = getFocusAreaLabels(['education', 'health', 'environment']);
+      expect(labels.every(label => typeof label === 'string' && label.length > 0)).toBe(true);
+    });
+
+    it('should return consistent results for calculateFocusAreaMatchScore', () => {
+      const score1 = calculateFocusAreaMatchScore(['education'], ['education']);
+      const score2 = calculateFocusAreaMatchScore(['education'], ['education']);
+      expect(score1).toBe(score2);
+      expect(score1).toBe(100);
+    });
+
+    it('should handle NTEE code arrays properly', () => {
+      const area = FOCUS_AREAS['human-services'];
+      expect(Array.isArray(area.ntee_codes)).toBe(true);
+      expect(area.ntee_codes.length).toBeGreaterThan(0);
     });
   });
 });
