@@ -129,7 +129,12 @@ export async function fetchOpportunities(
   // Apply pagination (default to showing all, max 1000 for performance)
   const limit = filters?.limit ?? 1000;
   const offset = filters?.offset ?? 0;
-  query = query.range(offset, offset + limit - 1);
+
+  // Use limit() for better compatibility with Supabase client
+  query = query.limit(limit);
+  if (offset > 0) {
+    query = query.range(offset, offset + limit - 1);
+  }
 
   const { data, error} = await query;
 
