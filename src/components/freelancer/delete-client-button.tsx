@@ -10,11 +10,19 @@ export function DeleteClientButton({ clientId, clientName }: { clientId: string;
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
+    // First confirmation
     const confirmed = window.confirm(
-      `Are you sure you want to delete ${clientName}? This will permanently delete all associated proposals, documents, and notes. This action cannot be undone.`
+      `⚠️ PERMANENT DELETE\n\nAre you absolutely sure you want to permanently delete ${clientName}?\n\nThis will permanently delete all associated proposals, documents, and notes. This action CANNOT be undone. All data will be lost forever.`
     );
 
     if (!confirmed) return;
+
+    // Second confirmation (double confirm pattern)
+    const doubleConfirm = window.confirm(
+      `This is your final warning.\n\nClient: "${clientName}"\n\nClick OK to permanently delete, or Cancel to keep it.`
+    );
+
+    if (!doubleConfirm) return;
 
     setIsDeleting(true);
 
