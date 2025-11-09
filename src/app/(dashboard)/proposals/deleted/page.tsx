@@ -103,11 +103,28 @@ export default function DeletedProposalsPage() {
     }
 
     try {
-      // TODO: Implement permanent delete endpoint
-      alert("Permanent delete not yet implemented. For now, proposals remain in deleted state.");
+      const response = await fetch(
+        `/api/proposals/${proposalId}/permanent?orgId=${currentOrgId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || "Failed to delete proposal");
+      }
+
+      // Refresh the deleted proposals list
+      queryClient.invalidateQueries({ queryKey: ["proposals", "deleted"], exact: false });
+      alert("Proposal permanently deleted. This action cannot be undone.");
     } catch (error) {
       console.error("Permanent delete error:", error);
-      alert("Failed to permanently delete proposal.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to permanently delete proposal. Please try again."
+      );
     }
   };
 
