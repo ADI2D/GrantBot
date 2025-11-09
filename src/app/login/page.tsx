@@ -39,7 +39,7 @@ export default async function LoginPage({
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <Card className="w-full max-w-md p-8">
         <div className="space-y-2 text-center">
-          <p className="text-sm font-semibold text-blue-600">GrantBot Access</p>
+          <p className="text-sm font-semibold text-blue-600">GrantSpec Access</p>
           <h1 className="text-2xl font-semibold text-slate-900">Sign in</h1>
           <p className="text-sm text-slate-500">
             Use the email/password from your Supabase Auth user to enter the workspace.
@@ -47,13 +47,13 @@ export default async function LoginPage({
         </div>
         {missingOrg && (
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            You don&apos;t have access to a GrantBot workspace yet. Contact your administrator so they
+            You don&apos;t have access to a GrantSpec workspace yet. Contact your administrator so they
             can invite you or bootstrap an organization for your account.
           </div>
         )}
         {missingAdmin && (
           <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            Your account does not have access to the GrantBot Super Admin panel. Please contact a
+            Your account does not have access to the GrantSpec Super Admin panel. Please contact a
             super admin to grant you the appropriate role.
           </div>
         )}

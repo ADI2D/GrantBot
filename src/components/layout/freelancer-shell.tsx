@@ -43,7 +43,7 @@ export function FreelancerShell({ children }: { children: ReactNode }) {
       <div className="flex min-h-screen">
         <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white p-6 lg:flex">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">GrantBot</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">GrantSpec</p>
             <h1 className="text-lg font-semibold text-slate-900">Freelancer</h1>
           </div>
 

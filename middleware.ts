@@ -53,7 +53,7 @@ export async function middleware(req: NextRequest) {
 
   if (user && (isDashboardRoute || isOnboardingRoute)) {
     // Get user's org ID from cookie
-    const orgCookie = req.cookies.get("grantbot_selected_org");
+    const orgCookie = req.cookies.get("grantspec_selected_org");
 
     if (orgCookie?.value) {
       // Check onboarding completion

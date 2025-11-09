@@ -47,10 +47,10 @@ export function Sidebar() {
       <div>
         <Link className="flex items-center gap-2" href="/dashboard">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white font-semibold">
-            GB
+            GS
           </div>
           <div>
-            <p className="text-base font-semibold text-slate-900">GrantBot</p>
+            <p className="text-base font-semibold text-slate-900">GrantSpec</p>
             <p className="text-xs text-slate-500">AI Grant Workspace</p>
           </div>
         </Link>

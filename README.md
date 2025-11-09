@@ -1,4 +1,4 @@
-# GrantBot Workspace
+# GrantSpec Workspace
 
 AI-assisted grant writing workspace that turns the PRD + 90-day roadmap into a runnable Next.js prototype. It showcases onboarding, opportunity curation, proposal drafting, compliance checklists, and analytics flows for <$1M-budget nonprofits.
 
