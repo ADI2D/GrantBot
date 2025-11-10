@@ -111,7 +111,10 @@ export default function FreelancerOpportunitiesPage({
         if (range.min !== undefined) fetchParams.append("minAmount", range.min.toString());
         if (range.max !== undefined) fetchParams.append("maxAmount", range.max.toString());
         if (geographicScope) fetchParams.append("geographicScope", geographicScope);
-        if (clientId) fetchParams.append("clientId", clientId);
+
+        // Only filter by clientId if NOT in "all" view mode
+        // This allows "All Opportunities" to show all public opportunities
+        if (clientId && viewMode !== "all") fetchParams.append("clientId", clientId);
 
         const response = await fetch(`/api/freelancer/opportunities?${fetchParams.toString()}`);
         if (!response.ok) throw new Error("Failed to fetch opportunities");
@@ -127,7 +130,7 @@ export default function FreelancerOpportunitiesPage({
     };
 
     fetchOpportunities();
-  }, [debouncedSearch, selectedFocusAreas, selectedAmountRange, geographicScope, clientId]);
+  }, [debouncedSearch, selectedFocusAreas, selectedAmountRange, geographicScope, clientId, viewMode]);
 
   const toggleBookmark = useMutation({
     mutationFn: async ({ opportunityId, isBookmarked }: { opportunityId: string; isBookmarked: boolean }) => {
@@ -160,7 +163,9 @@ export default function FreelancerOpportunitiesPage({
         if (range.min !== undefined) fetchParams.append("minAmount", range.min.toString());
         if (range.max !== undefined) fetchParams.append("maxAmount", range.max.toString());
         if (geographicScope) fetchParams.append("geographicScope", geographicScope);
-        if (clientId) fetchParams.append("clientId", clientId);
+
+        // Only filter by clientId if NOT in "all" view mode
+        if (clientId && viewMode !== "all") fetchParams.append("clientId", clientId);
 
         const response = await fetch(`/api/freelancer/opportunities?${fetchParams.toString()}`);
         if (response.ok) {

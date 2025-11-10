@@ -41,6 +41,20 @@ export async function GET(request: NextRequest) {
       focusAreas: clientFocusAreas.length > 0 ? clientFocusAreas : undefined,
     } : null;
 
+    // Fetch client focus areas if clientId provided (for client-specific filtering)
+    let dbClientFocusAreas: string[] = [];
+    if (clientId) {
+      const { data: clientData } = await supabase
+        .from("freelancer_clients")
+        .select("focus_areas")
+        .eq("id", clientId)
+        .single();
+
+      if (clientData?.focus_areas) {
+        dbClientFocusAreas = clientData.focus_areas;
+      }
+    }
+
     // Base query - get public opportunities only (organization_id IS NULL)
     // Show opportunities from past 60 days OR future OR ongoing (no deadline)
     const sixtyDaysAgo = new Date();
@@ -57,6 +71,11 @@ export async function GET(request: NextRequest) {
       .or(`deadline.gte.${sixtyDaysAgoStr},deadline.is.null`) // Past 60 days + future + ongoing
       .neq("status", "closed")
       .order("deadline", { ascending: true, nullsFirst: false }); // Soonest deadlines first
+
+    // Filter by client focus areas if clientId provided (show opportunities that overlap with client's focus areas)
+    if (clientId && dbClientFocusAreas.length > 0) {
+      query = query.overlaps("focus_areas", dbClientFocusAreas);
+    }
 
     // Apply filters
     // Support multiple focus areas with AND logic using the focus_areas array field
