@@ -38,8 +38,15 @@ export default async function RootLayout({
 }>) {
   const supabase = await createServerSupabase();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // If user exists, fetch the full session for initial state
+  let session = null;
+  if (user) {
+    const { data } = await supabase.auth.getSession();
+    session = data.session;
+  }
 
   return (
     <html lang="en" className={`${headingFont.variable} ${bodyFont.variable}`}>
