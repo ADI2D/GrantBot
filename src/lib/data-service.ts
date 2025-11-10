@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Opportunity, Proposal, DocumentMeta, ActivityLog } from "@/types/api";
 import type { Database } from "@/types/database";
+import { getAllFocusAreaSearchValues, type FocusAreaId } from "@/types/focus-areas";
 
 type ComplianceSection = {
   section: string;
@@ -112,11 +113,21 @@ export async function fetchOpportunities(
   // Support both single focusArea (deprecated) and multiple focusAreas
   if (filters?.focusAreas && filters.focusAreas.length > 0) {
     // Multiple focus areas - use OR logic
-    const focusAreaConditions = filters.focusAreas.map(fa => `focus_area.eq.${fa}`).join(',');
-    query = query.or(focusAreaConditions);
+    // Convert to all possible database values to handle mixed data quality
+    const allSearchValues = new Set<string>();
+    filters.focusAreas.forEach(fa => {
+      const values = getAllFocusAreaSearchValues([fa as FocusAreaId]);
+      values.forEach(v => allSearchValues.add(v));
+    });
+    const searchValuesArray = Array.from(allSearchValues);
+    query = query.in("focus_area", searchValuesArray);
+    console.log(`[fetchOpportunities] Filtering by focus areas:`, filters.focusAreas, "=>", searchValuesArray);
   } else if (filters?.focusArea) {
     // Single focus area (deprecated, kept for backwards compatibility)
-    query = query.eq("focus_area", filters.focusArea);
+    // Convert to all possible database values to handle mixed data quality
+    const searchValues = getAllFocusAreaSearchValues([filters.focusArea as FocusAreaId]);
+    query = query.in("focus_area", searchValues);
+    console.log(`[fetchOpportunities] Filtering by focus area:`, filters.focusArea, "=>", searchValues);
   }
 
   if (filters?.minAmount !== undefined) {

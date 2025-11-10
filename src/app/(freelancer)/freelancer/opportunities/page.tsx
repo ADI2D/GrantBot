@@ -254,19 +254,36 @@ export default function FreelancerOpportunitiesPage({
   let filteredOpportunities = opportunities;
   if (viewMode === "recommended") {
     // Show only opportunities with high alignment scores (0.7 or higher)
-    filteredOpportunities = filteredOpportunities.filter(opp => (opp.alignmentScore ?? 0) >= 70);
+    // Note: alignmentScore is stored as decimal 0-1, not percentage 0-100
+    filteredOpportunities = filteredOpportunities.filter(opp => (opp.alignmentScore ?? 0) >= 0.7);
   } else if (viewMode === "saved") {
     // Show only bookmarked opportunities
     filteredOpportunities = filteredOpportunities.filter(opp => opp.isBookmarked);
   }
 
-  // Sort opportunities: "Other" category goes to the end unless it's the only category
+  // Sort opportunities with multiple priorities:
+  // Priority 1: Match selected focus area filter (if active)
+  // Priority 2: "Other" category goes to end (unless all have "Other")
+  // Priority 3: Alignment score (higher first)
+  // Priority 4: Deadline (earlier first)
   const allHaveOther = filteredOpportunities.every(opp =>
     opp.focusAreas.some(area => area === "Other")
   );
 
-  if (!allHaveOther) {
-    filteredOpportunities = [...filteredOpportunities].sort((a, b) => {
+  filteredOpportunities = [...filteredOpportunities].sort((a, b) => {
+    // Priority 1: If focus area filter is active, prioritize matching opportunities
+    if (selectedFocusArea) {
+      const aMatches = a.focusAreas.includes(selectedFocusArea);
+      const bMatches = b.focusAreas.includes(selectedFocusArea);
+
+      // If only A matches the filter, A comes first
+      if (aMatches && !bMatches) return -1;
+      // If only B matches the filter, B comes first
+      if (!aMatches && bMatches) return 1;
+    }
+
+    // Priority 2: Sort "Other" to the end unless all opportunities have "Other"
+    if (!allHaveOther) {
       const aHasOther = a.focusAreas.some(area => area === "Other");
       const bHasOther = b.focusAreas.some(area => area === "Other");
 
@@ -274,11 +291,18 @@ export default function FreelancerOpportunitiesPage({
       if (aHasOther && !bHasOther) return 1;
       // If only B has "Other", A comes first
       if (!aHasOther && bHasOther) return -1;
+    }
 
-      // Otherwise maintain current order
-      return 0;
-    });
-  }
+    // Priority 3: Sort by alignment score (higher scores first)
+    const aScore = a.alignmentScore ?? 0;
+    const bScore = b.alignmentScore ?? 0;
+    if (aScore !== bScore) return bScore - aScore;
+
+    // Priority 4: Sort by deadline (earlier deadlines first, null deadlines last)
+    const aDeadline = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+    const bDeadline = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+    return aDeadline - bDeadline;
+  });
 
   const now = new Date();
 

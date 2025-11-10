@@ -93,15 +93,19 @@ export async function GET(request: NextRequest) {
       .order("deadline", { ascending: false });
 
     // Apply filters
-    // Prioritize client focus areas from database, then explicit focus area filter
-    if (focusAreaLabelsToFilter.length > 0) {
+    // Priority 1: Explicit focus area filter from UI (if selected)
+    // Priority 2: Client focus areas from database (if clientId provided)
+    if (focusArea) {
+      // Explicit focus area filter from UI takes precedence
+      // Convert to all possible database values to handle mixed data quality
+      const explicitFocusAreaValues = getAllFocusAreaSearchValues([focusArea as FocusAreaId]);
+      query = query.in("focus_area", explicitFocusAreaValues);
+      console.log(`[freelancer][opportunities] Filtering by explicit focus area:`, focusArea, "=>", explicitFocusAreaValues);
+    } else if (focusAreaLabelsToFilter.length > 0) {
       // Filter opportunities where focus_area matches ANY of the client's focus areas
       // Use display labels (e.g., "Education") since that's what opportunities table stores
       query = query.in("focus_area", focusAreaLabelsToFilter);
       console.log(`[freelancer][opportunities] Filtering by client focus area labels:`, focusAreaLabelsToFilter);
-    } else if (focusArea) {
-      // Explicit focus area filter from UI
-      query = query.eq("focus_area", focusArea);
     }
 
     if (status) {
