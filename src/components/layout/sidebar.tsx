@@ -47,8 +47,8 @@ export function Sidebar() {
     <aside className="hidden w-64 flex-col gap-6 border-r border-slate-100 bg-white px-5 py-6 lg:flex">
       <div>
         <Link className="block" href="/dashboard">
-          <div className="flex w-full items-center justify-center px-4 py-4">
-            <div className="relative w-40 h-10">
+          <div className="flex w-full items-center justify-center py-4">
+            <div className="relative h-8" style={{ width: '160px' }}>
               <Image
                 src="/grantspec-logo.png"
                 alt="GrantSpec"

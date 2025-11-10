@@ -44,8 +44,8 @@ export function FreelancerShell({ children }: { children: ReactNode }) {
       <div className="flex min-h-screen">
         <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white p-6 lg:flex">
           <Link href="/freelancer/clients" className="block">
-            <div className="flex w-full items-center justify-center px-4 py-4">
-              <div className="relative w-40 h-10">
+            <div className="flex w-full items-center justify-center py-4">
+              <div className="relative h-8" style={{ width: '160px' }}>
                 <Image
                   src="/grantspec-logo.png"
                   alt="GrantSpec"
