@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Target, Filter, AlertTriangle, Search, X, DollarSign, Calendar, MapPin, Bookmark, BookmarkCheck } from "lucide-react";
+import { Target, Filter, AlertTriangle, Search, X, DollarSign, Calendar, MapPin, Bookmark, BookmarkCheck, ShieldCheck, ShieldAlert } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -394,6 +394,32 @@ export default function OpportunitiesPage() {
                         return <Badge tone="neutral">{Math.round(matchScore)}% Focus Match</Badge>;
                       }
                       return null;
+                    })()}
+                    {/* Compliance risk score badge */}
+                    {opportunity.complianceRiskScore !== null && opportunity.complianceRiskScore !== undefined && (() => {
+                      const riskScore = opportunity.complianceRiskScore;
+                      if (riskScore >= 60) {
+                        return (
+                          <Badge tone="danger" className="flex items-center gap-1">
+                            <ShieldAlert className="h-3 w-3" />
+                            High Compliance Risk
+                          </Badge>
+                        );
+                      } else if (riskScore >= 30) {
+                        return (
+                          <Badge tone="warning" className="flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Medium Risk
+                          </Badge>
+                        );
+                      } else {
+                        return (
+                          <Badge tone="success" className="flex items-center gap-1">
+                            <ShieldCheck className="h-3 w-3" />
+                            Low Risk
+                          </Badge>
+                        );
+                      }
                     })()}
                   </div>
 

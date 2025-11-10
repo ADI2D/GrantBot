@@ -4,6 +4,7 @@ import { fetchProposals, fetchOrganization } from "@/lib/data-service";
 import { getBillingSummary, assertWithinQuota } from "@/lib/billing";
 import { defaultSections } from "@/lib/default-sections";
 import { createRouteSupabase } from "@/lib/supabase-server";
+import { ChecklistGenerator } from "@/lib/compliance/checklist-generator";
 
 export async function GET(request: NextRequest) {
   try {
@@ -106,6 +107,18 @@ export async function POST(request: NextRequest) {
       action: "proposal_created",
       metadata: { opportunityId, ownerName },
     });
+
+    // Generate compliance checklist if opportunity is linked
+    if (opportunityId) {
+      try {
+        const generator = new ChecklistGenerator(supabase);
+        await generator.populateProposalCompliance(newProposal.id, opportunityId);
+        console.log(`[proposals][POST] Generated compliance checklist for proposal ${newProposal.id}`);
+      } catch (complianceError) {
+        console.error("[proposals][POST] Error generating compliance checklist:", complianceError);
+        // Don't fail proposal creation if checklist generation fails
+      }
+    }
 
     return NextResponse.json({ proposal: newProposal });
   } catch (error) {

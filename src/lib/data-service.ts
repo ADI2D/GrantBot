@@ -96,7 +96,7 @@ export async function fetchOpportunities(
   let query = client
     .from("opportunities")
     .select(
-      `id, name, focus_area, focus_areas, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope,
+      `id, name, focus_area, focus_areas, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope, compliance_risk_score,
       bookmarked_opportunities!left(id)`,
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
@@ -180,6 +180,7 @@ export async function fetchOpportunities(
     complianceNotes: item.compliance_notes,
     applicationUrl: item.application_url,
     geographicScope: item.geographic_scope,
+    complianceRiskScore: item.compliance_risk_score,
     isBookmarked: Array.isArray(item.bookmarked_opportunities) && item.bookmarked_opportunities.length > 0,
   }));
 
