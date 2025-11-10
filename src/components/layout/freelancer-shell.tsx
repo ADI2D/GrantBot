@@ -48,12 +48,12 @@ export function FreelancerShell({ children }: { children: ReactNode }) {
               <Image
                 src="/grantspec-logo.png"
                 alt="GrantSpec"
-                width={200}
-                height={200}
-                className="object-contain w-full h-auto"
+                width={180}
+                height={60}
+                className="object-contain w-auto h-12"
               />
             </div>
-            <h1 className="text-center text-base font-bold uppercase mt-0" style={{ color: '#4A9B7F' }}>Freelancer</h1>
+            <h1 className="text-center text-base font-bold uppercase mt-1" style={{ color: '#4A9B7F' }}>Freelancer</h1>
           </Link>
 
           <nav className="mt-8 space-y-1">

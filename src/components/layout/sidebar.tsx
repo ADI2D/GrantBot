@@ -47,13 +47,13 @@ export function Sidebar() {
     <aside className="hidden w-64 flex-col gap-6 border-r border-slate-100 bg-white px-5 py-6 lg:flex">
       <div>
         <Link className="block" href="/dashboard">
-          <div className="flex w-full items-center justify-center px-2 py-6">
+          <div className="flex w-full items-center justify-center px-2 py-3">
             <Image
               src="/grantspec-logo.png"
               alt="GrantSpec"
-              width={200}
-              height={200}
-              className="object-contain w-full h-auto"
+              width={180}
+              height={60}
+              className="object-contain w-auto h-12"
             />
           </div>
         </Link>
