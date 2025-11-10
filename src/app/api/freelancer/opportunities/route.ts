@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteSupabase } from "@/lib/supabase-server";
 import { calculateMatchScore, type ClientProfile, type GrantOpportunity } from "@/lib/match-scoring";
+import { getFocusAreaLabels, type FocusAreaId } from "@/types/focus-areas";
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,10 +35,45 @@ export async function GET(request: NextRequest) {
     const clientMission = searchParams.get("clientMission");
     const clientFocusAreas = searchParams.get("clientFocusAreas")?.split(",").filter(Boolean) || [];
 
-    const clientProfile: ClientProfile | null = clientName ? {
-      name: clientName,
-      mission: clientMission || undefined,
-      focusAreas: clientFocusAreas.length > 0 ? clientFocusAreas : undefined,
+    // If clientId is provided, fetch client details to get focus areas
+    let clientFocusAreasFromDb: string[] = [];
+    let clientNameFromDb: string | undefined;
+    let clientMissionFromDb: string | undefined;
+
+    if (clientId) {
+      const { data: clientData, error: clientError } = await supabase
+        .from("freelancer_clients")
+        .select("focus_areas, name, mission")
+        .eq("id", clientId)
+        .eq("freelancer_user_id", user.id)
+        .single();
+
+      if (!clientError && clientData) {
+        clientFocusAreasFromDb = clientData.focus_areas || [];
+        clientNameFromDb = clientData.name;
+        clientMissionFromDb = clientData.mission;
+        console.log(`[freelancer][opportunities] Client ${clientId} focus areas:`, clientFocusAreasFromDb);
+      } else {
+        console.log(`[freelancer][opportunities] Could not fetch client ${clientId}:`, clientError?.message);
+      }
+    }
+
+    // Determine which focus areas to use for filtering
+    const focusAreasToFilter = clientFocusAreasFromDb.length > 0
+      ? clientFocusAreasFromDb
+      : (clientFocusAreas.length > 0 ? clientFocusAreas : []);
+
+    // Convert focus area IDs (e.g., 'education') to display labels (e.g., 'Education')
+    // because opportunities table stores display labels, not IDs
+    const focusAreaLabelsToFilter = focusAreasToFilter.length > 0
+      ? getFocusAreaLabels(focusAreasToFilter as FocusAreaId[])
+      : [];
+
+    // Build client profile for AI matching
+    const clientProfile: ClientProfile | null = (clientName || clientNameFromDb) ? {
+      name: clientName || clientNameFromDb || "",
+      mission: clientMission || clientMissionFromDb || undefined,
+      focusAreas: focusAreasToFilter.length > 0 ? focusAreasToFilter : undefined,
     } : null;
 
     // Base query - get all opportunities (not org-specific for freelancers)
@@ -57,7 +93,14 @@ export async function GET(request: NextRequest) {
       .order("deadline", { ascending: false });
 
     // Apply filters
-    if (focusArea) {
+    // Prioritize client focus areas from database, then explicit focus area filter
+    if (focusAreaLabelsToFilter.length > 0) {
+      // Filter opportunities where focus_area matches ANY of the client's focus areas
+      // Use display labels (e.g., "Education") since that's what opportunities table stores
+      query = query.in("focus_area", focusAreaLabelsToFilter);
+      console.log(`[freelancer][opportunities] Filtering by client focus area labels:`, focusAreaLabelsToFilter);
+    } else if (focusArea) {
+      // Explicit focus area filter from UI
       query = query.eq("focus_area", focusArea);
     }
 
