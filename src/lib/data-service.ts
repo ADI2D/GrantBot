@@ -111,12 +111,13 @@ export async function fetchOpportunities(
   // Apply filters
   // Support both single focusArea (deprecated) and multiple focusAreas
   if (filters?.focusAreas && filters.focusAreas.length > 0) {
-    // Multiple focus areas - use OR logic
-    const focusAreaConditions = filters.focusAreas.map(fa => `focus_area.eq.${fa}`).join(',');
-    query = query.or(focusAreaConditions);
+    // Multiple focus areas - use OR logic with array overlap
+    // Check if the focus_areas array contains any of the selected focus areas
+    query = query.overlaps("focus_areas", filters.focusAreas);
   } else if (filters?.focusArea) {
     // Single focus area (deprecated, kept for backwards compatibility)
-    query = query.eq("focus_area", filters.focusArea);
+    // Check if focus_areas array contains this single value
+    query = query.contains("focus_areas", [filters.focusArea]);
   }
 
   if (filters?.minAmount !== undefined) {

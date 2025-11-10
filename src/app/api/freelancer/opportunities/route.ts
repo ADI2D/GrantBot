@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("opportunities")
       .select(
-        `id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope,
+        `id, name, focus_area, focus_areas, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope,
         bookmarked_opportunities!left(id)`
       )
       .gte("deadline", sixtyDaysAgoStr)
@@ -58,7 +58,8 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     if (focusArea) {
-      query = query.eq("focus_area", focusArea);
+      // Check if focus_areas array contains this single value
+      query = query.contains("focus_areas", [focusArea]);
     }
 
     if (status) {
@@ -138,7 +139,7 @@ export async function GET(request: NextRequest) {
           alignmentScore,
           status: opp.status || "Open",
           summary: opp.compliance_notes || "",
-          focusAreas: opp.focus_area ? [opp.focus_area] : [],
+          focusAreas: (opp as any).focus_areas || [],
           clientIds: [], // Populated client-side based on filters
           matchReason,
           applicationUrl: opp.application_url,
