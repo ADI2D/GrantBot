@@ -100,6 +100,7 @@ export async function fetchOpportunities(
       bookmarked_opportunities!left(id)`,
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
+    .neq("status", "closed") // Exclude closed opportunities completely
     .or(`deadline.gte.${sixtyDaysAgoStr},deadline.is.null`); // Show past 60 days + future + ongoing programs (no deadline)
 
   // Apply filters
@@ -182,28 +183,18 @@ export async function fetchOpportunities(
     isBookmarked: Array.isArray(item.bookmarked_opportunities) && item.bookmarked_opportunities.length > 0,
   }));
 
-  // Sort: Open opportunities first (by status and deadline), then closed at the end
+  // Sort: Open opportunities with upcoming deadlines first, expired ones last
   return opportunities.sort((a, b) => {
-    // Check if opportunity is closed by status field
-    const aIsClosed = a.status === 'closed';
-    const bIsClosed = b.status === 'closed';
-
-    // If one is closed and the other isn't, closed goes to the end
-    if (aIsClosed !== bIsClosed) {
-      return aIsClosed ? 1 : -1;
-    }
-
-    // Both have same closed status - sort by deadline
-    const aDeadline = a.deadline ? new Date(a.deadline) : new Date(0);
-    const bDeadline = b.deadline ? new Date(b.deadline) : new Date(0);
+    const aDeadline = a.deadline ? new Date(a.deadline) : new Date(8640000000000000); // Max date for null deadlines
+    const bDeadline = b.deadline ? new Date(b.deadline) : new Date(8640000000000000);
     const aIsOpen = aDeadline >= now;
     const bIsOpen = bDeadline >= now;
 
+    // If both have same open/expired status, sort by deadline (soonest first)
     if (aIsOpen === bIsOpen) {
-      // Both open or both closed - sort by deadline (nearest first for open, most recent first for closed)
-      return aIsOpen ? aDeadline.getTime() - bDeadline.getTime() : bDeadline.getTime() - aDeadline.getTime();
+      return aDeadline.getTime() - bDeadline.getTime();
     }
-    // Open deadlines first
+    // Open deadlines first, expired last
     return aIsOpen ? -1 : 1;
   });
 }
