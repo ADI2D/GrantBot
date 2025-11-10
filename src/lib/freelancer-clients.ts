@@ -229,6 +229,37 @@ function listSeedProposals(): FreelancerProposalDetail[] {
 }
 
 /**
+ * Helper function to count opportunities that match a client's focus areas
+ */
+async function countClientOpportunities(
+  supabase: SupabaseClient<Database>,
+  clientFocusAreas: string[]
+): Promise<number> {
+  if (!clientFocusAreas || clientFocusAreas.length === 0) {
+    return 0;
+  }
+
+  const sixtyDaysAgo = new Date();
+  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+  const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
+
+  const { count, error } = await supabase
+    .from("opportunities")
+    .select("*", { count: "exact", head: true })
+    .is("organization_id", null) // Only public opportunities
+    .or(`deadline.gte.${sixtyDaysAgoStr},deadline.is.null`) // Past 60 days + ongoing
+    .neq("status", "closed")
+    .overlaps("focus_areas", clientFocusAreas);
+
+  if (error) {
+    console.error("[freelancer][clients] Failed to count opportunities:", error);
+    return 0;
+  }
+
+  return count || 0;
+}
+
+/**
  * Fetches the list of freelancer clients from the database.
  */
 export async function listFreelancerClients(): Promise<FreelancerClientSummary[]> {
@@ -253,25 +284,35 @@ export async function listFreelancerClients(): Promise<FreelancerClientSummary[]
       return [];
     }
 
-    return (data ?? []).map((row) => ({
-      id: row.id,
-      name: row.name,
-      status: row.status as "active" | "on_hold" | "archived",
-      activeProposals: 0, // TODO: Count from proposals table
-      opportunitiesInPipeline: 0, // TODO: Count from opportunities
-      documentsMissing: 0, // TODO: Count documents with status 'missing'
-      lastActivityAt: row.last_activity_at || row.created_at,
-      annualBudget: row.annual_budget || null,
+    // Count opportunities for each client in parallel
+    const clientsWithCounts = await Promise.all(
+      (data ?? []).map(async (row) => {
+        const focusAreas = Array.isArray(row.focus_areas) ? row.focus_areas : [];
+        const opportunityCount = await countClientOpportunities(supabase, focusAreas);
+
+        return {
+          id: row.id,
+          name: row.name,
+          status: row.status as "active" | "on_hold" | "archived",
+          activeProposals: 0, // TODO: Count from proposals table
+          opportunitiesInPipeline: opportunityCount,
+          documentsMissing: 0, // TODO: Count documents with status 'missing'
+          lastActivityAt: row.last_activity_at || row.created_at,
+          annualBudget: row.annual_budget || null,
       primaryContact: row.primary_contact_name || row.primary_contact_email
         ? {
             name: row.primary_contact_name || null,
             email: row.primary_contact_email || null,
           }
         : null,
-      billingRate: row.billing_rate || null,
-      likeUs: row.like_us || false,
-      categories: Array.isArray(row.categories) ? row.categories : [],
-    }));
+          billingRate: row.billing_rate || null,
+          likeUs: row.like_us || false,
+          categories: Array.isArray(row.categories) ? row.categories : [],
+        };
+      })
+    );
+
+    return clientsWithCounts;
   } catch (error) {
     console.error("[freelancer][clients] Unexpected error:", error);
     return [];
@@ -730,13 +771,17 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
       (p) => !["archived", "rejected", "awarded"].includes(p.status?.toLowerCase() || "")
     ).length;
 
+    // Count opportunities that match client's focus areas
+    const clientFocusAreas = Array.isArray(client.focus_areas) ? client.focus_areas : [];
+    const opportunityCount = await countClientOpportunities(supabase, clientFocusAreas);
+
     // Map to FreelancerClientDetail
     return {
       id: client.id,
       name: client.name,
       status: client.status as "active" | "on_hold" | "archived",
       activeProposals: activeProposalsCount,
-      opportunitiesInPipeline: 0, // TODO: Count from opportunities
+      opportunitiesInPipeline: opportunityCount,
       documentsMissing: (documents ?? []).filter((d) => d.status === "missing").length,
       lastActivityAt: client.last_activity_at || client.created_at,
       annualBudget: client.annual_budget || null,
