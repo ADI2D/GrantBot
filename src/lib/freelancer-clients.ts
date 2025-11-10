@@ -766,14 +766,20 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
     let opportunitiesCount = 0;
     const clientFocusAreas = Array.isArray(client.focus_areas) ? client.focus_areas : [];
 
+    console.log(`[freelancer][client] ${client.name} - Raw focus_areas:`, client.focus_areas);
+    console.log(`[freelancer][client] ${client.name} - Parsed as array:`, clientFocusAreas);
+
     if (clientFocusAreas.length > 0) {
       // Convert focus area IDs to display labels for matching
       const focusAreaLabels = getFocusAreaLabels(clientFocusAreas as FocusAreaId[]);
+      console.log(`[freelancer][client] ${client.name} - Converted to labels:`, focusAreaLabels);
 
       // Count opportunities with matching focus areas and valid deadlines
       const sixtyDaysAgo = new Date();
       sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
       const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
+
+      console.log(`[freelancer][client] ${client.name} - Querying opportunities with deadline >= ${sixtyDaysAgoStr}`);
 
       const { count, error: countError } = await supabase
         .from("opportunities")
@@ -784,9 +790,12 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
 
       if (!countError && count !== null) {
         opportunitiesCount = count;
+        console.log(`[freelancer][client] ${client.name} - Found ${count} matching opportunities`);
       } else if (countError) {
         console.error("[freelancer][client] Failed to count opportunities:", countError);
       }
+    } else {
+      console.log(`[freelancer][client] ${client.name} - No focus areas defined, skipping opportunity count`);
     }
 
     // Map to FreelancerClientDetail
