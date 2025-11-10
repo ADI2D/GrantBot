@@ -260,6 +260,26 @@ export default function FreelancerOpportunitiesPage({
     filteredOpportunities = filteredOpportunities.filter(opp => opp.isBookmarked);
   }
 
+  // Sort opportunities: "Other" category goes to the end unless it's the only category
+  const allHaveOther = filteredOpportunities.every(opp =>
+    opp.focusAreas.some(area => area === "Other")
+  );
+
+  if (!allHaveOther) {
+    filteredOpportunities = [...filteredOpportunities].sort((a, b) => {
+      const aHasOther = a.focusAreas.some(area => area === "Other");
+      const bHasOther = b.focusAreas.some(area => area === "Other");
+
+      // If only A has "Other", B comes first
+      if (aHasOther && !bHasOther) return 1;
+      // If only B has "Other", A comes first
+      if (!aHasOther && bHasOther) return -1;
+
+      // Otherwise maintain current order
+      return 0;
+    });
+  }
+
   const now = new Date();
 
   if (isLoading) return <PageLoader label="Searching opportunities" />;

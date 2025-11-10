@@ -172,9 +172,26 @@ export default function OpportunitiesPage() {
   }
 
   // Sort by focus area match score
+  // Priority 0: "Other" category goes to end (unless all have "Other")
   // Priority 1: Match count with selected filters (if filters active)
   // Priority 2: Match score with org focus areas
+  // Priority 3: Deadline
+  const allHaveOther = filteredOpportunities.every(opp =>
+    (opp.focus_areas || []).includes('other' as FocusAreaId)
+  );
+
   const opportunities = [...filteredOpportunities].sort((a, b) => {
+    // Sort "Other" to the end unless all opportunities have "Other"
+    if (!allHaveOther) {
+      const aHasOther = (a.focus_areas || []).includes('other' as FocusAreaId);
+      const bHasOther = (b.focus_areas || []).includes('other' as FocusAreaId);
+
+      // If only A has "Other", B comes first
+      if (aHasOther && !bHasOther) return 1;
+      // If only B has "Other", A comes first
+      if (!aHasOther && bHasOther) return -1;
+    }
+
     // If user has selected focus area filters, prioritize matches
     if (selectedFocusAreas.length > 0) {
       const aMatches = (a.focus_areas || []).filter(area =>
@@ -206,7 +223,7 @@ export default function OpportunitiesPage() {
 
     // Tertiary sort: by deadline (earliest first, null deadlines last)
     const aDeadline = a.deadline ? new Date(a.deadline).getTime() : Infinity;
-    const bDeadline = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+    const bDeadline = b.deadline ? new Date(a.deadline).getTime() : Infinity;
     return aDeadline - bDeadline;
   });
 
