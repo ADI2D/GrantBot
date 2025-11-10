@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteSupabase } from "@/lib/supabase-server";
 import { calculateMatchScore, type ClientProfile, type GrantOpportunity } from "@/lib/match-scoring";
-import { getFocusAreaLabels, type FocusAreaId } from "@/types/focus-areas";
+import { getAllFocusAreaSearchValues, type FocusAreaId } from "@/types/focus-areas";
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,10 +63,10 @@ export async function GET(request: NextRequest) {
       ? clientFocusAreasFromDb
       : (clientFocusAreas.length > 0 ? clientFocusAreas : []);
 
-    // Convert focus area IDs (e.g., 'education') to display labels (e.g., 'Education')
-    // because opportunities table stores display labels, not IDs
+    // Convert focus area IDs to ALL possible database values (labels, abbreviations, variations)
+    // This handles mixed data quality in the opportunities table
     const focusAreaLabelsToFilter = focusAreasToFilter.length > 0
-      ? getFocusAreaLabels(focusAreasToFilter as FocusAreaId[])
+      ? getAllFocusAreaSearchValues(focusAreasToFilter as FocusAreaId[])
       : [];
 
     // Build client profile for AI matching

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerSupabase } from "@/lib/supabase-server";
 import type { Database } from "@/types/database";
-import { getFocusAreaLabels, type FocusAreaId } from "@/types/focus-areas";
+import { getAllFocusAreaSearchValues, type FocusAreaId } from "@/types/focus-areas";
 
 export type FreelancerClientSummary = {
   id: string;
@@ -261,8 +261,8 @@ export async function listFreelancerClients(): Promise<FreelancerClientSummary[]
         const clientFocusAreas = Array.isArray(row.focus_areas) ? row.focus_areas : [];
 
         if (clientFocusAreas.length > 0) {
-          // Convert focus area IDs to display labels for matching
-          const focusAreaLabels = getFocusAreaLabels(clientFocusAreas as FocusAreaId[]);
+          // Convert focus area IDs to all possible database values (handles mixed data quality)
+          const focusAreaLabels = getAllFocusAreaSearchValues(clientFocusAreas as FocusAreaId[]);
 
           // Count opportunities with matching focus areas and valid deadlines
           const sixtyDaysAgo = new Date();
@@ -770,9 +770,9 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
     console.log(`[freelancer][client] ${client.name} - Parsed as array:`, clientFocusAreas);
 
     if (clientFocusAreas.length > 0) {
-      // Convert focus area IDs to display labels for matching
-      const focusAreaLabels = getFocusAreaLabels(clientFocusAreas as FocusAreaId[]);
-      console.log(`[freelancer][client] ${client.name} - Converted to labels:`, focusAreaLabels);
+      // Convert focus area IDs to all possible database values (handles mixed data quality)
+      const focusAreaLabels = getAllFocusAreaSearchValues(clientFocusAreas as FocusAreaId[]);
+      console.log(`[freelancer][client] ${client.name} - Converted to search values:`, focusAreaLabels);
 
       // Count opportunities with matching focus areas and valid deadlines
       const sixtyDaysAgo = new Date();

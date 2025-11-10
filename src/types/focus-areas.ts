@@ -135,6 +135,72 @@ export function getFocusAreaLabels(ids: FocusAreaId[]): string[] {
 }
 
 /**
+ * Mapping of database abbreviations/variations to focus area IDs
+ * Handles legacy data with abbreviations and mixed formats
+ */
+const FOCUS_AREA_ALIASES: Record<string, FocusAreaId> = {
+  // Display labels
+  'Arts & Culture': 'arts-culture',
+  'Education': 'education',
+  'Environment & Animals': 'environment',
+  'Health & Wellness': 'health',
+  'Human Services': 'human-services',
+  'Youth Development': 'youth-development',
+  'Community Development': 'community-development',
+  'Research & Science': 'research-science',
+  'Research & Innovation': 'research-science',
+  'International': 'international',
+  'Other': 'other',
+
+  // Abbreviations
+  'AR': 'arts-culture',
+  'ED': 'education',
+  'ENV': 'environment',
+  'HL': 'health',
+  'ISS': 'human-services',
+  'CD': 'community-development',
+  'NR': 'research-science',
+  'ST': 'research-science',
+  'RD': 'research-science',
+  'O': 'other',
+
+  // Lowercase variations
+  'education': 'education',
+  'health': 'health',
+  'environment': 'environment',
+  'arts': 'arts-culture',
+  'community': 'community-development',
+  'research': 'research-science',
+  'science': 'research-science',
+  'other': 'other',
+};
+
+/**
+ * Get all possible values to search for in the database for given focus area IDs
+ * Returns display labels, abbreviations, and variations to handle mixed data
+ */
+export function getAllFocusAreaSearchValues(ids: FocusAreaId[]): string[] {
+  const searchValues = new Set<string>();
+
+  for (const id of ids) {
+    // Add the display label
+    const label = FOCUS_AREAS[id]?.label;
+    if (label) {
+      searchValues.add(label);
+    }
+
+    // Add known abbreviations/aliases for this ID
+    for (const [alias, aliasId] of Object.entries(FOCUS_AREA_ALIASES)) {
+      if (aliasId === id) {
+        searchValues.add(alias);
+      }
+    }
+  }
+
+  return Array.from(searchValues);
+}
+
+/**
  * Calculate match score between org and opportunity focus areas
  * Returns 0-100 score
  */
