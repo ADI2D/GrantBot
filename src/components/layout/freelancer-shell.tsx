@@ -44,14 +44,16 @@ export function FreelancerShell({ children }: { children: ReactNode }) {
       <div className="flex min-h-screen">
         <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white p-6 lg:flex">
           <Link href="/freelancer/clients" className="block">
-            <div className="flex w-full items-center justify-center px-2 py-2">
-              <Image
-                src="/grantspec-logo.png"
-                alt="GrantSpec"
-                width={180}
-                height={60}
-                className="object-contain w-auto h-12"
-              />
+            <div className="flex w-full items-center justify-center px-4 py-4">
+              <div className="relative w-40 h-10">
+                <Image
+                  src="/grantspec-logo.png"
+                  alt="GrantSpec"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
             </div>
             <h1 className="text-center text-base font-bold uppercase mt-1" style={{ color: '#4A9B7F' }}>Freelancer</h1>
           </Link>
