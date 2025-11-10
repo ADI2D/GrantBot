@@ -63,12 +63,27 @@ export async function POST(request: NextRequest) {
       mission,
       annualBudget,
       focusAreas,
+      primaryFocusArea,
+      focusDescription,
       billingRate,
     } = body;
 
     // Validate required fields
     if (!name || typeof name !== "string") {
       return NextResponse.json({ error: "Organization name is required" }, { status: 400 });
+    }
+
+    if (!Array.isArray(focusAreas) || focusAreas.length === 0) {
+      return NextResponse.json({ error: "At least one focus area is required" }, { status: 400 });
+    }
+
+    if (focusAreas.length > 5) {
+      return NextResponse.json({ error: "Maximum 5 focus areas allowed" }, { status: 400 });
+    }
+
+    // Validate primary focus area is in focus areas
+    if (primaryFocusArea && !focusAreas.includes(primaryFocusArea)) {
+      return NextResponse.json({ error: "Primary focus area must be one of the selected focus areas" }, { status: 400 });
     }
 
     // Insert client into database
@@ -82,7 +97,9 @@ export async function POST(request: NextRequest) {
         primary_contact_email: primaryContactEmail || null,
         mission: mission || null,
         annual_budget: annualBudget || null,
-        focus_areas: Array.isArray(focusAreas) ? focusAreas : [],
+        focus_areas: focusAreas,
+        primary_focus_area: primaryFocusArea || focusAreas[0], // Default to first if not provided
+        focus_description: focusDescription || null,
         billing_rate: billingRate || null,
         last_activity_at: new Date().toISOString(),
       })

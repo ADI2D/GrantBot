@@ -9,6 +9,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FocusAreaSelect } from "@/components/ui/focus-area-select";
+import type { FocusAreaId } from "@/types/focus-areas";
 
 export default function NewFreelancerClientPage() {
   const router = useRouter();
@@ -21,9 +23,12 @@ export default function NewFreelancerClientPage() {
     primaryContactEmail: "",
     mission: "",
     annualBudget: "",
-    focusAreas: "",
     billingRate: "",
   });
+
+  const [focusAreas, setFocusAreas] = useState<FocusAreaId[]>([]);
+  const [primaryFocusArea, setPrimaryFocusArea] = useState<string>("");
+  const [focusDescription, setFocusDescription] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData((prev) => ({
@@ -35,6 +40,23 @@ export default function NewFreelancerClientPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Validate focus areas
+    if (focusAreas.length === 0) {
+      setError("Please select at least one focus area");
+      return;
+    }
+
+    if (focusAreas.length > 5) {
+      setError("Please select a maximum of 5 focus areas");
+      return;
+    }
+
+    if (primaryFocusArea && !focusAreas.includes(primaryFocusArea as FocusAreaId)) {
+      setError("Primary focus area must be one of the selected focus areas");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -47,9 +69,9 @@ export default function NewFreelancerClientPage() {
           primaryContactEmail: formData.primaryContactEmail || null,
           mission: formData.mission || null,
           annualBudget: formData.annualBudget ? parseInt(formData.annualBudget, 10) : null,
-          focusAreas: formData.focusAreas
-            ? formData.focusAreas.split(",").map((s) => s.trim()).filter(Boolean)
-            : [],
+          focusAreas: focusAreas,
+          primaryFocusArea: primaryFocusArea || focusAreas[0], // Default to first if not specified
+          focusDescription: focusDescription || null,
           billingRate: formData.billingRate ? parseFloat(formData.billingRate) : null,
         }),
       });
@@ -136,16 +158,58 @@ export default function NewFreelancerClientPage() {
             </div>
 
             <div>
-              <Label htmlFor="focusAreas">Focus areas</Label>
-              <Input
-                id="focusAreas"
-                name="focusAreas"
-                value={formData.focusAreas}
-                onChange={handleChange}
-                placeholder="e.g., Education, Youth Development, Community"
+              <Label htmlFor="focusAreas">
+                Focus areas <span className="text-red-500">*</span>
+              </Label>
+              <FocusAreaSelect
+                selectedAreas={focusAreas}
+                onChange={setFocusAreas}
+                maxSelections={5}
               />
-              <p className="mt-1 text-xs text-slate-500">Separate multiple areas with commas</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Select 1-5 focus areas that describe this client's work
+              </p>
             </div>
+
+            {focusAreas.length > 0 && (
+              <div>
+                <Label htmlFor="primaryFocusArea">Primary focus area</Label>
+                <select
+                  id="primaryFocusArea"
+                  value={primaryFocusArea}
+                  onChange={(e) => setPrimaryFocusArea(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="">Select primary focus...</option>
+                  {focusAreas.map((area) => (
+                    <option key={area} value={area}>
+                      {area.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-slate-500">
+                  Used for matching boost - helps prioritize relevant opportunities
+                </p>
+              </div>
+            )}
+
+            {focusAreas.length > 0 && (
+              <div>
+                <Label htmlFor="focusDescription">Focus description (optional)</Label>
+                <Textarea
+                  id="focusDescription"
+                  name="focusDescription"
+                  value={focusDescription}
+                  onChange={(e) => setFocusDescription(e.target.value)}
+                  placeholder="Brief description of the client's specific focus within these areas..."
+                  rows={2}
+                  maxLength={200}
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  {focusDescription.length}/200 characters - Provides context for grant writers
+                </p>
+              </div>
+            )}
 
             <div>
               <Label htmlFor="billingRate">Billing rate ($/hour)</Label>
