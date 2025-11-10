@@ -43,6 +43,7 @@ const focusAreas = [
   "Environment",
   "Arts & Culture",
   "Research & Innovation",
+  "International",
   "Disaster Relief",
   "Other"
 ];
@@ -69,7 +70,7 @@ export default function FreelancerOpportunitiesPage({
   // Filter state
   const [searchQuery, setSearchQuery] = useState(params?.search ?? "");
   const [debouncedSearch, setDebouncedSearch] = useState(params?.search ?? "");
-  const [selectedFocusArea, setSelectedFocusArea] = useState<string | undefined>();
+  const [selectedFocusAreas, setSelectedFocusAreas] = useState<string[]>([]);
   const [selectedAmountRange, setSelectedAmountRange] = useState(0);
   const [geographicScope, setGeographicScope] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -106,7 +107,7 @@ export default function FreelancerOpportunitiesPage({
         const fetchParams = new URLSearchParams();
 
         if (debouncedSearch) fetchParams.append("search", debouncedSearch);
-        if (selectedFocusArea) fetchParams.append("focusArea", selectedFocusArea);
+        if (selectedFocusAreas.length > 0) fetchParams.append("focusAreas", selectedFocusAreas.join(","));
         if (range.min !== undefined) fetchParams.append("minAmount", range.min.toString());
         if (range.max !== undefined) fetchParams.append("maxAmount", range.max.toString());
         if (geographicScope) fetchParams.append("geographicScope", geographicScope);
@@ -126,7 +127,7 @@ export default function FreelancerOpportunitiesPage({
     };
 
     fetchOpportunities();
-  }, [debouncedSearch, selectedFocusArea, selectedAmountRange, geographicScope, clientId]);
+  }, [debouncedSearch, selectedFocusAreas, selectedAmountRange, geographicScope, clientId]);
 
   const toggleBookmark = useMutation({
     mutationFn: async ({ opportunityId, isBookmarked }: { opportunityId: string; isBookmarked: boolean }) => {
@@ -155,7 +156,7 @@ export default function FreelancerOpportunitiesPage({
         const fetchParams = new URLSearchParams();
 
         if (debouncedSearch) fetchParams.append("search", debouncedSearch);
-        if (selectedFocusArea) fetchParams.append("focusArea", selectedFocusArea);
+        if (selectedFocusAreas.length > 0) fetchParams.append("focusAreas", selectedFocusAreas.join(","));
         if (range.min !== undefined) fetchParams.append("minAmount", range.min.toString());
         if (range.max !== undefined) fetchParams.append("maxAmount", range.max.toString());
         if (geographicScope) fetchParams.append("geographicScope", geographicScope);
@@ -240,12 +241,12 @@ export default function FreelancerOpportunitiesPage({
     }
   };
 
-  const hasActiveFilters = debouncedSearch || selectedFocusArea || selectedAmountRange > 0 || geographicScope;
+  const hasActiveFilters = debouncedSearch || selectedFocusAreas.length > 0 || selectedAmountRange > 0 || geographicScope;
 
   const clearAllFilters = () => {
     setSearchQuery("");
     setDebouncedSearch("");
-    setSelectedFocusArea(undefined);
+    setSelectedFocusAreas([]);
     setSelectedAmountRange(0);
     setGeographicScope("");
   };
@@ -358,11 +359,11 @@ export default function FreelancerOpportunitiesPage({
 
           {/* Quick filter chips */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-slate-700">Focus Area:</span>
+            <span className="text-sm font-medium text-slate-700">Focus Areas:</span>
             <button
-              onClick={() => setSelectedFocusArea(undefined)}
+              onClick={() => setSelectedFocusAreas([])}
               className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                !selectedFocusArea
+                selectedFocusAreas.length === 0
                   ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
                   : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
               }`}
@@ -372,9 +373,15 @@ export default function FreelancerOpportunitiesPage({
             {focusAreas.map((area) => (
               <button
                 key={area}
-                onClick={() => setSelectedFocusArea(area === selectedFocusArea ? undefined : area)}
+                onClick={() => {
+                  setSelectedFocusAreas(prev =>
+                    prev.includes(area)
+                      ? prev.filter(a => a !== area)
+                      : [...prev, area]
+                  );
+                }}
                 className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                  selectedFocusArea === area
+                  selectedFocusAreas.includes(area)
                     ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
                     : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
                 }`}

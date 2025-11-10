@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search") || "";
-    const focusArea = searchParams.get("focusArea") || "";
+    const focusAreasParam = searchParams.get("focusAreas");
+    const focusAreas = focusAreasParam ? focusAreasParam.split(",").filter(Boolean) : [];
     const status = searchParams.get("status") || "";
     const minAmount = searchParams.get("minAmount");
     const maxAmount = searchParams.get("maxAmount");
@@ -57,8 +58,10 @@ export async function GET(request: NextRequest) {
       .order("deadline", { ascending: false });
 
     // Apply filters
-    if (focusArea) {
-      query = query.eq("focus_area", focusArea);
+    // Support multiple focus areas with OR logic (matching nonprofit implementation)
+    if (focusAreas.length > 0) {
+      const focusAreaConditions = focusAreas.map(fa => `focus_area.eq.${fa}`).join(',');
+      query = query.or(focusAreaConditions);
     }
 
     if (status) {
