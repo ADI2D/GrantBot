@@ -84,10 +84,10 @@ export async function fetchOpportunities(
   orgId: string,
   filters?: OpportunityFilters
 ): Promise<Opportunity[]> {
-  // Show opportunities from past 60 days OR future (for reference and planning)
-  const sixtyDaysAgo = new Date();
-  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-  const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
+  // Only show opportunities with future deadlines or no deadline (ongoing programs)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Start of today
+  const todayStr = today.toISOString().split("T")[0];
 
   // Get user ID for bookmark lookup
   const { data: { user } } = await client.auth.getUser();
@@ -100,8 +100,8 @@ export async function fetchOpportunities(
       bookmarked_opportunities!left(id)`,
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
-    .not("status", "ilike", "closed") // Exclude closed opportunities (case-insensitive)
-    .or(`deadline.gte.${sixtyDaysAgoStr},deadline.is.null`); // Show past 60 days + future + ongoing programs (no deadline)
+    .not("status", "ilike", "closed") // Exclude explicitly closed opportunities
+    .or(`deadline.gte.${todayStr},deadline.is.null`); // Only show future deadlines or ongoing programs
 
   // Apply filters
   // Support both single focusArea (deprecated) and multiple focusAreas
@@ -184,19 +184,11 @@ export async function fetchOpportunities(
     isBookmarked: Array.isArray(item.bookmarked_opportunities) && item.bookmarked_opportunities.length > 0,
   }));
 
-  // Sort: Open opportunities with upcoming deadlines first, expired ones last
+  // Sort: Upcoming deadlines first (soonest), null deadlines (ongoing programs) last
   return opportunities.sort((a, b) => {
     const aDeadline = a.deadline ? new Date(a.deadline) : new Date(8640000000000000); // Max date for null deadlines
     const bDeadline = b.deadline ? new Date(b.deadline) : new Date(8640000000000000);
-    const aIsOpen = aDeadline >= now;
-    const bIsOpen = bDeadline >= now;
-
-    // If both have same open/expired status, sort by deadline (soonest first)
-    if (aIsOpen === bIsOpen) {
-      return aDeadline.getTime() - bDeadline.getTime();
-    }
-    // Open deadlines first, expired last
-    return aIsOpen ? -1 : 1;
+    return aDeadline.getTime() - bDeadline.getTime();
   });
 }
 
