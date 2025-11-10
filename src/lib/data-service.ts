@@ -22,7 +22,7 @@ export async function fetchOrganization(client: Client, orgId: string) {
   const { data, error } = await client
     .from("organizations")
     .select(
-      "id, name, mission, impact_summary, differentiator, annual_budget, focus_areas, onboarding_completion, document_metadata, plan_id",
+      "id, name, mission, impact_summary, differentiator, annual_budget, focus_areas, onboarding_completion, document_metadata, plan_id, ein, founded_year, staff_size, geographic_scope, website, programs, impact_metrics, target_demographics, past_funders",
     )
     .eq("id", orgId)
     .limit(1)
@@ -45,12 +45,24 @@ export async function fetchOrganization(client: Client, orgId: string) {
     name: data.name,
     mission: data.mission,
     impactSummary: data.impact_summary,
+    impact_summary: data.impact_summary,
     differentiator: data.differentiator,
     annualBudget: data.annual_budget,
+    annual_budget: data.annual_budget,
     focus_areas: data.focus_areas || [],
     onboardingCompletion: Number(data.onboarding_completion ?? 0),
     documents,
     planId: data.plan_id ?? "starter",
+    // New onboarding fields
+    ein: data.ein,
+    founded_year: data.founded_year,
+    staff_size: data.staff_size,
+    geographic_scope: data.geographic_scope,
+    website: data.website,
+    programs: data.programs || [],
+    impact_metrics: data.impact_metrics || [],
+    target_demographics: data.target_demographics || [],
+    past_funders: data.past_funders || [],
   };
 }
 

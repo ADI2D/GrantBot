@@ -72,6 +72,12 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // Clear onboarding progress after successful completion
+        await supabase
+          .from("user_profiles")
+          .update({ onboarding_progress: null })
+          .eq("user_id", user.id);
+
         return NextResponse.json({
           success: true,
           organizationId: existingOrg.organization_id,
@@ -104,6 +110,12 @@ export async function POST(request: NextRequest) {
         if (memberError) {
           console.error("[onboarding][complete] Member create error:", memberError);
         }
+
+        // Clear onboarding progress after successful completion
+        await supabase
+          .from("user_profiles")
+          .update({ onboarding_progress: null })
+          .eq("user_id", user.id);
 
         return NextResponse.json({
           success: true,
@@ -145,16 +157,13 @@ export async function POST(request: NextRequest) {
       // Create client records if any
       if (data.clients && data.clients.length > 0) {
         const clientRecords = data.clients.map((client: any) => ({
-          freelancer_id: user.id,
-          client_name: client.client_name,
+          freelancer_user_id: user.id,
+          name: client.client_name,
           client_type: client.client_type,
-          relationship_status: client.relationship_status,
-          total_raised: client.total_raised || 0,
-          grants_submitted: client.grants_submitted || 0,
-          grants_awarded: client.grants_awarded || 0,
+          status: client.relationship_status || "active",
+          like_us: client.like_us || false,
+          categories: client.categories || [],
           notes: client.notes,
-          // Store like_us and categories in notes for now
-          // In production, add these columns to freelancer_clients table
         }));
 
         const { error: clientsError } = await supabase
@@ -166,6 +175,12 @@ export async function POST(request: NextRequest) {
           // Don't fail the whole onboarding if clients fail
         }
       }
+
+      // Clear onboarding progress after successful completion
+      await supabase
+        .from("user_profiles")
+        .update({ onboarding_progress: null })
+        .eq("user_id", user.id);
 
       return NextResponse.json({
         success: true,

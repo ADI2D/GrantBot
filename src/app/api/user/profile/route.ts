@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       .from("user_profiles")
       .select("account_type, onboarding_progress")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("[user][profile] Fetch error:", error);
@@ -30,9 +30,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // If no profile exists, return default values
+    if (!profile) {
+      console.warn("[user][profile] No profile found for user:", user.id);
+      return NextResponse.json({
+        accountType: "nonprofit", // Default to nonprofit
+        onboardingProgress: null,
+      });
+    }
+
     return NextResponse.json({
-      accountType: profile?.account_type,
-      onboardingProgress: profile?.onboarding_progress,
+      accountType: profile.account_type || "nonprofit",
+      onboardingProgress: profile.onboarding_progress,
     });
   } catch (error) {
     console.error("[user][profile] Error:", error);

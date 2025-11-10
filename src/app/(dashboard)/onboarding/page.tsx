@@ -86,7 +86,7 @@ export default function OnboardingPage() {
   const [savedProgress, setSavedProgress] = useState<any>(null);
 
   useEffect(() => {
-    // Fetch user's account type and saved progress
+    // Fetch user's account type and existing data (for edit mode)
     const fetchUserData = async () => {
       try {
         // Get user profile to determine account type
@@ -95,14 +95,82 @@ export default function OnboardingPage() {
           throw new Error("Failed to fetch user profile");
         }
         const profileData = await profileResponse.json();
-        setAccountType(profileData.accountType);
+        const userAccountType = profileData.accountType;
+        setAccountType(userAccountType);
 
-        // Get saved onboarding progress
+        // Try to get saved onboarding progress first
         const progressResponse = await fetch("/api/onboarding/progress");
         if (progressResponse.ok) {
           const progressData = await progressResponse.json();
-          if (progressData.progress) {
+          if (progressData.progress?.data) {
             setSavedProgress(progressData.progress);
+            return; // Use progress data if available
+          }
+        }
+
+        // If no progress, try to load existing completed data for edit mode
+        if (userAccountType === "nonprofit") {
+          const orgResponse = await fetch("/api/organization");
+          if (orgResponse.ok) {
+            const orgData = await orgResponse.json();
+            if (orgData.organization) {
+              // Map organization data to wizard format
+              setSavedProgress({
+                data: {
+                  name: orgData.organization.name,
+                  mission: orgData.organization.mission,
+                  impact_summary: orgData.organization.impact_summary,
+                  differentiator: orgData.organization.differentiator,
+                  annual_budget: orgData.organization.annual_budget,
+                  focus_areas: orgData.organization.focus_areas || [],
+                  ein: orgData.organization.ein,
+                  founded_year: orgData.organization.founded_year,
+                  staff_size: orgData.organization.staff_size,
+                  geographic_scope: orgData.organization.geographic_scope,
+                  website: orgData.organization.website,
+                  programs: orgData.organization.programs || [],
+                  impact_metrics: orgData.organization.impact_metrics || [],
+                  target_demographics: orgData.organization.target_demographics || [],
+                  past_funders: orgData.organization.past_funders || [],
+                  documents: orgData.organization.documents || [],
+                },
+              });
+            }
+          }
+        } else if (userAccountType === "freelancer") {
+          // Fetch freelancer profile data for edit mode
+          const freelancerResponse = await fetch("/api/freelancer/profile");
+          if (freelancerResponse.ok) {
+            const freelancerData = await freelancerResponse.json();
+            if (freelancerData.profile) {
+              // Map freelancer profile data to wizard format
+              const profile = freelancerData.profile;
+              const clients = freelancerData.clients || [];
+
+              setSavedProgress({
+                data: {
+                  full_name: profile.full_name,
+                  headline: profile.headline,
+                  bio: profile.bio,
+                  hourly_rate: profile.hourly_rate,
+                  years_experience: profile.years_experience,
+                  specializations: profile.specializations || [],
+                  certifications: profile.certifications || [],
+                  portfolio_items: profile.portfolio_items || [],
+                  total_grants_written: profile.total_grants_written,
+                  total_amount_raised: profile.total_amount_raised,
+                  success_rate: profile.success_rate,
+                  availability_status: profile.availability_status,
+                  weekly_capacity: profile.weekly_capacity,
+                  clients: clients.map((client: any) => ({
+                    id: client.id,
+                    client_name: client.name,
+                    like_us: client.like_us || false,
+                    categories: client.categories || [],
+                  })),
+                },
+              });
+            }
           }
         }
       } catch (err) {
