@@ -6,10 +6,12 @@ import { useSearchParams } from "next/navigation";
 import { Sparkles, RefreshCw, Share2, ShieldAlert, Download, FileText, MessageSquare, Archive } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader, PageError, EmptyState } from "@/components/ui/page-state";
 import { useWorkspaceData } from "@/hooks/use-api";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { PresenceIndicators } from "@/components/workspace/presence-indicators";
+import { InlineCommentThread, NewCommentForm, type InlineComment } from "@/components/workspace/inline-comment-thread";
 
 type Comment = {
   id: string;
@@ -32,6 +34,9 @@ export default function WorkspacePage() {
   const [complianceState, setComplianceState] = useState(data?.compliance ?? []);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [inlineComments, setInlineComments] = useState<InlineComment[]>([]);
+  const [showNewComment, setShowNewComment] = useState(false);
+  const [newCommentSelection, setNewCommentSelection] = useState<{start: number; end: number; text: string} | null>(null);
 
   const { proposal, sections } = data ?? {};
 
@@ -59,6 +64,27 @@ export default function WorkspacePage() {
 
     loadComments();
   }, [proposal?.id]);
+
+  // Load inline comments when section changes
+  useEffect(() => {
+    async function loadInlineComments() {
+      if (!proposal?.id || !activeSection?.id) return;
+
+      try {
+        const response = await fetch(
+          `/api/proposals/${proposal.id}/inline-comments?sectionId=${activeSection.id}`
+        );
+        if (response.ok) {
+          const data = await response.json() as { comments: InlineComment[] };
+          setInlineComments(data.comments);
+        }
+      } catch (err) {
+        console.error("[workspace] Error loading inline comments:", err);
+      }
+    }
+
+    loadInlineComments();
+  }, [proposal?.id, activeSection?.id]);
 
   const activeSection = useMemo(() => {
     if (!sections?.length) return undefined;
@@ -229,6 +255,63 @@ export default function WorkspacePage() {
     }
   };
 
+  // Inline comment handlers
+  const handleCommentSelection = (selection: {start: number; end: number; text: string}) => {
+    setNewCommentSelection(selection);
+    setShowNewComment(true);
+  };
+
+  const handleCreateInlineComment = async (commentText: string) => {
+    if (!proposal?.id || !activeSection?.id || !newCommentSelection) return;
+
+    try {
+      const response = await fetch(`/api/proposals/${proposal.id}/inline-comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sectionId: activeSection.id,
+          commentText,
+          selectionStart: newCommentSelection.start,
+          selectionEnd: newCommentSelection.end,
+          selectedText: newCommentSelection.text,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json() as { comment: InlineComment };
+        setInlineComments([...inlineComments, data.comment]);
+        setShowNewComment(false);
+        setNewCommentSelection(null);
+      }
+    } catch (error) {
+      console.error("[workspace] Error creating inline comment:", error);
+      alert("Failed to create comment");
+    }
+  };
+
+  const handleResolveInlineComment = async (commentId: string) => {
+    if (!proposal?.id) return;
+
+    try {
+      const response = await fetch(`/api/proposals/${proposal.id}/inline-comments`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commentId, resolved: true }),
+      });
+
+      if (response.ok) {
+        setInlineComments(
+          inlineComments.map((c) =>
+            c.id === commentId ? { ...c, resolved: true } : c
+          )
+        );
+      }
+    } catch (error) {
+      console.error("[workspace] Error resolving comment:", error);
+      alert("Failed to resolve comment");
+    }
+  };
+
   return (
     <div className="space-y-8">
       {proposal?.archived && (
@@ -263,7 +346,7 @@ export default function WorkspacePage() {
         </div>
       )}
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
+        <div className="flex-1">
           <p className="text-sm font-semibold text-blue-600">AI workspace</p>
           <h1 className="text-3xl font-semibold text-slate-900">
             Generate, edit, and route reviews seamlessly.
@@ -271,6 +354,11 @@ export default function WorkspacePage() {
           <p className="text-sm text-slate-600">
             Retrieval-augmented prompts use your profile, opportunity metadata, and past wins.
           </p>
+          {proposal && (
+            <div className="mt-3">
+              <PresenceIndicators proposalId={proposal.id} currentSectionId={activeSection?.id} />
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {proposal && (
@@ -426,18 +514,52 @@ export default function WorkspacePage() {
                 <Badge tone="info">Confidence {(proposal.confidence ?? 0).toFixed(2)}</Badge>
               </div>
             </div>
-            <Textarea
-              rows={18}
+            <RichTextEditor
               value={draftContent}
-              onChange={(event) => setDraftContent(event.target.value)}
+              onChange={setDraftContent}
               disabled={proposal.archived}
-              className={proposal.archived ? "opacity-60 cursor-not-allowed" : ""}
+              placeholder="Start writing your proposal section..."
+              showCommentButton={!proposal.archived}
+              onComment={handleCommentSelection}
             />
+
+            {/* New comment form */}
+            {showNewComment && newCommentSelection && (
+              <div className="mt-4">
+                <NewCommentForm
+                  selectedText={newCommentSelection.text}
+                  selectionStart={newCommentSelection.start}
+                  selectionEnd={newCommentSelection.end}
+                  onSubmit={handleCreateInlineComment}
+                  onCancel={() => {
+                    setShowNewComment(false);
+                    setNewCommentSelection(null);
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Inline comments list */}
+            {inlineComments.length > 0 && (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm font-semibold text-slate-900">
+                  Comments on this section ({inlineComments.filter(c => !c.resolved).length})
+                </p>
+                {inlineComments.map((comment) => (
+                  <InlineCommentThread
+                    key={comment.id}
+                    comment={comment}
+                    onResolve={handleResolveInlineComment}
+                  />
+                ))}
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-              <p>{proposal.archived ? "Read-only mode" : "Edits save back to Supabase"}</p>
+              <p>{proposal.archived ? "Read-only mode" : "Auto-saves after 2 seconds of inactivity"}</p>
               <div className="flex gap-3">
                 <Button variant="secondary" size="sm" onClick={handleSaveSection} disabled={sectionMutation.isPending || proposal.archived}>
-                  Save section
+                  {sectionMutation.isPending ? "Saving..." : "Save now"}
                 </Button>
               </div>
             </div>

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { ShareProposalDialog, type ShareFormData } from "@/components/freelancer/share-proposal-dialog";
 import { ProposalCommentsPanel } from "@/components/freelancer/proposal-comments-panel";
+import { PresenceIndicators } from "@/components/workspace/presence-indicators";
 import { cn } from "@/lib/utils";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -351,6 +352,10 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
           {formatTimestamp(lastEditedAt) ? (
             <p className="text-xs text-slate-400">Last updated {formatTimestamp(lastEditedAt)}</p>
           ) : null}
+          {/* Presence indicators */}
+          <div className="mt-2">
+            <PresenceIndicators proposalId={proposal.id} />
+          </div>
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2">
