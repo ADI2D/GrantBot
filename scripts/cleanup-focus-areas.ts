@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * Comprehensive cleanup of focus_area values
+ * Comprehensive cleanup of focus_area values with batching to avoid timeouts
  * Handles abbreviations, JSON arrays, and mixed case
  */
 
@@ -38,6 +38,58 @@ if (!supabaseUrl || !supabaseKey) {
   process.exit(1);
 }
 
+const BATCH_SIZE = 50;
+
+async function updateInBatches(supabase: any, fromValue: string, toValue: string) {
+  let totalUpdated = 0;
+  let hasMore = true;
+  let iterations = 0;
+  const maxIterations = 100; // Safety limit
+
+  while (hasMore && iterations < maxIterations) {
+    iterations++;
+
+    // Fetch a batch of IDs
+    const { data: batch, error: fetchError } = await supabase
+      .from("opportunities")
+      .select("id")
+      .eq("focus_area", fromValue)
+      .limit(BATCH_SIZE);
+
+    if (fetchError) {
+      console.error(`    Error fetching batch:`, fetchError.message);
+      break;
+    }
+
+    if (!batch || batch.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    // Update this batch
+    const ids = batch.map((opp: any) => opp.id);
+    const { error: updateError } = await supabase
+      .from("opportunities")
+      .update({ focus_area: toValue })
+      .in("id", ids);
+
+    if (updateError) {
+      console.error(`    Error updating batch:`, updateError.message);
+      break;
+    }
+
+    totalUpdated += batch.length;
+    console.log(`    Updated batch of ${batch.length} (total: ${totalUpdated})`);
+
+    // If we got fewer than BATCH_SIZE, we're done
+    if (batch.length < BATCH_SIZE) {
+      hasMore = false;
+    }
+  }
+
+  return totalUpdated;
+}
+
 async function cleanupFocusAreas() {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -61,6 +113,7 @@ async function cleanupFocusAreas() {
     { from: ["FN"], to: "Food & Nutrition" },
     { from: ["ISS"], to: "Social Services" },
     { from: ["BC"], to: "Business & Commerce" },
+    { from: ["AG"], to: "Agriculture" },
     { from: ["other", "O", "OZ"], to: "Other" },
   ];
 
@@ -68,29 +121,22 @@ async function cleanupFocusAreas() {
 
   // Process each mapping
   for (const mapping of mappings) {
-    console.log(`Converting ${mapping.from.join(", ")} → "${mapping.to}"`);
+    console.log(`\nConverting ${mapping.from.join(", ")} → "${mapping.to}"`);
 
     for (const fromValue of mapping.from) {
-      const { count, error } = await supabase
-        .from("opportunities")
-        .update({ focus_area: mapping.to })
-        .eq("focus_area", fromValue)
-        .select("*", { count: "exact", head: true });
-
-      if (error) {
-        console.error(`  ❌ Error updating "${fromValue}":`, error.message);
-      } else if (count && count > 0) {
-        console.log(`  ✓ Updated ${count} opportunities from "${fromValue}"`);
-        totalUpdated += count;
+      const updated = await updateInBatches(supabase, fromValue, mapping.to);
+      if (updated > 0) {
+        console.log(`  ✓ Total updated from "${fromValue}": ${updated}`);
+        totalUpdated += updated;
       }
     }
   }
 
-  // Handle JSON arrays - fetch them and update in batches
-  console.log("\nHandling JSON arrays (multi-category values)...");
+  // Handle JSON arrays
+  console.log("\n\nHandling JSON arrays (multi-category values)...");
   const { data: jsonArrays, error: fetchError } = await supabase
     .from("opportunities")
-    .select("id, focus_area")
+    .select("id")
     .like("focus_area", "[%");
 
   if (fetchError) {
@@ -98,11 +144,10 @@ async function cleanupFocusAreas() {
   } else if (jsonArrays && jsonArrays.length > 0) {
     console.log(`Found ${jsonArrays.length} opportunities with JSON array focus areas`);
 
-    // Update in batches of 50
-    const batchSize = 50;
-    for (let i = 0; i < jsonArrays.length; i += batchSize) {
-      const batch = jsonArrays.slice(i, i + batchSize);
-      const ids = batch.map((opp) => opp.id);
+    // Update in batches
+    for (let i = 0; i < jsonArrays.length; i += BATCH_SIZE) {
+      const batch = jsonArrays.slice(i, i + BATCH_SIZE);
+      const ids = batch.map((opp: any) => opp.id);
 
       const { error: updateError } = await supabase
         .from("opportunities")
@@ -110,15 +155,15 @@ async function cleanupFocusAreas() {
         .in("id", ids);
 
       if (updateError) {
-        console.error(`  ❌ Error updating batch ${i}-${i + batchSize}:`, updateError.message);
+        console.error(`  ❌ Error updating batch ${i}-${i + BATCH_SIZE}:`, updateError.message);
       } else {
-        console.log(`  ✓ Updated batch ${i + 1}-${Math.min(i + batchSize, jsonArrays.length)}`);
+        console.log(`  ✓ Updated batch ${i + 1}-${Math.min(i + BATCH_SIZE, jsonArrays.length)}`);
         totalUpdated += batch.length;
       }
     }
   }
 
-  console.log(`\n=== SUMMARY ===`);
+  console.log(`\n\n=== SUMMARY ===`);
   console.log(`Total updated: ${totalUpdated}`);
 
   // Show final distribution
@@ -127,7 +172,7 @@ async function cleanupFocusAreas() {
     .select("focus_area");
 
   const distribution: Record<string, number> = {};
-  opportunities?.forEach((opp) => {
+  opportunities?.forEach((opp: any) => {
     const category = opp.focus_area || "NULL";
     distribution[category] = (distribution[category] || 0) + 1;
   });
