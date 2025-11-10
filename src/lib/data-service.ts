@@ -112,14 +112,15 @@ export async function fetchOpportunities(
   // Support both single focusArea (deprecated) and multiple focusAreas
   if (filters?.focusAreas && filters.focusAreas.length > 0) {
     // Multiple focus areas - use OR logic with array overlap
-    // Check if the focus_areas array contains any of the selected focus areas
-    console.log("[data-service] Filtering by focus_areas (overlaps):", filters.focusAreas);
-    query = query.overlaps("focus_areas", filters.focusAreas);
+    // Build OR conditions: focus_areas array contains ANY of the selected values
+    console.log("[data-service] Filtering by focus_areas (using OR with cs):", filters.focusAreas);
+    const orConditions = filters.focusAreas.map(fa => `focus_areas.cs.{${fa}}`).join(',');
+    query = query.or(orConditions);
   } else if (filters?.focusArea) {
     // Single focus area (deprecated, kept for backwards compatibility)
     // Check if focus_areas array contains this single value
-    console.log("[data-service] Filtering by single focus_area (contains):", filters.focusArea);
-    query = query.contains("focus_areas", [filters.focusArea]);
+    console.log("[data-service] Filtering by single focus_area (using cs):", filters.focusArea);
+    query = query.filter("focus_areas", "cs", `{${filters.focusArea}}`);
   } else {
     console.log("[data-service] No focus area filter applied");
   }
