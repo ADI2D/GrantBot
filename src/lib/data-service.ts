@@ -100,7 +100,7 @@ export async function fetchOpportunities(
       bookmarked_opportunities!left(id)`,
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
-    .neq("status", "closed") // Exclude closed opportunities completely
+    .not("status", "ilike", "closed") // Exclude closed opportunities (case-insensitive)
     .or(`deadline.gte.${sixtyDaysAgoStr},deadline.is.null`); // Show past 60 days + future + ongoing programs (no deadline)
 
   // Apply filters
