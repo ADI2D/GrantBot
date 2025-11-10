@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
       focusAreas: clientFocusAreas.length > 0 ? clientFocusAreas : undefined,
     } : null;
 
-    // Base query - get all opportunities (not org-specific for freelancers)
-    // Show opportunities from past 60 days OR future
+    // Base query - get public opportunities only (organization_id IS NULL)
+    // Show opportunities from past 60 days OR future OR ongoing (no deadline)
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
     const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
@@ -50,18 +50,19 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("opportunities")
       .select(
-        `id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope,
+        `id, name, focus_area, focus_areas, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope,
         bookmarked_opportunities!left(id)`
       )
-      .gte("deadline", sixtyDaysAgoStr)
+      .is("organization_id", null) // Only public opportunities for freelancers
+      .or(`deadline.gte.${sixtyDaysAgoStr},deadline.is.null`) // Past 60 days + future + ongoing
       .neq("status", "closed")
-      .order("deadline", { ascending: false });
+      .order("deadline", { ascending: true, nullsFirst: false }); // Soonest deadlines first
 
     // Apply filters
-    // Support multiple focus areas with OR logic (matching nonprofit implementation)
+    // Support multiple focus areas with AND logic using the focus_areas array field
+    // If user selects [International, Education], show only opportunities that have BOTH
     if (focusAreas.length > 0) {
-      const focusAreaConditions = focusAreas.map(fa => `focus_area.eq.${fa}`).join(',');
-      query = query.or(focusAreaConditions);
+      query = query.contains("focus_areas", focusAreas);
     }
 
     if (status) {
@@ -141,7 +142,7 @@ export async function GET(request: NextRequest) {
           alignmentScore,
           status: opp.status || "Open",
           summary: opp.compliance_notes || "",
-          focusAreas: opp.focus_area ? [opp.focus_area] : [],
+          focusAreas: (opp as any).focus_areas || (opp.focus_area ? [opp.focus_area] : []), // Use array field, fallback to legacy
           clientIds: [], // Populated client-side based on filters
           matchReason,
           applicationUrl: opp.application_url,

@@ -111,9 +111,9 @@ export async function fetchOpportunities(
   // Apply filters
   // Support both single focusArea (deprecated) and multiple focusAreas
   if (filters?.focusAreas && filters.focusAreas.length > 0) {
-    // Multiple focus areas - use OR logic
-    const focusAreaConditions = filters.focusAreas.map(fa => `focus_area.eq.${fa}`).join(',');
-    query = query.or(focusAreaConditions);
+    // Multiple focus areas - use AND logic with focus_areas array field
+    // If user selects [International, Education], show only opportunities that have BOTH
+    query = query.contains("focus_areas", filters.focusAreas);
   } else if (filters?.focusArea) {
     // Single focus area (deprecated, kept for backwards compatibility)
     query = query.eq("focus_area", filters.focusArea);
