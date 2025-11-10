@@ -132,7 +132,7 @@ CREATE POLICY "Members can view presence on org proposals"
   FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM proposals p
-    JOIN organization_members m ON m.organization_id = p.organization_id
+    JOIN org_members m ON m.organization_id = p.organization_id
     WHERE p.id = proposal_presence.proposal_id
       AND m.user_id = auth.uid()
   ));
@@ -151,7 +151,7 @@ CREATE POLICY "Members can read inline comments on org proposals"
   FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM proposals p
-    JOIN organization_members m ON m.organization_id = p.organization_id
+    JOIN org_members m ON m.organization_id = p.organization_id
     WHERE p.id = proposal_inline_comments.proposal_id
       AND m.user_id = auth.uid()
   ));
@@ -161,7 +161,7 @@ CREATE POLICY "Members can create inline comments on org proposals"
   FOR INSERT
   WITH CHECK (EXISTS (
     SELECT 1 FROM proposals p
-    JOIN organization_members m ON m.organization_id = p.organization_id
+    JOIN org_members m ON m.organization_id = p.organization_id
     WHERE p.id = proposal_inline_comments.proposal_id
       AND m.user_id = auth.uid()
   ));
@@ -207,7 +207,7 @@ CREATE POLICY "Members can read revisions on org proposals"
   FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM proposals p
-    JOIN organization_members m ON m.organization_id = p.organization_id
+    JOIN org_members m ON m.organization_id = p.organization_id
     WHERE p.id = proposal_section_revisions.proposal_id
       AND m.user_id = auth.uid()
   ));
