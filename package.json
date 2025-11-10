@@ -11,6 +11,7 @@
     "seed:stripe": "node --env-file .env.local scripts/seed-stripe.mjs",
     "seed:users": "node --env-file .env.local scripts/seed-users.mjs",
     "sync:grants": "tsx --env-file .env.local scripts/sync-grants.ts",
+    "standardize": "tsx scripts/standardize-focus-areas.ts",
     "recategorize": "tsx scripts/recategorize-opportunities.ts"
   },
   "dependencies": {
