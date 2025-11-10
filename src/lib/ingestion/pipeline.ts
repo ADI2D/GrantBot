@@ -6,6 +6,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import type { GrantConnector, CanonicalOpportunity, SyncState } from "@/types/connectors";
+import { ComplianceExtractor } from "@/lib/compliance/extractor";
 
 type SyncResult = {
   source: string;
@@ -25,6 +26,12 @@ export class GrantIngestionPipeline {
   private supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  private complianceExtractor = new ComplianceExtractor(
+    createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
   );
 
   /**
@@ -147,6 +154,16 @@ export class GrantIngestionPipeline {
           if (result === "created") created++;
           else if (result === "updated") updated++;
           else skipped++;
+
+          // Extract compliance requirements for new/updated opportunities
+          if (result === "created" || result === "updated") {
+            try {
+              await this.extractCompliance(normalized);
+            } catch (complianceError) {
+              console.error(`[Pipeline] ${connector.source}: Error extracting compliance:`, complianceError);
+              // Don't fail the entire sync if compliance extraction fails
+            }
+          }
         } catch (error) {
           console.error(`[Pipeline] ${connector.source}: Error processing record:`, error);
           errors.push(error as Error);
@@ -304,6 +321,53 @@ export class GrantIngestionPipeline {
 
       return "created";
     }
+  }
+
+  /**
+   * Extract compliance requirements for an opportunity
+   */
+  private async extractCompliance(opp: CanonicalOpportunity): Promise<void> {
+    // Find the opportunity ID from database
+    const { data: opportunity } = await this.supabase
+      .from("opportunities")
+      .select("id, name, compliance_notes, eligibility_requirements")
+      .eq("source", opp.source)
+      .eq("external_id", opp.external_id)
+      .maybeSingle();
+
+    if (!opportunity) {
+      return; // Opportunity not found, skip
+    }
+
+    // Build text to analyze
+    const textToAnalyze = [
+      opportunity.name,
+      opportunity.eligibility_requirements,
+      opportunity.compliance_notes,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    if (!textToAnalyze.trim()) {
+      return; // No text to analyze
+    }
+
+    // Extract requirements
+    const result = await this.complianceExtractor.extractRequirements(
+      textToAnalyze,
+      opp.compliance_notes || ""
+    );
+
+    if (result.requirements.length === 0) {
+      return; // No requirements found
+    }
+
+    // Store requirements in database
+    await this.complianceExtractor.storeRequirements(opportunity.id, result.requirements);
+
+    console.log(
+      `[Pipeline] Extracted ${result.requirements.length} compliance requirements for "${opportunity.name}"`
+    );
   }
 
   /**

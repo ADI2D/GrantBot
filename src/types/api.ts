@@ -17,6 +17,7 @@ export type Opportunity = {
   complianceNotes: string | null;
   applicationUrl?: string | null;
   geographicScope?: string | null;
+  complianceRiskScore?: number | null; // 0-100 risk score from compliance automation
   isBookmarked?: boolean;
 };
 

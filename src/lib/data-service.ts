@@ -97,7 +97,7 @@ export async function fetchOpportunities(
   let query = client
     .from("opportunities")
     .select(
-      `id, name, focus_area, focus_areas, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope,
+      `id, name, focus_area, focus_areas, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope, compliance_risk_score,
       bookmarked_opportunities!left(id)`,
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
@@ -185,22 +185,15 @@ export async function fetchOpportunities(
     complianceNotes: item.compliance_notes,
     applicationUrl: item.application_url,
     geographicScope: item.geographic_scope,
+    complianceRiskScore: item.compliance_risk_score,
     isBookmarked: Array.isArray(item.bookmarked_opportunities) && item.bookmarked_opportunities.length > 0,
   }));
 
-  // Sort: Open opportunities with upcoming deadlines first, expired ones last
+  // Sort: Upcoming deadlines first (soonest), null deadlines (ongoing programs) last
   return opportunities.sort((a, b) => {
     const aDeadline = a.deadline ? new Date(a.deadline) : new Date(8640000000000000); // Max date for null deadlines
     const bDeadline = b.deadline ? new Date(b.deadline) : new Date(8640000000000000);
-    const aIsOpen = aDeadline >= now;
-    const bIsOpen = bDeadline >= now;
-
-    // If both have same open/expired status, sort by deadline (soonest first)
-    if (aIsOpen === bIsOpen) {
-      return aDeadline.getTime() - bDeadline.getTime();
-    }
-    // Open deadlines first, expired last
-    return aIsOpen ? -1 : 1;
+    return aDeadline.getTime() - bDeadline.getTime();
   });
 }
 
