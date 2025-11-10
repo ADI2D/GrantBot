@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { PageLoader, PageError, EmptyState } from "@/components/ui/page-state";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
+import { FOCUS_AREAS, type FocusAreaId } from "@/types/focus-areas";
 
 export const dynamic = "force-dynamic";
 
@@ -35,17 +36,6 @@ type OpportunityCard = {
   geographicScope?: string | null;
   isBookmarked?: boolean;
 };
-
-const focusAreas = [
-  "Education",
-  "Health & Wellness",
-  "Community Development",
-  "Environment",
-  "Arts & Culture",
-  "Research & Innovation",
-  "Disaster Relief",
-  "Other"
-];
 
 const amountRanges = [
   { label: "Any amount", min: undefined, max: undefined },
@@ -69,7 +59,7 @@ export default function FreelancerOpportunitiesPage({
   // Filter state
   const [searchQuery, setSearchQuery] = useState(params?.search ?? "");
   const [debouncedSearch, setDebouncedSearch] = useState(params?.search ?? "");
-  const [selectedFocusArea, setSelectedFocusArea] = useState<string | undefined>();
+  const [selectedFocusArea, setSelectedFocusArea] = useState<FocusAreaId | undefined>();
   const [selectedAmountRange, setSelectedAmountRange] = useState(0);
   const [geographicScope, setGeographicScope] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -369,17 +359,17 @@ export default function FreelancerOpportunitiesPage({
             >
               All
             </button>
-            {focusAreas.map((area) => (
+            {Object.values(FOCUS_AREAS).sort((a, b) => a.sort_order - b.sort_order).map((area) => (
               <button
-                key={area}
-                onClick={() => setSelectedFocusArea(area === selectedFocusArea ? undefined : area)}
+                key={area.id}
+                onClick={() => setSelectedFocusArea(area.id === selectedFocusArea ? undefined : area.id)}
                 className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                  selectedFocusArea === area
+                  selectedFocusArea === area.id
                     ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
                     : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
                 }`}
               >
-                {area}
+                {area.label}
               </button>
             ))}
           </div>
