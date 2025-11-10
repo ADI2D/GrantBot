@@ -112,11 +112,11 @@ export async function fetchOpportunities(
   // Support both single focusArea (deprecated) and multiple focusAreas
   if (filters?.focusAreas && filters.focusAreas.length > 0) {
     // Multiple focus areas - use OR logic
-    // Build OR condition: each focus area gets a separate contains check
+    // Build OR condition using PostgREST array contains syntax
     console.log("[data-service] Filtering by focus_areas:", filters.focusAreas);
-    // Use raw filter with @> operator (array contains)
+    // Use cs (contains) operator: focus_areas.cs.{value}
     const orConditions = filters.focusAreas
-      .map(fa => `focus_areas@>{"${fa}"}`)
+      .map(fa => `focus_areas.cs.{${fa}}`)
       .join(',');
     query = query.or(orConditions);
   } else if (filters?.focusArea) {
