@@ -41,25 +41,113 @@ function mapTitleToFocusArea(text: string): string {
   const lowerText = text.toLowerCase();
 
   // Map based on keywords in title/description
-  if (lowerText.includes("education") || lowerText.includes("school") || lowerText.includes("student")) {
-    return "Education";
-  }
-  if (lowerText.includes("health") || lowerText.includes("medical") || lowerText.includes("wellness")) {
+  // Health & Wellness - check first because it has many specific terms
+  if (
+    lowerText.includes("health") ||
+    lowerText.includes("medical") ||
+    lowerText.includes("wellness") ||
+    lowerText.includes("substance use") ||
+    lowerText.includes("substance abuse") ||
+    lowerText.includes("treatment") ||
+    lowerText.includes("prevention") ||
+    lowerText.includes("mental health") ||
+    lowerText.includes("behavioral health") ||
+    lowerText.includes("clinical") ||
+    lowerText.includes("disease") ||
+    lowerText.includes("patient") ||
+    lowerText.includes("hospital") ||
+    lowerText.includes("nursing") ||
+    lowerText.includes("pharmaceutical") ||
+    lowerText.includes("public health") ||
+    lowerText.includes("epidemi") ||
+    lowerText.includes("medicine")
+  ) {
     return "Health & Wellness";
   }
-  if (lowerText.includes("community") || lowerText.includes("housing") || lowerText.includes("development")) {
-    return "Community Development";
+
+  // Education
+  if (
+    lowerText.includes("education") ||
+    lowerText.includes("school") ||
+    lowerText.includes("student") ||
+    lowerText.includes("teacher") ||
+    lowerText.includes("learning") ||
+    lowerText.includes("academic") ||
+    lowerText.includes("university") ||
+    lowerText.includes("college") ||
+    lowerText.includes("curriculum") ||
+    lowerText.includes("literacy") ||
+    lowerText.includes("stem") ||
+    lowerText.includes("training program")
+  ) {
+    return "Education";
   }
-  if (lowerText.includes("environment") || lowerText.includes("energy") || lowerText.includes("climate")) {
-    return "Environment";
-  }
-  if (lowerText.includes("arts") || lowerText.includes("culture") || lowerText.includes("humanities")) {
-    return "Arts & Culture";
-  }
-  if (lowerText.includes("science") || lowerText.includes("research") || lowerText.includes("innovation")) {
+
+  // Research & Science - check before Community Development to catch research keywords
+  if (
+    lowerText.includes("research") ||
+    lowerText.includes("science") ||
+    lowerText.includes("innovation") ||
+    lowerText.includes("laboratory") ||
+    lowerText.includes("investigation") ||
+    lowerText.includes("study") ||
+    lowerText.includes("experiment") ||
+    lowerText.includes("implementation science") ||
+    lowerText.includes("biomedical") ||
+    lowerText.includes("scientific")
+  ) {
     return "Research & Innovation";
   }
-  if (lowerText.includes("disaster") || lowerText.includes("emergency") || lowerText.includes("relief")) {
+
+  // Community Development
+  if (
+    lowerText.includes("community") ||
+    lowerText.includes("housing") ||
+    lowerText.includes("development") ||
+    lowerText.includes("neighborhood") ||
+    lowerText.includes("infrastructure") ||
+    lowerText.includes("economic development") ||
+    lowerText.includes("workforce")
+  ) {
+    return "Community Development";
+  }
+
+  // Environment
+  if (
+    lowerText.includes("environment") ||
+    lowerText.includes("energy") ||
+    lowerText.includes("climate") ||
+    lowerText.includes("conservation") ||
+    lowerText.includes("sustainability") ||
+    lowerText.includes("renewable") ||
+    lowerText.includes("pollution") ||
+    lowerText.includes("ecosystem")
+  ) {
+    return "Environment";
+  }
+
+  // Arts & Culture
+  if (
+    lowerText.includes("arts") ||
+    lowerText.includes("culture") ||
+    lowerText.includes("humanities") ||
+    lowerText.includes("museum") ||
+    lowerText.includes("music") ||
+    lowerText.includes("theater") ||
+    lowerText.includes("film") ||
+    lowerText.includes("heritage")
+  ) {
+    return "Arts & Culture";
+  }
+
+  // Disaster Relief
+  if (
+    lowerText.includes("disaster") ||
+    lowerText.includes("emergency") ||
+    lowerText.includes("relief") ||
+    lowerText.includes("humanitarian") ||
+    lowerText.includes("crisis")
+  ) {
     return "Disaster Relief";
   }
 
