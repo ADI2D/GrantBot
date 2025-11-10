@@ -45,6 +45,7 @@ export type OpportunitiesFilters = {
   minDeadline?: string;
   maxDeadline?: string;
   geographicScope?: string;
+  showClosed?: boolean; // Show closed opportunities when explicitly enabled
   limit?: number;
   offset?: number;
 };
@@ -65,6 +66,7 @@ export function useOpportunitiesData(filters?: OpportunitiesFilters) {
   if (filters?.minDeadline) params.set("minDeadline", filters.minDeadline);
   if (filters?.maxDeadline) params.set("maxDeadline", filters.maxDeadline);
   if (filters?.geographicScope) params.set("geographicScope", filters.geographicScope);
+  if (filters?.showClosed !== undefined) params.set("showClosed", filters.showClosed.toString());
   if (filters?.limit !== undefined) params.set("limit", filters.limit.toString());
   if (filters?.offset !== undefined) params.set("offset", filters.offset.toString());
 

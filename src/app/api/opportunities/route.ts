@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
 
     // Parse filter parameters from query string
     const focusAreasParam = request.nextUrl.searchParams.get("focusAreas");
+    const showClosedParam = request.nextUrl.searchParams.get("showClosed");
     const filters: OpportunityFilters = {
       search: request.nextUrl.searchParams.get("search") || undefined,
       focusArea: request.nextUrl.searchParams.get("focusArea") || undefined,
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
       minDeadline: request.nextUrl.searchParams.get("minDeadline") || undefined,
       maxDeadline: request.nextUrl.searchParams.get("maxDeadline") || undefined,
       geographicScope: request.nextUrl.searchParams.get("geographicScope") || undefined,
+      showClosed: showClosedParam === "true",
       limit: request.nextUrl.searchParams.get("limit")
         ? Number(request.nextUrl.searchParams.get("limit"))
         : undefined,

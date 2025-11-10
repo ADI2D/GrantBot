@@ -38,6 +38,7 @@ export default function OpportunitiesPage() {
   const [selectedFocusAreas, setSelectedFocusAreas] = useState<FocusAreaId[]>([]);
   const [selectedAmountRange, setSelectedAmountRange] = useState(0);
   const [geographicScope, setGeographicScope] = useState("");
+  const [showClosed, setShowClosed] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"all" | "recommended" | "saved">("all");
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -76,8 +77,9 @@ export default function OpportunitiesPage() {
       minAmount: range.min,
       maxAmount: range.max,
       geographicScope: geographicScope || undefined,
+      showClosed,
     };
-  }, [debouncedSearch, selectedFocusAreas, selectedAmountRange, geographicScope]);
+  }, [debouncedSearch, selectedFocusAreas, selectedAmountRange, geographicScope, showClosed]);
 
   // Fetch opportunities with filters
   const { data, isLoading, error } = useOpportunitiesData(filters);
@@ -135,7 +137,7 @@ export default function OpportunitiesPage() {
     },
   });
 
-  const hasActiveFilters = debouncedSearch || selectedFocusAreas.length > 0 || selectedAmountRange > 0 || geographicScope;
+  const hasActiveFilters = debouncedSearch || selectedFocusAreas.length > 0 || selectedAmountRange > 0 || geographicScope || showClosed;
 
   const clearAllFilters = () => {
     setSearchQuery("");
@@ -143,6 +145,7 @@ export default function OpportunitiesPage() {
     setSelectedFocusAreas([]);
     setSelectedAmountRange(0);
     setGeographicScope("");
+    setShowClosed(false);
   };
 
   if (isLoading) return <PageLoader label="Searching opportunities" />;
@@ -299,38 +302,54 @@ export default function OpportunitiesPage() {
 
           {/* Advanced filters panel */}
           {showAdvancedFilters && (
-            <div className="grid gap-4 border-t border-slate-100 pt-4 md:grid-cols-2">
-              {/* Amount range */}
-              <div>
-                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <DollarSign className="h-4 w-4" />
-                  Award Amount
-                </label>
-                <select
-                  value={selectedAmountRange}
-                  onChange={(e) => setSelectedAmountRange(Number(e.target.value))}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                >
-                  {amountRanges.map((range, index) => (
-                    <option key={index} value={index}>
-                      {range.label}
-                    </option>
-                  ))}
-                </select>
+            <div className="space-y-4 border-t border-slate-100 pt-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                {/* Amount range */}
+                <div>
+                  <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <DollarSign className="h-4 w-4" />
+                    Award Amount
+                  </label>
+                  <select
+                    value={selectedAmountRange}
+                    onChange={(e) => setSelectedAmountRange(Number(e.target.value))}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  >
+                    {amountRanges.map((range, index) => (
+                      <option key={index} value={index}>
+                        {range.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Geographic scope */}
+                <div>
+                  <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <MapPin className="h-4 w-4" />
+                    Geographic Scope
+                  </label>
+                  <Input
+                    placeholder="e.g., California, National, International"
+                    value={geographicScope}
+                    onChange={(e) => setGeographicScope(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
               </div>
 
-              {/* Geographic scope */}
-              <div>
-                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <MapPin className="h-4 w-4" />
-                  Geographic Scope
-                </label>
-                <Input
-                  placeholder="e.g., California, National, International"
-                  value={geographicScope}
-                  onChange={(e) => setGeographicScope(e.target.value)}
-                  className="text-sm"
+              {/* Show closed opportunities checkbox */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="show-closed"
+                  checked={showClosed}
+                  onChange={(e) => setShowClosed(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-200"
                 />
+                <label htmlFor="show-closed" className="text-sm font-medium text-slate-700 cursor-pointer">
+                  Show closed opportunities
+                </label>
               </div>
             </div>
           )}

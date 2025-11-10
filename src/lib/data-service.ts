@@ -75,6 +75,7 @@ export type OpportunityFilters = {
   minDeadline?: string;
   maxDeadline?: string;
   geographicScope?: string;
+  showClosed?: boolean; // Show closed opportunities when explicitly enabled
   limit?: number;
   offset?: number;
 };
@@ -100,8 +101,12 @@ export async function fetchOpportunities(
       bookmarked_opportunities!left(id)`,
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
-    .not("status", "ilike", "closed") // Exclude closed opportunities (case-insensitive)
     .or(`deadline.gte.${sixtyDaysAgoStr},deadline.is.null`); // Show past 60 days + future + ongoing programs (no deadline)
+
+  // Only exclude closed opportunities if showClosed filter is not explicitly enabled
+  if (!filters?.showClosed) {
+    query = query.not("status", "ilike", "closed"); // Exclude closed opportunities (case-insensitive)
+  }
 
   // Apply filters
   // Support both single focusArea (deprecated) and multiple focusAreas
