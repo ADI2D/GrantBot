@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRouteSupabase } from "@/lib/supabase-server";
 
 type RouteParams = {
-  params: Promise<{ proposalId: string }>;
+  params: Promise<{ id: string }>;
 };
 
-// GET /api/proposals/[proposalId]/presence - Get active users
+// GET /api/proposals/[id]/presence - Get active users
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const supabase = await createRouteSupabase();
-    const { proposalId } = await params;
+    const { id: proposalId } = await params;
 
     // Authenticate user
     const {
@@ -61,11 +61,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// POST /api/proposals/[proposalId]/presence - Update presence
+// POST /api/proposals/[id]/presence - Update presence
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const supabase = await createRouteSupabase();
-    const { proposalId } = await params;
+    const { id: proposalId } = await params;
 
     // Authenticate user
     const {

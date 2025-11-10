@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRouteSupabase } from "@/lib/supabase-server";
 
 type RouteParams = {
-  params: Promise<{ proposalId: string }>;
+  params: Promise<{ id: string }>;
 };
 
-// GET /api/proposals/[proposalId]/inline-comments - Get inline comments
+// GET /api/proposals/[id]/inline-comments - Get inline comments
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const supabase = await createRouteSupabase();
-    const { proposalId } = await params;
+    const { id: proposalId } = await params;
 
     // Authenticate user
     const {
@@ -75,11 +75,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// POST /api/proposals/[proposalId]/inline-comments - Create inline comment
+// POST /api/proposals/[id]/inline-comments - Create inline comment
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const supabase = await createRouteSupabase();
-    const { proposalId } = await params;
+    const { id: proposalId } = await params;
 
     // Authenticate user
     const {
@@ -182,11 +182,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// PATCH /api/proposals/[proposalId]/inline-comments - Resolve/unresolve comment
+// PATCH /api/proposals/[id]/inline-comments - Resolve/unresolve comment
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const supabase = await createRouteSupabase();
-    const { proposalId } = await params;
+    const { id: proposalId } = await params;
 
     // Authenticate user
     const {
