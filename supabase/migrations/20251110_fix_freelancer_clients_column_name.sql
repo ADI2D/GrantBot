@@ -71,6 +71,109 @@ BEGIN
   END IF;
 END $$;
 
+-- Step 3.5: Add missing columns if they don't exist
+DO $$
+BEGIN
+  -- Add focus_areas if missing
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'freelancer_clients' AND column_name = 'focus_areas'
+  ) THEN
+    ALTER TABLE public.freelancer_clients ADD COLUMN focus_areas text[] DEFAULT '{}';
+    RAISE NOTICE 'Added focus_areas column';
+  END IF;
+
+  -- Add primary_focus_area if missing
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'freelancer_clients' AND column_name = 'primary_focus_area'
+  ) THEN
+    ALTER TABLE public.freelancer_clients ADD COLUMN primary_focus_area text;
+    RAISE NOTICE 'Added primary_focus_area column';
+  END IF;
+
+  -- Add focus_description if missing
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'freelancer_clients' AND column_name = 'focus_description'
+  ) THEN
+    ALTER TABLE public.freelancer_clients ADD COLUMN focus_description text;
+    RAISE NOTICE 'Added focus_description column';
+  END IF;
+
+  -- Add primary_contact_name if missing
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'freelancer_clients' AND column_name = 'primary_contact_name'
+  ) THEN
+    ALTER TABLE public.freelancer_clients ADD COLUMN primary_contact_name text;
+    RAISE NOTICE 'Added primary_contact_name column';
+  END IF;
+
+  -- Add primary_contact_email if missing
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'freelancer_clients' AND column_name = 'primary_contact_email'
+  ) THEN
+    ALTER TABLE public.freelancer_clients ADD COLUMN primary_contact_email text;
+    RAISE NOTICE 'Added primary_contact_email column';
+  END IF;
+
+  -- Add mission if missing
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'freelancer_clients' AND column_name = 'mission'
+  ) THEN
+    ALTER TABLE public.freelancer_clients ADD COLUMN mission text;
+    RAISE NOTICE 'Added mission column';
+  END IF;
+
+  -- Add annual_budget if missing
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'freelancer_clients' AND column_name = 'annual_budget'
+  ) THEN
+    ALTER TABLE public.freelancer_clients ADD COLUMN annual_budget numeric;
+    RAISE NOTICE 'Added annual_budget column';
+  END IF;
+
+  -- Add billing_rate if missing
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'freelancer_clients' AND column_name = 'billing_rate'
+  ) THEN
+    ALTER TABLE public.freelancer_clients ADD COLUMN billing_rate numeric;
+    RAISE NOTICE 'Added billing_rate column';
+  END IF;
+
+  -- Add last_activity_at if missing
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'freelancer_clients' AND column_name = 'last_activity_at'
+  ) THEN
+    ALTER TABLE public.freelancer_clients ADD COLUMN last_activity_at timestamptz;
+    RAISE NOTICE 'Added last_activity_at column';
+  END IF;
+
+  -- Rename client_name to name if needed
+  IF EXISTS (
+    SELECT FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'freelancer_clients' AND column_name = 'client_name'
+  ) THEN
+    ALTER TABLE public.freelancer_clients RENAME COLUMN client_name TO name;
+    RAISE NOTICE 'Renamed client_name to name';
+  END IF;
+
+  -- Rename relationship_status to status if needed
+  IF EXISTS (
+    SELECT FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'freelancer_clients' AND column_name = 'relationship_status'
+  ) THEN
+    ALTER TABLE public.freelancer_clients RENAME COLUMN relationship_status TO status;
+    RAISE NOTICE 'Renamed relationship_status to status';
+  END IF;
+END $$;
+
 -- Step 4: Update the index to use the correct column name
 DROP INDEX IF EXISTS idx_freelancer_clients_freelancer;
 CREATE INDEX IF NOT EXISTS idx_freelancer_clients_freelancer
