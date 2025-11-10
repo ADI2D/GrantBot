@@ -113,11 +113,15 @@ export async function fetchOpportunities(
   if (filters?.focusAreas && filters.focusAreas.length > 0) {
     // Multiple focus areas - use OR logic with array overlap
     // Check if the focus_areas array contains any of the selected focus areas
+    console.log("[data-service] Filtering by focus_areas (overlaps):", filters.focusAreas);
     query = query.overlaps("focus_areas", filters.focusAreas);
   } else if (filters?.focusArea) {
     // Single focus area (deprecated, kept for backwards compatibility)
     // Check if focus_areas array contains this single value
+    console.log("[data-service] Filtering by single focus_area (contains):", filters.focusArea);
     query = query.contains("focus_areas", [filters.focusArea]);
+  } else {
+    console.log("[data-service] No focus area filter applied");
   }
 
   if (filters?.minAmount !== undefined) {
@@ -171,6 +175,9 @@ export async function fetchOpportunities(
 
   // Debug: Log the actual count returned
   console.log(`[fetchOpportunities] Returned ${data?.length ?? 0} opportunities (requested limit: ${limit})`);
+  if (data && data.length > 0) {
+    console.log(`[fetchOpportunities] Sample focus_areas from first result:`, data[0].focus_areas, 'type:', typeof data[0].focus_areas);
+  }
 
   const now = new Date();
   const opportunities = (data ?? []).map((item: any) => ({
