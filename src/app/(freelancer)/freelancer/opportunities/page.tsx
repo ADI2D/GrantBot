@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { PageLoader, PageError, EmptyState } from "@/components/ui/page-state";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
+import { FOCUS_AREAS, type FocusAreaId } from "@/types/focus-areas";
 
 export const dynamic = "force-dynamic";
 
@@ -36,16 +37,17 @@ type OpportunityCard = {
   isBookmarked?: boolean;
 };
 
-const focusAreas = [
-  "Education",
-  "Health & Wellness",
-  "Community Development",
-  "Environment",
-  "Arts & Culture",
-  "Research & Innovation",
-  "International",
-  "Disaster Relief",
-  "Other"
+// Use standardized focus area taxonomy for database queries
+const focusAreas: Array<{ id: FocusAreaId; label: string }> = [
+  { id: 'education', label: FOCUS_AREAS['education'].label },
+  { id: 'health', label: FOCUS_AREAS['health'].label },
+  { id: 'community-development', label: FOCUS_AREAS['community-development'].label },
+  { id: 'environment', label: FOCUS_AREAS['environment'].label },
+  { id: 'arts-culture', label: FOCUS_AREAS['arts-culture'].label },
+  { id: 'research-science', label: FOCUS_AREAS['research-science'].label },
+  { id: 'international', label: FOCUS_AREAS['international'].label },
+  { id: 'human-services', label: FOCUS_AREAS['human-services'].label },
+  { id: 'other', label: FOCUS_AREAS['other'].label },
 ];
 
 const amountRanges = [
@@ -377,21 +379,21 @@ export default function FreelancerOpportunitiesPage({
             </button>
             {focusAreas.map((area) => (
               <button
-                key={area}
+                key={area.id}
                 onClick={() => {
                   setSelectedFocusAreas(prev =>
-                    prev.includes(area)
-                      ? prev.filter(a => a !== area)
-                      : [...prev, area]
+                    prev.includes(area.id)
+                      ? prev.filter(a => a !== area.id)
+                      : [...prev, area.id]
                   );
                 }}
                 className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                  selectedFocusAreas.includes(area)
+                  selectedFocusAreas.includes(area.id)
                     ? "border-blue-500 bg-blue-50 text-blue-700 font-medium"
                     : "border-slate-200 text-slate-600 hover:border-blue-200 hover:text-blue-600"
                 }`}
               >
-                {area}
+                {area.label}
               </button>
             ))}
           </div>
