@@ -100,7 +100,6 @@ export async function fetchOpportunities(
       bookmarked_opportunities!left(id)`,
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
-    .neq("status", "closed") // Filter out closed opportunities
     .or(`deadline.gte.${sixtyDaysAgoStr},deadline.is.null`); // Show past 60 days + future + ongoing programs (no deadline)
 
   // Apply filters
@@ -183,8 +182,18 @@ export async function fetchOpportunities(
     isBookmarked: Array.isArray(item.bookmarked_opportunities) && item.bookmarked_opportunities.length > 0,
   }));
 
-  // Sort: Open opportunities first (future deadline), then closed (past deadline)
+  // Sort: Open opportunities first (by status and deadline), then closed at the end
   return opportunities.sort((a, b) => {
+    // Check if opportunity is closed by status field
+    const aIsClosed = a.status === 'closed';
+    const bIsClosed = b.status === 'closed';
+
+    // If one is closed and the other isn't, closed goes to the end
+    if (aIsClosed !== bIsClosed) {
+      return aIsClosed ? 1 : -1;
+    }
+
+    // Both have same closed status - sort by deadline
     const aDeadline = a.deadline ? new Date(a.deadline) : new Date(0);
     const bDeadline = b.deadline ? new Date(b.deadline) : new Date(0);
     const aIsOpen = aDeadline >= now;
@@ -194,7 +203,7 @@ export async function fetchOpportunities(
       // Both open or both closed - sort by deadline (nearest first for open, most recent first for closed)
       return aIsOpen ? aDeadline.getTime() - bDeadline.getTime() : bDeadline.getTime() - aDeadline.getTime();
     }
-    // Open opportunities first
+    // Open deadlines first
     return aIsOpen ? -1 : 1;
   });
 }
