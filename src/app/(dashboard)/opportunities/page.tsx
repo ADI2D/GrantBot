@@ -154,6 +154,14 @@ export default function OpportunitiesPage() {
   // Filter opportunities based on view mode and focus areas
   let filteredOpportunities = data.opportunities;
 
+  // Filter out closed opportunities unless showClosed is true
+  if (!showClosed) {
+    filteredOpportunities = filteredOpportunities.filter(opp => {
+      const deadline = opp.deadline ? new Date(opp.deadline) : null;
+      return deadline ? deadline >= now : true; // Keep opportunities without deadlines
+    });
+  }
+
   // Apply view mode filter
   if (viewMode === "recommended") {
     // Show only opportunities with high alignment scores (0.7 or higher)
