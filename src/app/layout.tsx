@@ -36,22 +36,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createServerSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // If user exists, fetch the full session for initial state
-  let session = null;
-  if (user) {
-    const { data } = await supabase.auth.getSession();
-    session = data.session;
-  }
-
   return (
     <html lang="en" className={`${headingFont.variable} ${bodyFont.variable}`}>
       <body className="antialiased font-body bg-surface text-primary">
-        <AppProviders initialSession={session}>{children}</AppProviders>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );
