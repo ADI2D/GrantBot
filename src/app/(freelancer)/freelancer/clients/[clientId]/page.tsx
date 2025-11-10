@@ -78,6 +78,12 @@ export default async function FreelancerClientDetailPage({
               <p className="mt-2 text-slate-600">No contact assigned.</p>
             )}
           </div>
+          <ButtonLink
+            href={`/freelancer/clients/${client.id}/edit`}
+            className="bg-blue-600 text-white border-blue-700 hover:bg-blue-700"
+          >
+            Edit client
+          </ButtonLink>
           <DeleteClientButton clientId={client.id} clientName={client.name} />
         </div>
       </div>
