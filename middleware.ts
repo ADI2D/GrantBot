@@ -17,21 +17,21 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const pathname = req.nextUrl.pathname;
 
   // Admin route protection
   if (pathname.startsWith("/admin")) {
-    if (!session?.user) {
+    if (!user) {
       return redirectToLogin(req, "admin");
     }
 
     const { data: adminRecord } = await supabase
       .from("admin_users")
       .select("role")
-      .eq("user_id", session.user.id)
+      .eq("user_id", user.id)
       .maybeSingle();
 
     if (!adminRecord) {
@@ -51,7 +51,7 @@ export async function middleware(req: NextRequest) {
 
   const isOnboardingRoute = pathname.startsWith("/onboarding");
 
-  if (session?.user && (isDashboardRoute || isOnboardingRoute)) {
+  if (user && (isDashboardRoute || isOnboardingRoute)) {
     // Get user's org ID from cookie
     const orgCookie = req.cookies.get("grantbot_selected_org");
 
