@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader, PageError, EmptyState } from "@/components/ui/page-state";
 import { useWorkspaceData } from "@/hooks/use-api";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { TipTapEditor } from "@/components/ui/tiptap-editor";
 import { PresenceIndicators } from "@/components/workspace/presence-indicators";
 import { InlineCommentThread, NewCommentForm, type InlineComment } from "@/components/workspace/inline-comment-thread";
 
@@ -514,7 +514,7 @@ export default function WorkspacePage() {
                 <Badge tone="info">Confidence {(proposal.confidence ?? 0).toFixed(2)}</Badge>
               </div>
             </div>
-            <RichTextEditor
+            <TipTapEditor
               value={draftContent}
               onChange={setDraftContent}
               disabled={proposal.archived}

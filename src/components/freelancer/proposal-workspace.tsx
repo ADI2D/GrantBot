@@ -10,6 +10,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { ShareProposalDialog, type ShareFormData } from "@/components/freelancer/share-proposal-dialog";
 import { ProposalCommentsPanel } from "@/components/freelancer/proposal-comments-panel";
 import { PresenceIndicators } from "@/components/workspace/presence-indicators";
+import { InlineCommentThread, NewCommentForm, type InlineComment } from "@/components/workspace/inline-comment-thread";
 import { cn } from "@/lib/utils";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -37,12 +38,34 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
   const [showChecklistInput, setShowChecklistInput] = useState(false);
   const [isChecklistExpanded, setIsChecklistExpanded] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [inlineComments, setInlineComments] = useState<InlineComment[]>([]);
+  const [showNewComment, setShowNewComment] = useState(false);
+  const [newCommentSelection, setNewCommentSelection] = useState<{ start: number; end: number; text: string } | null>(null);
 
   const completedCount = useMemo(() => checklist.filter((item) => item.completed).length, [checklist]);
   const isReadOnly = ["awarded"].includes(status.toLowerCase());
   const isSubmitted = status.toLowerCase() === "in review";
 
   const formatTimestamp = (value: string | null) => (value ? new Date(value).toLocaleString() : null);
+
+  // Load inline comments
+  useEffect(() => {
+    async function loadInlineComments() {
+      if (!proposal?.id) return;
+
+      try {
+        const response = await fetch(`/api/freelancer/proposals/${proposal.id}/inline-comments`);
+        if (response.ok) {
+          const data = (await response.json()) as { comments: InlineComment[] };
+          setInlineComments(data.comments);
+        }
+      } catch (err) {
+        console.error("[freelancer] Error loading inline comments:", err);
+      }
+    }
+
+    loadInlineComments();
+  }, [proposal?.id]);
 
   useEffect(() => {
     if (!feedback || feedback.type !== "success") {
@@ -81,6 +104,14 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
       setDraft(editor.getHTML());
+    },
+    onSelectionUpdate: ({ editor }) => {
+      const { from, to } = editor.state.selection;
+      const selectedText = editor.state.doc.textBetween(from, to, " ").trim();
+      if (selectedText.length > 0 && !isReadOnly) {
+        // Store selection for potential comment
+        setNewCommentSelection({ start: from, end: to, text: selectedText });
+      }
     },
   });
 
@@ -331,6 +362,81 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
         message: error instanceof Error ? error.message : "Failed to delete proposal",
       });
       setIsDeleting(false);
+    }
+  };
+
+  // Inline comment handlers
+  const handleCommentSelection = (selection: { start: number; end: number; text: string }) => {
+    setNewCommentSelection(selection);
+    setShowNewComment(true);
+  };
+
+  const handleCreateInlineComment = async (commentText: string) => {
+    if (!proposal?.id || !newCommentSelection) return;
+
+    try {
+      const response = await fetch(`/api/freelancer/proposals/${proposal.id}/inline-comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          commentText,
+          selectionStart: newCommentSelection.start,
+          selectionEnd: newCommentSelection.end,
+          selectedText: newCommentSelection.text,
+        }),
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as { comment: InlineComment };
+        setInlineComments([...inlineComments, data.comment]);
+        setShowNewComment(false);
+        setNewCommentSelection(null);
+        setFeedback({ type: "success", message: "Comment added" });
+      }
+    } catch (error) {
+      console.error("[freelancer] Error creating inline comment:", error);
+      setFeedback({ type: "error", message: "Failed to create comment" });
+    }
+  };
+
+  const handleResolveInlineComment = async (commentId: string) => {
+    if (!proposal?.id) return;
+
+    try {
+      const response = await fetch(`/api/freelancer/proposals/${proposal.id}/inline-comments`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commentId, resolved: true }),
+      });
+
+      if (response.ok) {
+        setInlineComments(inlineComments.map((c) => (c.id === commentId ? { ...c, resolved: true } : c)));
+        setFeedback({ type: "success", message: "Comment resolved" });
+      }
+    } catch (error) {
+      console.error("[freelancer] Error resolving comment:", error);
+      setFeedback({ type: "error", message: "Failed to resolve comment" });
+    }
+  };
+
+  const handleDeleteInlineComment = async (commentId: string) => {
+    if (!proposal?.id) return;
+
+    try {
+      const response = await fetch(
+        `/api/freelancer/proposals/${proposal.id}/inline-comments?commentId=${commentId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (response.ok) {
+        setInlineComments(inlineComments.filter((c) => c.id !== commentId));
+        setFeedback({ type: "success", message: "Comment deleted" });
+      }
+    } catch (error) {
+      console.error("[freelancer] Error deleting comment:", error);
+      setFeedback({ type: "error", message: "Failed to delete comment" });
     }
   };
 
@@ -652,6 +758,56 @@ export function FreelancerProposalWorkspace({ proposal }: { proposal: Freelancer
               </div>
             )}
           </div>
+
+          {/* Comment button for selected text */}
+          {!isReadOnly && newCommentSelection && !showNewComment && (
+            <div className="flex justify-center">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="gap-2"
+                onClick={() => setShowNewComment(true)}
+              >
+                <MessageSquare className="h-4 w-4" />
+                Add Comment to Selection
+              </Button>
+            </div>
+          )}
+
+          {/* New comment form */}
+          {showNewComment && newCommentSelection && (
+            <div className="mt-4">
+              <NewCommentForm
+                selectedText={newCommentSelection.text}
+                selectionStart={newCommentSelection.start}
+                selectionEnd={newCommentSelection.end}
+                onSubmit={handleCreateInlineComment}
+                onCancel={() => {
+                  setShowNewComment(false);
+                  setNewCommentSelection(null);
+                }}
+              />
+            </div>
+          )}
+
+          {/* Inline comments list */}
+          {inlineComments.length > 0 && (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm font-semibold text-slate-900">
+                Comments ({inlineComments.filter((c) => !c.resolved).length})
+              </p>
+              {inlineComments.map((comment) => (
+                <InlineCommentThread
+                  key={comment.id}
+                  comment={comment}
+                  onResolve={handleResolveInlineComment}
+                  onDelete={handleDeleteInlineComment}
+                  isOwner={true}
+                />
+              ))}
+            </div>
+          )}
+
           {isReadOnly ? <p className="text-xs text-slate-500">This proposal has been submitted and is read-only.</p> : null}
         </Card>
 
