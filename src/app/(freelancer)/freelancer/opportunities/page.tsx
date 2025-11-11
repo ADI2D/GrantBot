@@ -73,7 +73,8 @@ export default function FreelancerOpportunitiesPage({
   const [selectedAmountRange, setSelectedAmountRange] = useState(0);
   const [geographicScope, setGeographicScope] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<"all" | "recommended" | "saved">("all");
+  // Default to "recommended" (High Match) when coming from a client page, otherwise "all"
+  const [viewMode, setViewMode] = useState<"all" | "recommended" | "saved">(clientId ? "recommended" : "all");
   const [feedback, setFeedback] = useState<string | null>(null);
 
   // Add opportunity modal state
