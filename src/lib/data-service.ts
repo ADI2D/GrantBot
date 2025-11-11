@@ -105,7 +105,11 @@ export async function fetchOpportunities(
 
   // Only exclude closed opportunities if showClosed filter is not explicitly enabled
   if (!filters?.showClosed) {
-    query = query.not("status", "ilike", "closed"); // Exclude closed opportunities (case-insensitive)
+    // Exclude closed, expired, and ended opportunities (case-insensitive)
+    query = query
+      .not("status", "ilike", "closed")
+      .not("status", "ilike", "expired")
+      .not("status", "ilike", "ended");
   }
 
   // Apply filters
@@ -189,8 +193,18 @@ export async function fetchOpportunities(
     isBookmarked: Array.isArray(item.bookmarked_opportunities) && item.bookmarked_opportunities.length > 0,
   }));
 
-  // Sort: Upcoming deadlines first (soonest), null deadlines (ongoing programs) last
+  // Sort: "other" category last, then by deadline (soonest first), null deadlines (ongoing programs) last
   return opportunities.sort((a, b) => {
+    const aFocusArea = a.focusArea?.toLowerCase() || "";
+    const bFocusArea = b.focusArea?.toLowerCase() || "";
+    const aIsOther = aFocusArea === "other";
+    const bIsOther = bFocusArea === "other";
+
+    // If one is "other" and the other isn't, non-"other" comes first
+    if (aIsOther && !bIsOther) return 1;
+    if (!aIsOther && bIsOther) return -1;
+
+    // If both are "other" or both are not "other", sort by deadline
     const aDeadline = a.deadline ? new Date(a.deadline) : new Date(8640000000000000); // Max date for null deadlines
     const bDeadline = b.deadline ? new Date(b.deadline) : new Date(8640000000000000);
     return aDeadline.getTime() - bDeadline.getTime();
