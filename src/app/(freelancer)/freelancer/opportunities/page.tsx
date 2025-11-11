@@ -15,7 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { PageLoader, PageError, EmptyState } from "@/components/ui/page-state";
+import { FocusAreaBadges } from "@/components/ui/focus-area-select";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
+import { type FocusAreaId } from "@/types/focus-areas";
 
 export const dynamic = "force-dynamic";
 
@@ -480,14 +482,23 @@ export default function FreelancerOpportunitiesPage({
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   {/* Title and badges */}
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg font-semibold text-slate-900">{opportunity.name}</h3>
-                    {!isOpen && <Badge tone="neutral">Closed</Badge>}
-                    {isClosingSoon && <Badge tone="warning">Closing Soon</Badge>}
-                    {opportunity.alignmentScore && opportunity.alignmentScore >= 80 && (
-                      <Badge tone="success">{opportunity.alignmentScore}% Match</Badge>
-                    )}
+                  <div className="mb-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-semibold text-slate-900">{opportunity.name}</h3>
+                      {!isOpen && <Badge tone="neutral">Closed</Badge>}
+                      {isClosingSoon && <Badge tone="warning">Closing Soon</Badge>}
+                      {opportunity.alignmentScore && opportunity.alignmentScore >= 80 && (
+                        <Badge tone="success">{opportunity.alignmentScore}% Match</Badge>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Focus area badges */}
+                  {opportunity.focusAreas && opportunity.focusAreas.length > 0 && (
+                    <div className="mb-3">
+                      <FocusAreaBadges areaIds={opportunity.focusAreas as FocusAreaId[]} maxVisible={4} />
+                    </div>
+                  )}
 
                   {/* Metadata */}
                   <div className="mb-4 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
@@ -501,12 +512,6 @@ export default function FreelancerOpportunitiesPage({
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4" />
                         <span className="font-semibold text-emerald-600">{formatCurrency(opportunity.amount)}</span>
-                      </div>
-                    )}
-                    {opportunity.focusAreas && opportunity.focusAreas.length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4" />
-                        {opportunity.focusAreas.join(", ")}
                       </div>
                     )}
                     {deadline && (

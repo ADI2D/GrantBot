@@ -392,54 +392,56 @@ export default function OpportunitiesPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   {/* Title and badges */}
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg font-semibold text-slate-900">{opportunity.name}</h3>
-                    {!isOpen && <Badge tone="neutral">Closed</Badge>}
-                    {isClosingSoon && <Badge tone="warning">Closing Soon</Badge>}
-                    {opportunity.alignmentScore && opportunity.alignmentScore >= 0.8 && (
-                      <Badge tone="success">{formatPercent(opportunity.alignmentScore)} Match</Badge>
-                    )}
-                    {/* Focus area match score badge */}
-                    {orgFocusAreas.length > 0 && opportunity.focus_areas && opportunity.focus_areas.length > 0 && (() => {
-                      const matchScore = calculateFocusAreaMatchScore(
-                        orgFocusAreas,
-                        opportunity.focus_areas as FocusAreaId[]
-                      );
-                      if (matchScore >= 75) {
-                        return <Badge tone="success">{Math.round(matchScore)}% Focus Match</Badge>;
-                      } else if (matchScore >= 50) {
-                        return <Badge tone="info">{Math.round(matchScore)}% Focus Match</Badge>;
-                      } else if (matchScore > 0) {
-                        return <Badge tone="neutral">{Math.round(matchScore)}% Focus Match</Badge>;
-                      }
-                      return null;
-                    })()}
-                    {/* Compliance risk score badge */}
-                    {opportunity.complianceRiskScore !== null && opportunity.complianceRiskScore !== undefined && (() => {
-                      const riskScore = opportunity.complianceRiskScore;
-                      if (riskScore >= 60) {
-                        return (
-                          <Badge tone="danger" className="flex items-center gap-1">
-                            <ShieldAlert className="h-3 w-3" />
-                            High Compliance Risk
-                          </Badge>
+                  <div className="mb-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-semibold text-slate-900">{opportunity.name}</h3>
+                      {!isOpen && <Badge tone="neutral">Closed</Badge>}
+                      {isClosingSoon && <Badge tone="warning">Closing Soon</Badge>}
+                      {opportunity.alignmentScore && opportunity.alignmentScore >= 0.8 && (
+                        <Badge tone="success">{formatPercent(opportunity.alignmentScore)} Match</Badge>
+                      )}
+                      {/* Focus area match score badge */}
+                      {orgFocusAreas.length > 0 && opportunity.focus_areas && opportunity.focus_areas.length > 0 && (() => {
+                        const matchScore = calculateFocusAreaMatchScore(
+                          orgFocusAreas,
+                          opportunity.focus_areas as FocusAreaId[]
                         );
-                      } else if (riskScore >= 30) {
-                        return (
-                          <Badge tone="warning" className="flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3" />
-                            Medium Risk
-                          </Badge>
-                        );
-                      } else {
-                        return (
-                          <Badge tone="success" className="flex items-center gap-1">
-                            <ShieldCheck className="h-3 w-3" />
-                            Low Risk
-                          </Badge>
-                        );
-                      }
-                    })()}
+                        if (matchScore >= 75) {
+                          return <Badge tone="success">{Math.round(matchScore)}% Focus Match</Badge>;
+                        } else if (matchScore >= 50) {
+                          return <Badge tone="info">{Math.round(matchScore)}% Focus Match</Badge>;
+                        } else if (matchScore > 0) {
+                          return <Badge tone="neutral">{Math.round(matchScore)}% Focus Match</Badge>;
+                        }
+                        return null;
+                      })()}
+                      {/* Compliance risk score badge */}
+                      {opportunity.complianceRiskScore !== null && opportunity.complianceRiskScore !== undefined && (() => {
+                        const riskScore = opportunity.complianceRiskScore;
+                        if (riskScore >= 60) {
+                          return (
+                            <Badge tone="danger" className="flex items-center gap-1">
+                              <ShieldAlert className="h-3 w-3" />
+                              High Compliance Risk
+                            </Badge>
+                          );
+                        } else if (riskScore >= 30) {
+                          return (
+                            <Badge tone="warning" className="flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              Medium Risk
+                            </Badge>
+                          );
+                        } else {
+                          return (
+                            <Badge tone="success" className="flex items-center gap-1">
+                              <ShieldCheck className="h-3 w-3" />
+                              Low Risk
+                            </Badge>
+                          );
+                        }
+                      })()}
+                    </div>
                   </div>
 
                   {/* Focus area badges */}
