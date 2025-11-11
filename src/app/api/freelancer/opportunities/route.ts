@@ -58,10 +58,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Base query - get all opportunities (not org-specific for freelancers)
-    // Show opportunities from past 60 days OR future
-    const sixtyDaysAgo = new Date();
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-    const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
+    // Show only active opportunities with future deadlines
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
 
     let query = supabase
       .from("opportunities")
@@ -69,9 +68,15 @@ export async function GET(request: NextRequest) {
         `id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope,
         bookmarked_opportunities!left(id)`
       )
-      .gte("deadline", sixtyDaysAgoStr)
-      .neq("status", "closed")
-      .order("deadline", { ascending: false });
+      .gte("deadline", todayStr); // Only show opportunities with deadlines today or in the future
+
+    // Exclude closed, expired, and ended opportunities (case-insensitive)
+    query = query
+      .not("status", "ilike", "closed")
+      .not("status", "ilike", "expired")
+      .not("status", "ilike", "ended");
+
+    query = query.order("deadline", { ascending: false });
 
     // Apply filters
     // Filter by client's focus areas if clientId provided

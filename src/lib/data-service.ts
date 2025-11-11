@@ -85,10 +85,9 @@ export async function fetchOpportunities(
   orgId: string,
   filters?: OpportunityFilters
 ): Promise<Opportunity[]> {
-  // Show opportunities from past 60 days OR future (for reference and planning)
-  const sixtyDaysAgo = new Date();
-  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-  const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
+  // Show only active opportunities with future deadlines or ongoing programs
+  const today = new Date();
+  const todayStr = today.toISOString().split("T")[0];
 
   // Get user ID for bookmark lookup
   const { data: { user } } = await client.auth.getUser();
@@ -101,7 +100,7 @@ export async function fetchOpportunities(
       bookmarked_opportunities!left(id)`,
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
-    .or(`deadline.gte.${sixtyDaysAgoStr},deadline.is.null`); // Show past 60 days + future + ongoing programs (no deadline)
+    .or(`deadline.gte.${todayStr},deadline.is.null`); // Show future deadlines + ongoing programs (no deadline)
 
   // Only exclude closed opportunities if showClosed filter is not explicitly enabled
   if (!filters?.showClosed) {
