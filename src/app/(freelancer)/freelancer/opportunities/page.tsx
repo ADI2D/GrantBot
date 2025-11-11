@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { PageLoader, PageError, EmptyState } from "@/components/ui/page-state";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
+import { FocusAreaBadges } from "@/components/ui/focus-area-select";
+import { FOCUS_AREAS, type FocusAreaId } from "@/types/focus-areas";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +57,53 @@ const amountRanges = [
   { label: "$100K - $500K", min: 100000, max: 500000 },
   { label: "$500K+", min: 500000, max: undefined },
 ];
+
+/**
+ * Convert focus area label string to FocusAreaId
+ * Handles legacy string labels from the database
+ */
+function labelToFocusAreaId(label: string): FocusAreaId | null {
+  // Normalize the label for comparison
+  const normalizedLabel = label.toLowerCase().trim();
+
+  // Find matching focus area by label
+  for (const [id, area] of Object.entries(FOCUS_AREAS)) {
+    if (area.label.toLowerCase() === normalizedLabel) {
+      return id as FocusAreaId;
+    }
+  }
+
+  // Handle common variations and legacy labels
+  const labelMap: Record<string, FocusAreaId> = {
+    'education': 'education',
+    'health & wellness': 'health',
+    'health': 'health',
+    'community development': 'community-development',
+    'environment': 'environment',
+    'environment & animals': 'environment',
+    'arts & culture': 'arts-culture',
+    'arts and culture': 'arts-culture',
+    'research & innovation': 'research-science',
+    'research & science': 'research-science',
+    'research': 'research-science',
+    'disaster relief': 'other',
+    'human services': 'human-services',
+    'youth development': 'youth-development',
+    'international': 'international',
+    'other': 'other',
+  };
+
+  return labelMap[normalizedLabel] || null;
+}
+
+/**
+ * Convert array of focus area strings to FocusAreaId array
+ */
+function convertFocusAreasToIds(focusAreas: string[]): FocusAreaId[] {
+  return focusAreas
+    .map(labelToFocusAreaId)
+    .filter((id): id is FocusAreaId => id !== null);
+}
 
 export default function FreelancerOpportunitiesPage({
   searchParams,
@@ -489,6 +538,16 @@ export default function FreelancerOpportunitiesPage({
                     )}
                   </div>
 
+                  {/* Focus area badges */}
+                  {opportunity.focusAreas && opportunity.focusAreas.length > 0 && (
+                    <div className="mb-3">
+                      <FocusAreaBadges
+                        areaIds={convertFocusAreasToIds(opportunity.focusAreas)}
+                        maxVisible={4}
+                      />
+                    </div>
+                  )}
+
                   {/* Metadata */}
                   <div className="mb-4 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
                     {opportunity.funderName && (
@@ -501,12 +560,6 @@ export default function FreelancerOpportunitiesPage({
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4" />
                         <span className="font-semibold text-emerald-600">{formatCurrency(opportunity.amount)}</span>
-                      </div>
-                    )}
-                    {opportunity.focusAreas && opportunity.focusAreas.length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4" />
-                        {opportunity.focusAreas.join(", ")}
                       </div>
                     )}
                     {deadline && (
