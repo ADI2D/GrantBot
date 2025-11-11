@@ -253,25 +253,72 @@ export async function listFreelancerClients(): Promise<FreelancerClientSummary[]
       return [];
     }
 
-    return (data ?? []).map((row) => ({
-      id: row.id,
-      name: row.name,
-      status: row.status as "active" | "on_hold" | "archived",
-      activeProposals: 0, // TODO: Count from proposals table
-      opportunitiesInPipeline: 0, // TODO: Count from opportunities
-      documentsMissing: 0, // TODO: Count documents with status 'missing'
-      lastActivityAt: row.last_activity_at || row.created_at,
-      annualBudget: row.annual_budget || null,
-      primaryContact: row.primary_contact_name || row.primary_contact_email
-        ? {
-            name: row.primary_contact_name || null,
-            email: row.primary_contact_email || null,
+    const clients = data ?? [];
+
+    // Collect all unique focus areas from all clients
+    const allFocusAreas = new Set<string>();
+    clients.forEach((client) => {
+      if (Array.isArray(client.focus_areas)) {
+        client.focus_areas.forEach((area: string) => allFocusAreas.add(area));
+      }
+    });
+
+    // Fetch opportunities matching any of the focus areas
+    let opportunitiesByFocusArea: Record<string, number> = {};
+    if (allFocusAreas.size > 0) {
+      const sixtyDaysAgo = new Date();
+      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+      const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
+
+      const { data: opportunities, error: oppError } = await supabase
+        .from("opportunities")
+        .select("focus_area")
+        .in("focus_area", Array.from(allFocusAreas))
+        .gte("deadline", sixtyDaysAgoStr)
+        .neq("status", "closed");
+
+      if (oppError) {
+        console.error("[freelancer][clients] Failed to fetch opportunities:", oppError);
+      } else {
+        // Count opportunities per focus area
+        (opportunities ?? []).forEach((opp) => {
+          if (opp.focus_area) {
+            opportunitiesByFocusArea[opp.focus_area] =
+              (opportunitiesByFocusArea[opp.focus_area] || 0) + 1;
           }
-        : null,
-      billingRate: row.billing_rate || null,
-      likeUs: row.like_us || false,
-      categories: Array.isArray(row.categories) ? row.categories : [],
-    }));
+        });
+      }
+    }
+
+    return clients.map((row) => {
+      // Count opportunities for this client's focus areas
+      let opportunitiesCount = 0;
+      if (Array.isArray(row.focus_areas)) {
+        row.focus_areas.forEach((area: string) => {
+          opportunitiesCount += opportunitiesByFocusArea[area] || 0;
+        });
+      }
+
+      return {
+        id: row.id,
+        name: row.name,
+        status: row.status as "active" | "on_hold" | "archived",
+        activeProposals: 0, // TODO: Count from proposals table
+        opportunitiesInPipeline: opportunitiesCount,
+        documentsMissing: 0, // TODO: Count documents with status 'missing'
+        lastActivityAt: row.last_activity_at || row.created_at,
+        annualBudget: row.annual_budget || null,
+        primaryContact: row.primary_contact_name || row.primary_contact_email
+          ? {
+              name: row.primary_contact_name || null,
+              email: row.primary_contact_email || null,
+            }
+          : null,
+        billingRate: row.billing_rate || null,
+        likeUs: row.like_us || false,
+        categories: Array.isArray(row.categories) ? row.categories : [],
+      };
+    });
   } catch (error) {
     console.error("[freelancer][clients] Unexpected error:", error);
     return [];
@@ -730,13 +777,34 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
       (p) => !["archived", "rejected", "awarded"].includes(p.status?.toLowerCase() || "")
     ).length;
 
+    // Count opportunities in pipeline (matching client's focus areas)
+    let opportunitiesCount = 0;
+    if (client.focus_areas && Array.isArray(client.focus_areas) && client.focus_areas.length > 0) {
+      const sixtyDaysAgo = new Date();
+      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+      const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
+
+      const { count, error: oppCountError } = await supabase
+        .from("opportunities")
+        .select("*", { count: "exact", head: true })
+        .in("focus_area", client.focus_areas)
+        .gte("deadline", sixtyDaysAgoStr)
+        .neq("status", "closed");
+
+      if (oppCountError) {
+        console.error("[freelancer][client] Failed to count opportunities:", oppCountError);
+      } else {
+        opportunitiesCount = count ?? 0;
+      }
+    }
+
     // Map to FreelancerClientDetail
     return {
       id: client.id,
       name: client.name,
       status: client.status as "active" | "on_hold" | "archived",
       activeProposals: activeProposalsCount,
-      opportunitiesInPipeline: 0, // TODO: Count from opportunities
+      opportunitiesInPipeline: opportunitiesCount,
       documentsMissing: (documents ?? []).filter((d) => d.status === "missing").length,
       lastActivityAt: client.last_activity_at || client.created_at,
       annualBudget: client.annual_budget || null,
