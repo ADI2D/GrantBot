@@ -447,7 +447,13 @@ export default function FreelancerOpportunitiesPage({
           <div className="flex items-center justify-between border-t border-slate-100 pt-4">
             <p className="text-sm text-slate-600">
               Showing <span className="font-semibold text-slate-900">{filteredOpportunities.length}</span> opportunities
-              {hasActiveFilters && ` matching your search`}
+              {viewMode === "all" && filteredOpportunities.length !== opportunities.length && (
+                <span className="text-slate-500"> (filtered from {opportunities.length} total)</span>
+              )}
+              {viewMode === "recommended" && (
+                <span className="text-slate-500"> ({opportunities.length} total available)</span>
+              )}
+              {hasActiveFilters && viewMode === "all" && ` matching your search`}
             </p>
             {debouncedSearch && (
               <Badge tone="info">Searching: "{debouncedSearch}"</Badge>

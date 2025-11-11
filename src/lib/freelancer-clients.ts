@@ -730,13 +730,21 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
       (p) => !["archived", "rejected", "awarded"].includes(p.status?.toLowerCase() || "")
     ).length;
 
+    // Count opportunities in pipeline (open opportunities with future deadlines)
+    const today = new Date().toISOString().split("T")[0];
+    const { count: opportunitiesCount } = await supabase
+      .from("opportunities")
+      .select("*", { count: "exact", head: true })
+      .gte("deadline", today)
+      .neq("status", "closed");
+
     // Map to FreelancerClientDetail
     return {
       id: client.id,
       name: client.name,
       status: client.status as "active" | "on_hold" | "archived",
       activeProposals: activeProposalsCount,
-      opportunitiesInPipeline: 0, // TODO: Count from opportunities
+      opportunitiesInPipeline: opportunitiesCount ?? 0,
       documentsMissing: (documents ?? []).filter((d) => d.status === "missing").length,
       lastActivityAt: client.last_activity_at || client.created_at,
       annualBudget: client.annual_budget || null,
