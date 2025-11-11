@@ -170,9 +170,27 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    console.log(`[freelancer][opportunities] Returned ${opportunities.length} opportunities (requested limit: ${limit})`);
+    // Sort opportunities: "other" category last, all other categories first
+    // Within each group, sort by deadline (descending - furthest deadline first)
+    const sortedOpportunities = opportunities.sort((a, b) => {
+      const aFocusArea = a.focusAreas[0]?.toLowerCase() || "";
+      const bFocusArea = b.focusAreas[0]?.toLowerCase() || "";
+      const aIsOther = aFocusArea === "other";
+      const bIsOther = bFocusArea === "other";
 
-    return NextResponse.json({ opportunities });
+      // If one is "other" and the other isn't, non-"other" comes first
+      if (aIsOther && !bIsOther) return 1;
+      if (!aIsOther && bIsOther) return -1;
+
+      // If both are "other" or both are not "other", sort by deadline
+      const aDeadline = new Date(a.deadline).getTime();
+      const bDeadline = new Date(b.deadline).getTime();
+      return bDeadline - aDeadline; // Descending order (furthest deadline first)
+    });
+
+    console.log(`[freelancer][opportunities] Returned ${sortedOpportunities.length} opportunities (requested limit: ${limit})`);
+
+    return NextResponse.json({ opportunities: sortedOpportunities });
   } catch (error) {
     console.error("[freelancer][opportunities] Unexpected error:", error);
     return NextResponse.json(
