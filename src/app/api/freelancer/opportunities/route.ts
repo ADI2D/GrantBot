@@ -40,6 +40,23 @@ export async function GET(request: NextRequest) {
       focusAreas: clientFocusAreas.length > 0 ? clientFocusAreas : undefined,
     } : null;
 
+    // If filtering by clientId, fetch the client's focus areas
+    let clientFilterFocusAreas: string[] = [];
+    if (clientId) {
+      const { data: clientData, error: clientError } = await supabase
+        .from("freelancer_clients")
+        .select("focus_areas")
+        .eq("id", clientId)
+        .eq("freelancer_user_id", user.id)
+        .maybeSingle();
+
+      if (clientError) {
+        console.error("[freelancer][opportunities] Failed to fetch client focus areas:", clientError);
+      } else if (clientData && Array.isArray(clientData.focus_areas)) {
+        clientFilterFocusAreas = clientData.focus_areas;
+      }
+    }
+
     // Base query - get all opportunities (not org-specific for freelancers)
     // Show opportunities from past 60 days OR future
     const sixtyDaysAgo = new Date();
@@ -57,6 +74,11 @@ export async function GET(request: NextRequest) {
       .order("deadline", { ascending: false });
 
     // Apply filters
+    // Filter by client's focus areas if clientId provided
+    if (clientId && clientFilterFocusAreas.length > 0) {
+      query = query.in("focus_area", clientFilterFocusAreas);
+    }
+
     if (focusArea) {
       query = query.eq("focus_area", focusArea);
     }
