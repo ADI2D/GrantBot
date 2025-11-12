@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
       if (client && Array.isArray(client.focus_areas)) {
         clientFocusAreas = client.focus_areas;
       }
+      console.log(`[freelancer][opportunities] Client ${clientId} focus areas:`, clientFocusAreas);
     }
 
     // Get client profile parameters for AI matching
@@ -157,6 +158,7 @@ export async function GET(request: NextRequest) {
           } else {
             alignmentScore = 30; // Low score if no match
           }
+          console.log(`[freelancer][opportunities] ${opp.name}: focus_area=${opp.focus_area}, score=${alignmentScore}`);
         }
 
         // Check if bookmarked based on context (org or client)
