@@ -47,12 +47,12 @@ export async function GET(request: NextRequest) {
     const enableMatching = searchParams.get("enableMatching") === "true";
     const clientName = searchParams.get("clientName");
     const clientMission = searchParams.get("clientMission");
-    const clientFocusAreas = searchParams.get("clientFocusAreas")?.split(",").filter(Boolean) || [];
+    const clientProfileFocusAreas = searchParams.get("clientFocusAreas")?.split(",").filter(Boolean) || [];
 
     const clientProfile: ClientProfile | null = clientName ? {
       name: clientName,
       mission: clientMission || undefined,
-      focusAreas: clientFocusAreas.length > 0 ? clientFocusAreas : undefined,
+      focusAreas: clientProfileFocusAreas.length > 0 ? clientProfileFocusAreas : undefined,
     } : null;
 
     // Base query - get all opportunities (not org-specific for freelancers)
