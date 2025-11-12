@@ -130,12 +130,14 @@ export default function FreelancerOpportunitiesPage({
 
   const toggleBookmark = useMutation({
     mutationFn: async ({ opportunityId, isBookmarked }: { opportunityId: string; isBookmarked: boolean }) => {
+      if (!clientId) {
+        throw new Error("Client ID is required for bookmarking");
+      }
+
       const method = isBookmarked ? "DELETE" : "POST";
-      // Note: For freelancers, we'll need to determine the orgId (client's org)
-      // For now, using a placeholder - this will need to be implemented based on client structure
       const url = isBookmarked
-        ? `/api/opportunities/bookmark?orgId=${clientId}&opportunityId=${opportunityId}`
-        : `/api/opportunities/bookmark?orgId=${clientId}`;
+        ? `/api/opportunities/bookmark?clientId=${clientId}&opportunityId=${opportunityId}`
+        : `/api/opportunities/bookmark?clientId=${clientId}`;
 
       const response = await fetch(url, {
         method,
@@ -144,7 +146,8 @@ export default function FreelancerOpportunitiesPage({
       });
 
       if (!response.ok) {
-        throw new Error(await response.text());
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to bookmark opportunity");
       }
       return response.json();
     },

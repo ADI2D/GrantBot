@@ -28,6 +28,21 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get("limit") ? Number(searchParams.get("limit")) : 1000;
     const offset = searchParams.get("offset") ? Number(searchParams.get("offset")) : 0;
 
+    // Fetch client focus areas if clientId is provided
+    let clientFocusAreas: string[] = [];
+    if (clientId) {
+      const { data: client } = await supabase
+        .from("freelancer_clients")
+        .select("focus_areas")
+        .eq("id", clientId)
+        .eq("freelancer_user_id", user.id)
+        .maybeSingle();
+
+      if (client && Array.isArray(client.focus_areas)) {
+        clientFocusAreas = client.focus_areas;
+      }
+    }
+
     // Get client profile parameters for AI matching
     const enableMatching = searchParams.get("enableMatching") === "true";
     const clientName = searchParams.get("clientName");
@@ -46,12 +61,19 @@ export async function GET(request: NextRequest) {
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
     const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
 
+    // Build select with appropriate bookmark join
+    let selectQuery = `id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope`;
+
+    // Add bookmark join based on context
+    if (clientId) {
+      selectQuery += `, bookmarked_opportunities!left(id, freelancer_client_id)`;
+    } else {
+      selectQuery += `, bookmarked_opportunities!left(id)`;
+    }
+
     let query = supabase
       .from("opportunities")
-      .select(
-        `id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope,
-        bookmarked_opportunities!left(id)`
-      )
+      .select(selectQuery)
       .gte("deadline", sixtyDaysAgoStr)
       .neq("status", "closed")
       .order("deadline", { ascending: false });
@@ -127,6 +149,27 @@ export async function GET(request: NextRequest) {
             console.error(`Error calculating match for ${opp.id}:`, error);
             // Fall back to database score
           }
+        } else if (clientFocusAreas.length > 0) {
+          // Calculate basic alignment score based on focus area matching
+          if (opp.focus_area && clientFocusAreas.includes(opp.focus_area)) {
+            alignmentScore = 85; // High match if focus area matches
+            matchReason = `Matches client focus area: ${opp.focus_area}`;
+          } else {
+            alignmentScore = 30; // Low score if no match
+          }
+        }
+
+        // Check if bookmarked based on context (org or client)
+        let isBookmarked = false;
+        if (Array.isArray((opp as any).bookmarked_opportunities)) {
+          const bookmarks = (opp as any).bookmarked_opportunities;
+          if (clientId) {
+            // For freelancer clients, check if any bookmark matches this client
+            isBookmarked = bookmarks.some((b: any) => b.freelancer_client_id === clientId);
+          } else {
+            // For regular use, any bookmark counts
+            isBookmarked = bookmarks.length > 0;
+          }
         }
 
         return {
@@ -143,7 +186,7 @@ export async function GET(request: NextRequest) {
           matchReason,
           applicationUrl: opp.application_url,
           geographicScope: opp.geographic_scope,
-          isBookmarked: Array.isArray((opp as any).bookmarked_opportunities) && (opp as any).bookmarked_opportunities.length > 0,
+          isBookmarked,
         };
       })
     );

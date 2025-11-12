@@ -730,13 +730,31 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
       (p) => !["archived", "rejected", "awarded"].includes(p.status?.toLowerCase() || "")
     ).length;
 
+    // Count opportunities matching client's focus areas
+    let opportunitiesCount = 0;
+    if (Array.isArray(client.focus_areas) && client.focus_areas.length > 0) {
+      // Show opportunities from past 60 days OR future
+      const sixtyDaysAgo = new Date();
+      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+      const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
+
+      const { count } = await supabase
+        .from("opportunities")
+        .select("id", { count: "exact", head: true })
+        .gte("deadline", sixtyDaysAgoStr)
+        .neq("status", "closed")
+        .in("focus_area", client.focus_areas);
+
+      opportunitiesCount = count || 0;
+    }
+
     // Map to FreelancerClientDetail
     return {
       id: client.id,
       name: client.name,
       status: client.status as "active" | "on_hold" | "archived",
       activeProposals: activeProposalsCount,
-      opportunitiesInPipeline: 0, // TODO: Count from opportunities
+      opportunitiesInPipeline: opportunitiesCount,
       documentsMissing: (documents ?? []).filter((d) => d.status === "missing").length,
       lastActivityAt: client.last_activity_at || client.created_at,
       annualBudget: client.annual_budget || null,
