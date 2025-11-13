@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Calendar } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+type Opportunity = {
+  id: string;
+  name: string;
+  funderName: string;
+  amount: number;
+  deadline: string | null;
+};
 
 export default function NewProposalPage() {
   const params = useParams();
@@ -18,13 +26,33 @@ export default function NewProposalPage() {
   const [selectedOpportunity, setSelectedOpportunity] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [creating, setCreating] = useState(false);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [loadingOpportunities, setLoadingOpportunities] = useState(true);
 
-  // Mock opportunities - in production, fetch from /api/opportunities filtered by client
-  const mockOpportunities = [
-    { id: "opp-1", name: "STEM Futures Initiative", funder: "National Science Foundation" },
-    { id: "opp-2", name: "Regional Innovation Grant", funder: "State Education Department" },
-    { id: "opp-3", name: "Community Impact Fund", funder: "Local Foundation" },
-  ];
+  // Fetch saved opportunities for this client
+  useEffect(() => {
+    const fetchOpportunities = async () => {
+      if (!clientId) return;
+
+      setLoadingOpportunities(true);
+      try {
+        const response = await fetch(`/api/freelancer/opportunities?clientId=${clientId}`);
+        if (!response.ok) throw new Error("Failed to fetch opportunities");
+
+        const data = await response.json();
+        // Filter for only bookmarked opportunities
+        const saved = (data.opportunities || []).filter((opp: any) => opp.isBookmarked);
+        setOpportunities(saved);
+      } catch (error) {
+        console.error("Error fetching opportunities:", error);
+        setOpportunities([]);
+      } finally {
+        setLoadingOpportunities(false);
+      }
+    };
+
+    fetchOpportunities();
+  }, [clientId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,22 +180,43 @@ export default function NewProposalPage() {
                 value={selectedOpportunity}
                 onChange={(e) => setSelectedOpportunity(e.target.value)}
                 className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                disabled={loadingOpportunities}
               >
-                <option value="">Choose an opportunity...</option>
-                {mockOpportunities.map((opp) => (
+                <option value="">
+                  {loadingOpportunities
+                    ? "Loading saved opportunities..."
+                    : opportunities.length === 0
+                    ? "No saved opportunities - save some first"
+                    : "Choose an opportunity..."}
+                </option>
+                {opportunities.map((opp) => (
                   <option key={opp.id} value={opp.id}>
-                    {opp.name} - {opp.funder}
+                    {opp.name} - {opp.funderName}
                   </option>
                 ))}
               </select>
               <p className="mt-2 text-xs text-slate-500">
-                Don't see the opportunity?{" "}
-                <Link
-                  href={`/freelancer/opportunities?client=${clientId}`}
-                  className="text-blue-600 hover:underline"
-                >
-                  Search for more opportunities
-                </Link>
+                {opportunities.length === 0 && !loadingOpportunities ? (
+                  <>
+                    No saved opportunities yet.{" "}
+                    <Link
+                      href={`/freelancer/opportunities?client=${clientId}`}
+                      className="text-blue-600 hover:underline"
+                    >
+                      Browse and save opportunities first
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    Don't see the opportunity?{" "}
+                    <Link
+                      href={`/freelancer/opportunities?client=${clientId}`}
+                      className="text-blue-600 hover:underline"
+                    >
+                      Search for more opportunities
+                    </Link>
+                  </>
+                )}
               </p>
             </div>
           )}
