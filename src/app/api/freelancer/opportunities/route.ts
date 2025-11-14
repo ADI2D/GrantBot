@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       const { data: bookmarksData } = await supabase
         .from("bookmarked_opportunities")
         .select("opportunity_id")
-        .eq("organization_id", clientId);
+        .eq("freelancer_client_id", clientId);
       bookmarkedIds = new Set(bookmarksData?.map(b => b.opportunity_id) || []);
     }
 

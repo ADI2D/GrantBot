@@ -258,15 +258,17 @@ export async function listFreelancerClients(): Promise<FreelancerClientSummary[]
     // Fetch counts for all clients efficiently
     const clientIds = clients.map(c => c.id);
 
-    // Count bookmarked opportunities per client
+    // Count bookmarked opportunities per client (using freelancer_client_id for freelancer workspace)
     const { data: bookmarkCounts } = await supabase
       .from("bookmarked_opportunities")
-      .select("organization_id")
-      .in("organization_id", clientIds);
+      .select("freelancer_client_id")
+      .in("freelancer_client_id", clientIds);
 
     const opportunityCounts = new Map<string, number>();
     (bookmarkCounts ?? []).forEach(b => {
-      opportunityCounts.set(b.organization_id, (opportunityCounts.get(b.organization_id) || 0) + 1);
+      if (b.freelancer_client_id) {
+        opportunityCounts.set(b.freelancer_client_id, (opportunityCounts.get(b.freelancer_client_id) || 0) + 1);
+      }
     });
 
     return clients.map((row) => ({
@@ -746,11 +748,11 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
       (p) => !["archived", "rejected", "awarded"].includes(p.status?.toLowerCase() || "")
     ).length;
 
-    // Count bookmarked opportunities for this client
+    // Count bookmarked opportunities for this client (using freelancer_client_id for freelancer workspace)
     const { count: opportunitiesCount } = await supabase
       .from("bookmarked_opportunities")
       .select("*", { count: "exact", head: true })
-      .eq("organization_id", clientId);
+      .eq("freelancer_client_id", clientId);
 
     // Map to FreelancerClientDetail
     return {
