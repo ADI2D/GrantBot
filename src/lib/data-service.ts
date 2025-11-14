@@ -94,11 +94,18 @@ export async function fetchOpportunities(
   const { data: { user } } = await client.auth.getUser();
   const userId = user?.id;
 
+  // First, fetch bookmarks for this organization
+  const { data: bookmarksData } = await client
+    .from("bookmarked_opportunities")
+    .select("opportunity_id")
+    .eq("organization_id", orgId);
+
+  const bookmarkedIds = new Set(bookmarksData?.map(b => b.opportunity_id) || []);
+
   let query = client
     .from("opportunities")
     .select(
-      `id, name, focus_area, focus_areas, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope, compliance_risk_score,
-      bookmarked_opportunities!left(id)`,
+      `id, name, focus_area, focus_areas, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope, compliance_risk_score`,
     )
     .or(`organization_id.eq.${orgId},organization_id.is.null`)
     .or(`deadline.gte.${sixtyDaysAgoStr},deadline.is.null`); // Show past 60 days + future + ongoing programs (no deadline)
@@ -186,7 +193,7 @@ export async function fetchOpportunities(
     applicationUrl: item.application_url,
     geographicScope: item.geographic_scope,
     complianceRiskScore: item.compliance_risk_score,
-    isBookmarked: Array.isArray(item.bookmarked_opportunities) && item.bookmarked_opportunities.length > 0,
+    isBookmarked: bookmarkedIds.has(item.id),
   }));
 
   // Sort: Upcoming deadlines first (soonest), null deadlines (ongoing programs) last

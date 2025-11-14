@@ -46,11 +46,20 @@ export async function GET(request: NextRequest) {
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
     const sixtyDaysAgoStr = sixtyDaysAgo.toISOString().split("T")[0];
 
+    // Fetch bookmarks for this client if clientId is provided
+    let bookmarkedIds = new Set<string>();
+    if (clientId) {
+      const { data: bookmarksData } = await supabase
+        .from("bookmarked_opportunities")
+        .select("opportunity_id")
+        .eq("organization_id", clientId);
+      bookmarkedIds = new Set(bookmarksData?.map(b => b.opportunity_id) || []);
+    }
+
     let query = supabase
       .from("opportunities")
       .select(
-        `id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope,
-        bookmarked_opportunities!left(id)`
+        `id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope`
       )
       .gte("deadline", sixtyDaysAgoStr)
       .neq("status", "closed")
@@ -143,7 +152,7 @@ export async function GET(request: NextRequest) {
           matchReason,
           applicationUrl: opp.application_url,
           geographicScope: opp.geographic_scope,
-          isBookmarked: Array.isArray((opp as any).bookmarked_opportunities) && (opp as any).bookmarked_opportunities.length > 0,
+          isBookmarked: bookmarkedIds.has(opp.id),
         };
       })
     );

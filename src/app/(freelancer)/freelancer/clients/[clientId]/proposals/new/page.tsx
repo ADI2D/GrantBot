@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Plus, Calendar } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -11,20 +11,46 @@ import { Input } from "@/components/ui/input";
 export default function NewProposalPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const clientId = params?.clientId as string;
+  const opportunityIdFromUrl = searchParams?.get("opportunity") || "";
 
   const [proposalTitle, setProposalTitle] = useState("");
   const [opportunitySource, setOpportunitySource] = useState<"search" | "manual">("search");
-  const [selectedOpportunity, setSelectedOpportunity] = useState("");
+  const [selectedOpportunity, setSelectedOpportunity] = useState(opportunityIdFromUrl);
   const [dueDate, setDueDate] = useState("");
   const [creating, setCreating] = useState(false);
+  const [opportunities, setOpportunities] = useState<Array<{ id: string; name: string; funderName: string; deadline: string | null }>>([]);
 
-  // Mock opportunities - in production, fetch from /api/opportunities filtered by client
-  const mockOpportunities = [
-    { id: "opp-1", name: "STEM Futures Initiative", funder: "National Science Foundation" },
-    { id: "opp-2", name: "Regional Innovation Grant", funder: "State Education Department" },
-    { id: "opp-3", name: "Community Impact Fund", funder: "Local Foundation" },
-  ];
+  // Fetch opportunities for this client
+  useEffect(() => {
+    const fetchOpportunities = async () => {
+      try {
+        const response = await fetch(`/api/freelancer/opportunities?clientId=${clientId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setOpportunities(data.opportunities || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch opportunities:", error);
+      }
+    };
+    fetchOpportunities();
+  }, [clientId]);
+
+  // Auto-populate title when opportunity is selected
+  useEffect(() => {
+    if (selectedOpportunity && opportunities.length > 0) {
+      const opportunity = opportunities.find(o => o.id === selectedOpportunity);
+      if (opportunity && !proposalTitle) {
+        setProposalTitle(opportunity.name);
+        // Auto-populate deadline if available
+        if (opportunity.deadline) {
+          setDueDate(opportunity.deadline.split('T')[0]);
+        }
+      }
+    }
+  }, [selectedOpportunity, opportunities, proposalTitle]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,9 +180,9 @@ export default function NewProposalPage() {
                 className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">Choose an opportunity...</option>
-                {mockOpportunities.map((opp) => (
+                {opportunities.map((opp) => (
                   <option key={opp.id} value={opp.id}>
-                    {opp.name} - {opp.funder}
+                    {opp.name} - {opp.funderName}
                   </option>
                 ))}
               </select>
