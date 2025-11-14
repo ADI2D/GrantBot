@@ -253,12 +253,28 @@ export async function listFreelancerClients(): Promise<FreelancerClientSummary[]
       return [];
     }
 
-    return (data ?? []).map((row) => ({
+    const clients = data ?? [];
+
+    // Fetch counts for all clients efficiently
+    const clientIds = clients.map(c => c.id);
+
+    // Count bookmarked opportunities per client
+    const { data: bookmarkCounts } = await supabase
+      .from("bookmarked_opportunities")
+      .select("organization_id")
+      .in("organization_id", clientIds);
+
+    const opportunityCounts = new Map<string, number>();
+    (bookmarkCounts ?? []).forEach(b => {
+      opportunityCounts.set(b.organization_id, (opportunityCounts.get(b.organization_id) || 0) + 1);
+    });
+
+    return clients.map((row) => ({
       id: row.id,
       name: row.name,
       status: row.status as "active" | "on_hold" | "archived",
       activeProposals: 0, // TODO: Count from proposals table
-      opportunitiesInPipeline: 0, // TODO: Count from opportunities
+      opportunitiesInPipeline: opportunityCounts.get(row.id) || 0,
       documentsMissing: 0, // TODO: Count documents with status 'missing'
       lastActivityAt: row.last_activity_at || row.created_at,
       annualBudget: row.annual_budget || null,
@@ -730,13 +746,19 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
       (p) => !["archived", "rejected", "awarded"].includes(p.status?.toLowerCase() || "")
     ).length;
 
+    // Count bookmarked opportunities for this client
+    const { count: opportunitiesCount } = await supabase
+      .from("bookmarked_opportunities")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", clientId);
+
     // Map to FreelancerClientDetail
     return {
       id: client.id,
       name: client.name,
       status: client.status as "active" | "on_hold" | "archived",
       activeProposals: activeProposalsCount,
-      opportunitiesInPipeline: 0, // TODO: Count from opportunities
+      opportunitiesInPipeline: opportunitiesCount || 0,
       documentsMissing: (documents ?? []).filter((d) => d.status === "missing").length,
       lastActivityAt: client.last_activity_at || client.created_at,
       annualBudget: client.annual_budget || null,
