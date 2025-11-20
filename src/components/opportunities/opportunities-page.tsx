@@ -249,6 +249,13 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], c
 
   // Sort by AI alignment score (when available), then focus area priority, then deadline
   const sortedOpportunities = [...filteredOpportunities].sort((a, b) => {
+    // CRITICAL: Closed opportunities always go to the bottom
+    const aIsClosed = a.status?.toLowerCase() === "closed";
+    const bIsClosed = b.status?.toLowerCase() === "closed";
+
+    if (aIsClosed && !bIsClosed) return 1; // a goes after b
+    if (!aIsClosed && bIsClosed) return -1; // a goes before b
+
     // Primary sort: AI alignment score (higher is better)
     const aScore = a.alignmentScore ?? 0;
     const bScore = b.alignmentScore ?? 0;

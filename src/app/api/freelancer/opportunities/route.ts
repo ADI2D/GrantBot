@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     const maxAmount = searchParams.get("maxAmount");
     const clientId = searchParams.get("clientId");
     const geographicScope = searchParams.get("geographicScope");
+    const showClosed = searchParams.get("showClosed") === "true";
     const limit = searchParams.get("limit") ? Number(searchParams.get("limit")) : 1000;
     const offset = searchParams.get("offset") ? Number(searchParams.get("offset")) : 0;
 
@@ -62,8 +63,12 @@ export async function GET(request: NextRequest) {
         `id, name, focus_area, focus_areas, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope`
       )
       .gte("deadline", sixtyDaysAgoStr)
-      .neq("status", "closed")
       .order("deadline", { ascending: false });
+
+    // Exclude closed opportunities unless explicitly requested
+    if (!showClosed) {
+      query = query.not("status", "ilike", "closed"); // Case-insensitive filter
+    }
 
     // Apply filters
     if (focusArea) {
@@ -113,11 +118,13 @@ export async function GET(request: NextRequest) {
     // Transform data and optionally calculate AI match scores
     const opportunities = await Promise.all(
       (data ?? []).map(async (opp) => {
-        let alignmentScore = opp.alignment_score || 0;
+        // IMPORTANT: Closed opportunities always get 0% match score
+        const isClosed = opp.status?.toLowerCase() === "closed";
+        let alignmentScore = isClosed ? 0 : (opp.alignment_score || 0);
         let matchReason = null;
 
-        // Calculate AI-powered match score if client profile provided and enabled
-        if (enableMatching && clientProfile) {
+        // Calculate AI-powered match score if client profile provided and enabled (skip for closed opps)
+        if (enableMatching && clientProfile && !isClosed) {
           try {
             const grantOpp: GrantOpportunity = {
               name: opp.name,
