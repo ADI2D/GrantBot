@@ -84,7 +84,7 @@ export async function fetchOpportunities(
   client: Client,
   orgId: string,
   filters?: OpportunityFilters
-): Promise<Opportunity[]> {
+): Promise<{ opportunities: Opportunity[]; totalCount: number }> {
   // Show opportunities from past 60 days OR future (for reference and planning)
   const sixtyDaysAgo = new Date();
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
@@ -155,6 +155,48 @@ export async function fetchOpportunities(
     });
   }
 
+  // Clone query for count (before pagination)
+  let countQuery = client
+    .from("opportunities")
+    .select("id", { count: "exact", head: true })
+    .or(`organization_id.eq.${orgId},organization_id.is.null`)
+    .or(`deadline.gte.${sixtyDaysAgoStr},deadline.is.null`);
+
+  // Apply same filters to count query
+  if (!filters?.showClosed) {
+    countQuery = countQuery.not("status", "ilike", "closed");
+  }
+  if (filters?.focusAreas && filters.focusAreas.length > 0) {
+    const focusAreaConditions = filters.focusAreas.map(fa => `focus_area.eq.${fa}`).join(',');
+    countQuery = countQuery.or(focusAreaConditions);
+  } else if (filters?.focusArea) {
+    countQuery = countQuery.eq("focus_area", filters.focusArea);
+  }
+  if (filters?.minAmount !== undefined) {
+    countQuery = countQuery.gte("amount", filters.minAmount);
+  }
+  if (filters?.maxAmount !== undefined) {
+    countQuery = countQuery.lte("amount", filters.maxAmount);
+  }
+  if (filters?.minDeadline) {
+    countQuery = countQuery.gte("deadline", filters.minDeadline);
+  }
+  if (filters?.maxDeadline) {
+    countQuery = countQuery.lte("deadline", filters.maxDeadline);
+  }
+  if (filters?.geographicScope) {
+    countQuery = countQuery.ilike("geographic_scope", `%${filters.geographicScope}%`);
+  }
+  if (filters?.search && filters.search.trim()) {
+    countQuery = countQuery.textSearch("search_vector", filters.search, {
+      type: "websearch",
+      config: "english",
+    });
+  }
+
+  // Get total count
+  const { count: totalCount, error: countError } = await countQuery;
+
   // Order by deadline (soonest first, NULL deadlines last)
   // This ensures the 1000 limit shows the most urgent opportunities
   query = query.order("deadline", { ascending: true, nullsFirst: false });
@@ -169,7 +211,7 @@ export async function fetchOpportunities(
     query = query.range(offset, offset + limit - 1);
   }
 
-  const { data, error, count} = await query;
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(`Failed to load opportunities: ${error.message}`);
@@ -197,11 +239,16 @@ export async function fetchOpportunities(
   }));
 
   // Sort: Upcoming deadlines first (soonest), null deadlines (ongoing programs) last
-  return opportunities.sort((a, b) => {
+  const sortedOpportunities = opportunities.sort((a, b) => {
     const aDeadline = a.deadline ? new Date(a.deadline) : new Date(8640000000000000); // Max date for null deadlines
     const bDeadline = b.deadline ? new Date(b.deadline) : new Date(8640000000000000);
     return aDeadline.getTime() - bDeadline.getTime();
   });
+
+  return {
+    opportunities: sortedOpportunities,
+    totalCount: totalCount || 0,
+  };
 }
 
 type RawProposal = {

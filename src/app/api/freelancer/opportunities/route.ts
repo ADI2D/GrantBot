@@ -99,7 +99,42 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Apply pagination
+    // Clone query for count (before pagination)
+    let countQuery = supabase
+      .from("opportunities")
+      .select("id", { count: "exact", head: true })
+      .gte("deadline", sixtyDaysAgoStr);
+
+    // Apply same filters to count query
+    if (!showClosed) {
+      countQuery = countQuery.not("status", "ilike", "closed");
+    }
+    if (focusArea) {
+      countQuery = countQuery.eq("focus_area", focusArea);
+    }
+    if (status) {
+      countQuery = countQuery.eq("status", status);
+    }
+    if (minAmount) {
+      countQuery = countQuery.gte("amount", parseInt(minAmount));
+    }
+    if (maxAmount) {
+      countQuery = countQuery.lte("amount", parseInt(maxAmount));
+    }
+    if (geographicScope) {
+      countQuery = countQuery.ilike("geographic_scope", `%${geographicScope}%`);
+    }
+    if (search && search.trim()) {
+      countQuery = countQuery.textSearch("search_vector", search, {
+        type: "websearch",
+        config: "english",
+      });
+    }
+
+    // Get total count
+    const { count: totalCount, error: countError } = await countQuery;
+
+    // Apply pagination to main query
     query = query.limit(limit);
     if (offset > 0) {
       query = query.range(offset, offset + limit - 1);
@@ -142,9 +177,9 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    console.log(`[freelancer][opportunities] Returned ${opportunities.length} opportunities (requested limit: ${limit})`);
+    console.log(`[freelancer][opportunities] Returned ${opportunities.length} opportunities (requested limit: ${limit}, total count: ${totalCount})`);
 
-    return NextResponse.json({ opportunities });
+    return NextResponse.json({ opportunities, totalCount: totalCount || 0 });
   } catch (error) {
     console.error("[freelancer][opportunities] Unexpected error:", error);
     return NextResponse.json(

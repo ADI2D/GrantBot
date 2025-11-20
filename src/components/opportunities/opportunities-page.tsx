@@ -74,6 +74,7 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], c
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 100;
+  const [totalCount, setTotalCount] = useState(0);
 
   // Opportunities data
   const [opportunities, setOpportunities] = useState<OpportunityItem[]>([]);
@@ -144,6 +145,7 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], c
 
         const data = await response.json();
         const opps = data.opportunities || [];
+        setTotalCount(data.totalCount || 0);
 
         // Debug: Log AI matching status
         if (mode === "freelancer" && clientId) {
@@ -711,35 +713,38 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], c
       </div>
 
       {/* Pagination Controls */}
-      {sortedOpportunities.length > 0 && (
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-slate-600">
-              Showing page <span className="font-semibold text-slate-900">{currentPage}</span>
-              {" "}({sortedOpportunities.length} opportunities on this page)
+      {sortedOpportunities.length > 0 && (() => {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return (
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-slate-600">
+                Page <span className="font-semibold text-slate-900">{currentPage} of {totalPages}</span>
+                {" "}({totalCount.toLocaleString()} opportunities)
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-slate-600 px-3">Page {currentPage}</span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  disabled={currentPage >= totalPages}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-slate-600 px-3">Page {currentPage}</span>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setCurrentPage(prev => prev + 1)}
-                disabled={sortedOpportunities.length < pageSize}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
+          </Card>
+        );
+      })()}
     </div>
   );
 }

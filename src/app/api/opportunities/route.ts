@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
         : undefined,
     };
 
-    const opportunities = await fetchOpportunities(supabase, orgId, filters);
-    return NextResponse.json({ opportunities });
+    const { opportunities, totalCount } = await fetchOpportunities(supabase, orgId, filters);
+    return NextResponse.json({ opportunities, totalCount });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
