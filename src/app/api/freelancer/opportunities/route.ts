@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const clientId = searchParams.get("clientId");
     const geographicScope = searchParams.get("geographicScope");
     const showClosed = searchParams.get("showClosed") === "true";
-    const limit = searchParams.get("limit") ? Number(searchParams.get("limit")) : 1000;
+    const limit = searchParams.get("limit") ? Number(searchParams.get("limit")) : 100;
     const offset = searchParams.get("offset") ? Number(searchParams.get("offset")) : 0;
 
     // Get client profile parameters for AI matching
@@ -116,15 +116,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform data and optionally calculate AI match scores
+    // IMPORTANT: Due to API rate limits, only calculate AI scores for first 50 opportunities
+    const MAX_AI_SCORES = 50;
     const opportunities = await Promise.all(
-      (data ?? []).map(async (opp) => {
+      (data ?? []).map(async (opp, index) => {
         // IMPORTANT: Closed opportunities always get 0% match score
         const isClosed = opp.status?.toLowerCase() === "closed";
         let alignmentScore = isClosed ? 0 : (opp.alignment_score || 0);
         let matchReason = null;
 
         // Calculate AI-powered match score if client profile provided and enabled (skip for closed opps)
-        if (enableMatching && clientProfile && !isClosed) {
+        // Only calculate for first MAX_AI_SCORES to avoid rate limits
+        if (enableMatching && clientProfile && !isClosed && index < MAX_AI_SCORES) {
           try {
             const grantOpp: GrantOpportunity = {
               name: opp.name,
@@ -139,6 +142,11 @@ export async function GET(request: NextRequest) {
             const matchResult = await calculateMatchScore(clientProfile, grantOpp);
             alignmentScore = matchResult.score;
             matchReason = matchResult.reasoning;
+
+            // Add small delay to avoid rate limiting
+            if (index < MAX_AI_SCORES - 1) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
           } catch (error) {
             console.error(`Error calculating match for ${opp.id}:`, error);
             // Fall back to database score

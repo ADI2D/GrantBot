@@ -94,7 +94,22 @@ Respond in JSON format:
       throw new Error("Unexpected response type from Claude");
     }
 
-    const result = JSON.parse(content.text) as MatchResult;
+    // Extract JSON from response (handle cases where Claude wraps it in markdown or text)
+    let jsonText = content.text.trim();
+
+    // Remove markdown code blocks if present
+    const jsonMatch = jsonText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+    if (jsonMatch) {
+      jsonText = jsonMatch[1];
+    } else {
+      // Look for JSON object in the text
+      const objectMatch = jsonText.match(/\{[\s\S]*\}/);
+      if (objectMatch) {
+        jsonText = objectMatch[0];
+      }
+    }
+
+    const result = JSON.parse(jsonText) as MatchResult;
 
     // Ensure score is within bounds
     result.score = Math.max(0, Math.min(100, result.score));
