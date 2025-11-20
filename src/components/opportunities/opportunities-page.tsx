@@ -71,6 +71,10 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], c
   const [viewMode, setViewMode] = useState<"all" | "recommended" | "saved">("all");
   const [feedback, setFeedback] = useState<string | null>(null);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 100;
+
   // Opportunities data
   const [opportunities, setOpportunities] = useState<OpportunityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,6 +88,11 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], c
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, selectedFocusAreas, selectedAmountRange, geographicScope, showClosed, viewMode]);
 
   // Build filters object
   const filters = useMemo(() => {
@@ -113,6 +122,10 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], c
         if (range.max !== undefined) fetchParams.append("maxAmount", range.max.toString());
         if (geographicScope) fetchParams.append("geographicScope", geographicScope);
         if (showClosed) fetchParams.append("showClosed", "true");
+
+        // Pagination
+        fetchParams.append("limit", pageSize.toString());
+        fetchParams.append("offset", ((currentPage - 1) * pageSize).toString());
 
         // For freelancer mode with client data, enable AI matching
         if (mode === "freelancer" && clientId && clientName) {
@@ -159,7 +172,7 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], c
     if ((mode === "nonprofit" && orgId) || mode === "freelancer") {
       fetchOpportunities();
     }
-  }, [mode, orgId, clientId, clientName, clientMission, orgFocusAreas, debouncedSearch, selectedFocusAreas, selectedAmountRange, geographicScope, showClosed]);
+  }, [mode, orgId, clientId, clientName, clientMission, orgFocusAreas, debouncedSearch, selectedFocusAreas, selectedAmountRange, geographicScope, showClosed, currentPage, pageSize]);
 
   const createProposal = useMutation({
     mutationFn: async (opportunityId: string) => {
@@ -696,6 +709,37 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], c
           );
         })}
       </div>
+
+      {/* Pagination Controls */}
+      {sortedOpportunities.length > 0 && (
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-slate-600">
+              Showing page <span className="font-semibold text-slate-900">{currentPage}</span>
+              {" "}({sortedOpportunities.length} opportunities on this page)
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-slate-600 px-3">Page {currentPage}</span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                disabled={sortedOpportunities.length < pageSize}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
