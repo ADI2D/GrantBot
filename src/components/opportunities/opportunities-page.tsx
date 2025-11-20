@@ -221,7 +221,7 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], o
     filteredOpportunities = filteredOpportunities.filter(opp => opp.isBookmarked);
   }
 
-  // Sort by focus area priority (order they were selected) with "Other" always last
+  // Sort by focus area priority (order they were selected), then "Other", then no match
   const sortedOpportunities = orgFocusAreas.length > 0
     ? [...filteredOpportunities].sort((a, b) => {
         // Helper function to get the highest priority focus area index for an opportunity
@@ -231,21 +231,21 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], o
           // Find the first matching focus area in the org's priority list
           for (let i = 0; i < orgFocusAreas.length; i++) {
             if (oppFocusAreas.includes(orgFocusAreas[i])) {
-              // "Other" should always be sorted last
+              // "Other" comes after all selected focus areas but before no match
               if (orgFocusAreas[i] === "other") {
-                return 9999;
+                return 9998; // After all focus areas, before no match
               }
               return i;
             }
           }
 
-          // Check if it has "Other" focus area
+          // Check if it has "Other" focus area (potential match but uncertain)
           if (oppFocusAreas.includes("other")) {
-            return 9999;
+            return 9998; // After all focus areas, before no match
           }
 
-          // No match found - put at end (but before "Other")
-          return 9998;
+          // No match found - definitely doesn't match, so put at very end
+          return 9999;
         };
 
         const aPriority = getPriorityIndex(a);
