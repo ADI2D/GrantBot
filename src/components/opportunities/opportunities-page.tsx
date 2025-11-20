@@ -130,7 +130,23 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], c
         if (!response.ok) throw new Error("Failed to fetch opportunities");
 
         const data = await response.json();
-        setOpportunities(data.opportunities || []);
+        const opps = data.opportunities || [];
+
+        // Debug: Log AI matching status
+        if (mode === "freelancer" && clientId) {
+          console.log(`[Opportunities] Fetched ${opps.length} opportunities for client ${clientId}`);
+          const scoresCount = opps.filter((o: OpportunityItem) => o.alignmentScore !== null && o.alignmentScore !== undefined).length;
+          console.log(`[Opportunities] ${scoresCount} opportunities have AI match scores`);
+          if (scoresCount > 0) {
+            console.log(`[Opportunities] Sample scores:`, opps.slice(0, 3).map((o: OpportunityItem) => ({
+              name: o.name,
+              score: o.alignmentScore,
+              reason: o.matchReason?.substring(0, 50)
+            })));
+          }
+        }
+
+        setOpportunities(opps);
       } catch (err) {
         console.error("Error fetching opportunities:", err);
         setError(err instanceof Error ? err : new Error("Unknown error"));
@@ -477,27 +493,50 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], c
 
           return (
             <Card key={opportunity.id} className={`p-6 transition-shadow hover:shadow-md ${!isOpen ? "opacity-60" : ""}`}>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  {/* Title and badges */}
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg font-semibold text-slate-900">{opportunity.name}</h3>
-                    {!isOpen && <Badge tone="neutral">Closed</Badge>}
-                    {isClosingSoon && <Badge tone="warning">Closing Soon</Badge>}
-                    {/* AI Match Score - show for all opportunities when available */}
-                    {mode === "freelancer" && opportunity.alignmentScore !== null && opportunity.alignmentScore !== undefined && (() => {
-                      const score = opportunity.alignmentScore;
-                      if (score >= 80) {
-                        return <Badge tone="success" className="font-semibold">{Math.round(score)}% Match</Badge>;
-                      } else if (score >= 60) {
-                        return <Badge tone="info" className="font-semibold">{Math.round(score)}% Match</Badge>;
-                      } else if (score >= 40) {
-                        return <Badge tone="warning" className="font-semibold">{Math.round(score)}% Match</Badge>;
-                      } else if (score > 0) {
-                        return <Badge tone="neutral" className="font-semibold">{Math.round(score)}% Match</Badge>;
-                      }
-                      return null;
-                    })()}
+              <div className="flex items-start gap-6">
+                {/* Match Score Visual Indicator (Freelancer mode only) */}
+                {mode === "freelancer" && opportunity.alignmentScore !== null && opportunity.alignmentScore !== undefined && (() => {
+                  const score = Math.round(opportunity.alignmentScore);
+                  let bgColor = "bg-slate-100";
+                  let textColor = "text-slate-600";
+                  let borderColor = "border-slate-300";
+
+                  if (score >= 80) {
+                    bgColor = "bg-emerald-50";
+                    textColor = "text-emerald-700";
+                    borderColor = "border-emerald-400";
+                  } else if (score >= 60) {
+                    bgColor = "bg-blue-50";
+                    textColor = "text-blue-700";
+                    borderColor = "border-blue-400";
+                  } else if (score >= 40) {
+                    bgColor = "bg-amber-50";
+                    textColor = "text-amber-700";
+                    borderColor = "border-amber-400";
+                  }
+
+                  return (
+                    <div className="flex flex-col items-center gap-1 shrink-0">
+                      <div className={`flex h-20 w-20 items-center justify-center rounded-full border-4 ${borderColor} ${bgColor}`}>
+                        <div className="text-center">
+                          <div className={`text-2xl font-bold ${textColor}`}>{score}</div>
+                          <div className={`text-xs font-medium ${textColor}`}>%</div>
+                        </div>
+                      </div>
+                      <div className={`text-xs font-semibold ${textColor}`}>
+                        {score >= 80 ? "Excellent" : score >= 60 ? "Good" : score >= 40 ? "Potential" : "Weak"}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div className="flex flex-1 items-start justify-between gap-4">
+                  <div className="flex-1">
+                    {/* Title and badges */}
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-semibold text-slate-900">{opportunity.name}</h3>
+                      {!isOpen && <Badge tone="neutral">Closed</Badge>}
+                      {isClosingSoon && <Badge tone="warning">Closing Soon</Badge>}
                     {/* Focus area match score badge (nonprofit only) */}
                     {mode === "nonprofit" && orgFocusAreas.length > 0 && opportunity.focus_areas && opportunity.focus_areas.length > 0 && (() => {
                       const matchScore = calculateFocusAreaMatchScore(
@@ -643,6 +682,7 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], c
                       </Link>
                     </Button>
                   ) : null}
+                </div>
                 </div>
               </div>
             </Card>
