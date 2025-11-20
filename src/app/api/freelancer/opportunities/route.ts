@@ -116,62 +116,64 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform data and optionally calculate AI match scores
-    // IMPORTANT: Due to API rate limits, only calculate AI scores for first 50 opportunities
-    const MAX_AI_SCORES = 50;
-    const opportunities = await Promise.all(
-      (data ?? []).map(async (opp, index) => {
-        // IMPORTANT: Closed opportunities always get 0% match score
-        const isClosed = opp.status?.toLowerCase() === "closed";
-        let alignmentScore = isClosed ? 0 : (opp.alignment_score || 0);
-        let matchReason = null;
+    // IMPORTANT: Due to API rate limits, process sequentially (not Promise.all)
+    const MAX_AI_SCORES = 20; // Reduced to 20 for free tier
+    const opportunities = [];
 
-        // Calculate AI-powered match score if client profile provided and enabled (skip for closed opps)
-        // Only calculate for first MAX_AI_SCORES to avoid rate limits
-        if (enableMatching && clientProfile && !isClosed && index < MAX_AI_SCORES) {
-          try {
-            const grantOpp: GrantOpportunity = {
-              name: opp.name,
-              funderName: opp.funder_name || "Unknown",
-              focusArea: opp.focus_area,
-              amount: opp.amount,
-              deadline: opp.deadline,
-              complianceNotes: opp.compliance_notes,
-              geographicScope: opp.geographic_scope,
-            };
+    for (let index = 0; index < (data ?? []).length; index++) {
+      const opp = (data ?? [])[index];
 
-            const matchResult = await calculateMatchScore(clientProfile, grantOpp);
-            alignmentScore = matchResult.score;
-            matchReason = matchResult.reasoning;
+      // IMPORTANT: Closed opportunities always get 0% match score
+      const isClosed = opp.status?.toLowerCase() === "closed";
+      let alignmentScore = isClosed ? 0 : (opp.alignment_score || 0);
+      let matchReason = null;
 
-            // Add small delay to avoid rate limiting
-            if (index < MAX_AI_SCORES - 1) {
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-          } catch (error) {
-            console.error(`Error calculating match for ${opp.id}:`, error);
-            // Fall back to database score
+      // Calculate AI-powered match score if client profile provided and enabled (skip for closed opps)
+      // Only calculate for first MAX_AI_SCORES to avoid rate limits
+      if (enableMatching && clientProfile && !isClosed && index < MAX_AI_SCORES) {
+        try {
+          const grantOpp: GrantOpportunity = {
+            name: opp.name,
+            funderName: opp.funder_name || "Unknown",
+            focusArea: opp.focus_area,
+            amount: opp.amount,
+            deadline: opp.deadline,
+            complianceNotes: opp.compliance_notes,
+            geographicScope: opp.geographic_scope,
+          };
+
+          const matchResult = await calculateMatchScore(clientProfile, grantOpp);
+          alignmentScore = matchResult.score;
+          matchReason = matchResult.reasoning;
+
+          // Add delay between requests to avoid rate limiting
+          if (index < MAX_AI_SCORES - 1) {
+            await new Promise(resolve => setTimeout(resolve, 200));
           }
+        } catch (error) {
+          console.error(`Error calculating match for ${opp.id}:`, error);
+          // Fall back to database score
         }
+      }
 
-        return {
-          id: opp.id,
-          name: opp.name,
-          funderName: opp.funder_name,
-          amount: opp.amount || 0,
-          deadline: opp.deadline,
-          alignmentScore,
-          status: opp.status || "Open",
-          summary: opp.compliance_notes || "",
-          focus_areas: opp.focus_areas || (opp.focus_area ? [opp.focus_area] : []),
-          focusAreas: opp.focus_areas || (opp.focus_area ? [opp.focus_area] : []),
-          clientIds: [], // Populated client-side based on filters
-          matchReason,
-          applicationUrl: opp.application_url,
-          geographicScope: opp.geographic_scope,
-          isBookmarked: bookmarkedIds.has(opp.id),
-        };
-      })
-    );
+      opportunities.push({
+        id: opp.id,
+        name: opp.name,
+        funderName: opp.funder_name,
+        amount: opp.amount || 0,
+        deadline: opp.deadline,
+        alignmentScore,
+        status: opp.status || "Open",
+        summary: opp.compliance_notes || "",
+        focus_areas: opp.focus_areas || (opp.focus_area ? [opp.focus_area] : []),
+        focusAreas: opp.focus_areas || (opp.focus_area ? [opp.focus_area] : []),
+        clientIds: [], // Populated client-side based on filters
+        matchReason,
+        applicationUrl: opp.application_url,
+        geographicScope: opp.geographic_scope,
+        isBookmarked: bookmarkedIds.has(opp.id),
+      });
+    }
 
     console.log(`[freelancer][opportunities] Returned ${opportunities.length} opportunities (requested limit: ${limit})`);
 
