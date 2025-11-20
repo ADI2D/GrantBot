@@ -16,22 +16,26 @@ export default function FreelancerOpportunitiesPage({
   const clientId = params?.client ?? null;
   const router = useRouter();
   const [clientFocusAreas, setClientFocusAreas] = useState<FocusAreaId[]>([]);
+  const [clientName, setClientName] = useState<string>("");
+  const [clientMission, setClientMission] = useState<string>("");
 
-  // Fetch client focus areas for sorting
+  // Fetch client profile for AI matching and sorting
   useEffect(() => {
-    const fetchClientFocusAreas = async () => {
+    const fetchClientProfile = async () => {
       if (!clientId) return;
       try {
         const response = await fetch(`/api/freelancer/clients/${clientId}`);
         if (response.ok) {
           const data = await response.json();
           setClientFocusAreas((data.client?.focus_areas || []) as FocusAreaId[]);
+          setClientName(data.client?.name || "");
+          setClientMission(data.client?.mission || "");
         }
       } catch (error) {
-        console.error("Failed to fetch client focus areas:", error);
+        console.error("Failed to fetch client profile:", error);
       }
     };
-    fetchClientFocusAreas();
+    fetchClientProfile();
   }, [clientId]);
 
   const handleBack = () => {
@@ -47,6 +51,8 @@ export default function FreelancerOpportunitiesPage({
       mode="freelancer"
       clientId={clientId}
       orgFocusAreas={clientFocusAreas}
+      clientName={clientName}
+      clientMission={clientMission}
       onBack={clientId ? handleBack : undefined}
     />
   );

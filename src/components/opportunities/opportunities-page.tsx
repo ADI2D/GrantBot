@@ -42,6 +42,8 @@ type OpportunitiesPageProps = {
   orgId?: string;
   clientId?: string | null;
   orgFocusAreas?: FocusAreaId[];
+  clientName?: string;
+  clientMission?: string;
   onBack?: () => void;
 };
 
@@ -54,7 +56,7 @@ const amountRanges = [
   { label: "$500K+", min: 500000, max: undefined },
 ];
 
-export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], onBack }: OpportunitiesPageProps) {
+export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], clientName, clientMission, onBack }: OpportunitiesPageProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
 
@@ -112,6 +114,14 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], o
         if (geographicScope) fetchParams.append("geographicScope", geographicScope);
         if (showClosed) fetchParams.append("showClosed", "true");
 
+        // For freelancer mode with client data, enable AI matching
+        if (mode === "freelancer" && clientId && clientName) {
+          fetchParams.append("enableMatching", "true");
+          fetchParams.append("clientName", clientName);
+          if (clientMission) fetchParams.append("clientMission", clientMission);
+          if (orgFocusAreas.length > 0) fetchParams.append("clientFocusAreas", orgFocusAreas.join(","));
+        }
+
         const endpoint = mode === "nonprofit"
           ? `/api/opportunities?orgId=${orgId}&${fetchParams.toString()}`
           : `/api/freelancer/opportunities?${clientId ? `clientId=${clientId}&` : ""}${fetchParams.toString()}`;
@@ -133,7 +143,7 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], o
     if ((mode === "nonprofit" && orgId) || mode === "freelancer") {
       fetchOpportunities();
     }
-  }, [mode, orgId, clientId, debouncedSearch, selectedFocusAreas, selectedAmountRange, geographicScope, showClosed]);
+  }, [mode, orgId, clientId, clientName, clientMission, orgFocusAreas, debouncedSearch, selectedFocusAreas, selectedAmountRange, geographicScope, showClosed]);
 
   const createProposal = useMutation({
     mutationFn: async (opportunityId: string) => {
@@ -221,52 +231,54 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], o
     filteredOpportunities = filteredOpportunities.filter(opp => opp.isBookmarked);
   }
 
-  // Sort by focus area priority (order they were selected), then "Other", then no match
-  const sortedOpportunities = orgFocusAreas.length > 0
-    ? [...filteredOpportunities].sort((a, b) => {
-        // Helper function to get the highest priority focus area index for an opportunity
-        const getPriorityIndex = (opp: OpportunityItem) => {
-          const oppFocusAreas = opp.focus_areas || [];
+  // Sort by AI alignment score (when available), then focus area priority, then deadline
+  const sortedOpportunities = [...filteredOpportunities].sort((a, b) => {
+    // Primary sort: AI alignment score (higher is better)
+    const aScore = a.alignmentScore ?? 0;
+    const bScore = b.alignmentScore ?? 0;
 
-          // Find the first matching focus area in the org's priority list
-          for (let i = 0; i < orgFocusAreas.length; i++) {
-            if (oppFocusAreas.includes(orgFocusAreas[i])) {
-              // "Other" comes after all selected focus areas but before no match
-              if (orgFocusAreas[i] === "other") {
-                return 9998; // After all focus areas, before no match
-              }
-              return i;
+    if (aScore !== bScore) {
+      return bScore - aScore; // Descending order (highest match first)
+    }
+
+    // Secondary sort: Focus area priority (only when org has focus areas)
+    if (orgFocusAreas.length > 0) {
+      const getPriorityIndex = (opp: OpportunityItem) => {
+        const oppFocusAreas = opp.focus_areas || [];
+
+        // Find the first matching focus area in the org's priority list
+        for (let i = 0; i < orgFocusAreas.length; i++) {
+          if (oppFocusAreas.includes(orgFocusAreas[i])) {
+            // "Other" comes after all selected focus areas but before no match
+            if (orgFocusAreas[i] === "other") {
+              return 9998; // After all focus areas, before no match
             }
+            return i;
           }
-
-          // Check if it has "Other" focus area (potential match but uncertain)
-          if (oppFocusAreas.includes("other")) {
-            return 9998; // After all focus areas, before no match
-          }
-
-          // No match found - definitely doesn't match, so put at very end
-          return 9999;
-        };
-
-        const aPriority = getPriorityIndex(a);
-        const bPriority = getPriorityIndex(b);
-
-        // Sort by focus area priority (lower index = higher priority)
-        if (aPriority !== bPriority) {
-          return aPriority - bPriority;
         }
 
-        // Tiebreaker: sort by deadline (earliest first, null deadlines last)
-        const aDeadline = a.deadline ? new Date(a.deadline).getTime() : Infinity;
-        const bDeadline = b.deadline ? new Date(b.deadline).getTime() : Infinity;
-        return aDeadline - bDeadline;
-      })
-    : [...filteredOpportunities].sort((a, b) => {
-        // For no focus areas, just sort by deadline
-        const aDeadline = a.deadline ? new Date(a.deadline).getTime() : Infinity;
-        const bDeadline = b.deadline ? new Date(b.deadline).getTime() : Infinity;
-        return aDeadline - bDeadline;
-      });
+        // Check if it has "Other" focus area (potential match but uncertain)
+        if (oppFocusAreas.includes("other")) {
+          return 9998; // After all focus areas, before no match
+        }
+
+        // No match found - definitely doesn't match, so put at very end
+        return 9999;
+      };
+
+      const aPriority = getPriorityIndex(a);
+      const bPriority = getPriorityIndex(b);
+
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority;
+      }
+    }
+
+    // Tertiary sort: Deadline (earliest first, null deadlines last)
+    const aDeadline = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+    const bDeadline = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+    return aDeadline - bDeadline;
+  });
 
   const now = new Date();
 
@@ -472,9 +484,20 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], o
                     <h3 className="text-lg font-semibold text-slate-900">{opportunity.name}</h3>
                     {!isOpen && <Badge tone="neutral">Closed</Badge>}
                     {isClosingSoon && <Badge tone="warning">Closing Soon</Badge>}
-                    {opportunity.alignmentScore && opportunity.alignmentScore >= 80 && (
-                      <Badge tone="success">{Math.round(opportunity.alignmentScore)}% Match</Badge>
-                    )}
+                    {/* AI Match Score - show for all opportunities when available */}
+                    {mode === "freelancer" && opportunity.alignmentScore !== null && opportunity.alignmentScore !== undefined && (() => {
+                      const score = opportunity.alignmentScore;
+                      if (score >= 80) {
+                        return <Badge tone="success" className="font-semibold">{Math.round(score)}% Match</Badge>;
+                      } else if (score >= 60) {
+                        return <Badge tone="info" className="font-semibold">{Math.round(score)}% Match</Badge>;
+                      } else if (score >= 40) {
+                        return <Badge tone="warning" className="font-semibold">{Math.round(score)}% Match</Badge>;
+                      } else if (score > 0) {
+                        return <Badge tone="neutral" className="font-semibold">{Math.round(score)}% Match</Badge>;
+                      }
+                      return null;
+                    })()}
                     {/* Focus area match score badge (nonprofit only) */}
                     {mode === "nonprofit" && orgFocusAreas.length > 0 && opportunity.focus_areas && opportunity.focus_areas.length > 0 && (() => {
                       const matchScore = calculateFocusAreaMatchScore(
