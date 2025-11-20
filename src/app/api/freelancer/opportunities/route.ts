@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("opportunities")
       .select(
-        `id, name, focus_area, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope`
+        `id, name, focus_area, focus_areas, funder_name, amount, deadline, alignment_score, status, compliance_notes, application_url, geographic_scope`
       )
       .gte("deadline", sixtyDaysAgoStr)
       .neq("status", "closed")
@@ -147,7 +147,8 @@ export async function GET(request: NextRequest) {
           alignmentScore,
           status: opp.status || "Open",
           summary: opp.compliance_notes || "",
-          focusAreas: opp.focus_area ? [opp.focus_area] : [],
+          focus_areas: opp.focus_areas || (opp.focus_area ? [opp.focus_area] : []),
+          focusAreas: opp.focus_areas || (opp.focus_area ? [opp.focus_area] : []),
           clientIds: [], // Populated client-side based on filters
           matchReason,
           applicationUrl: opp.application_url,

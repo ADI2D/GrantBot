@@ -505,8 +505,8 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], o
                     })()}
                   </div>
 
-                  {/* Focus area badges (nonprofit only) */}
-                  {mode === "nonprofit" && opportunity.focus_areas && opportunity.focus_areas.length > 0 && (
+                  {/* Focus area badges (shown for all modes) */}
+                  {opportunity.focus_areas && opportunity.focus_areas.length > 0 && (
                     <div className="mb-3">
                       <FocusAreaBadges areaIds={opportunity.focus_areas as FocusAreaId[]} maxVisible={4} />
                     </div>
