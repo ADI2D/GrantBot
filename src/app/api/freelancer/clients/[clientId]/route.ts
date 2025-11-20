@@ -1,6 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteSupabase } from "@/lib/supabase-server";
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ clientId: string }> }
+) {
+  try {
+    const { clientId } = await params;
+    const supabase = await createRouteSupabase();
+
+    // Authenticate user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Fetch client details
+    const { data: client, error: clientError } = await supabase
+      .from("freelancer_clients")
+      .select("*")
+      .eq("id", clientId)
+      .eq("freelancer_user_id", user.id)
+      .maybeSingle();
+
+    if (clientError) {
+      console.error("[freelancer][clients] Fetch error:", clientError);
+      return NextResponse.json(
+        { error: "Failed to fetch client" },
+        { status: 500 }
+      );
+    }
+
+    if (!client) {
+      return NextResponse.json(
+        { error: "Client not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ client });
+  } catch (error) {
+    console.error("[freelancer][clients] Unexpected error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ clientId: string }> }

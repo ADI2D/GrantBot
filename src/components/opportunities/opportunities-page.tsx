@@ -221,39 +221,52 @@ export function OpportunitiesPage({ mode, orgId, clientId, orgFocusAreas = [], o
     filteredOpportunities = filteredOpportunities.filter(opp => opp.isBookmarked);
   }
 
-  // Sort by focus area match score for nonprofit mode
-  const sortedOpportunities = mode === "nonprofit" && orgFocusAreas.length > 0
+  // Sort by focus area priority (order they were selected) with "Other" always last
+  const sortedOpportunities = orgFocusAreas.length > 0
     ? [...filteredOpportunities].sort((a, b) => {
-        if (selectedFocusAreas.length > 0) {
-          const aMatches = (a.focus_areas || []).filter(area =>
-            selectedFocusAreas.includes(area as FocusAreaId)
-          ).length;
-          const bMatches = (b.focus_areas || []).filter(area =>
-            selectedFocusAreas.includes(area as FocusAreaId)
-          ).length;
+        // Helper function to get the highest priority focus area index for an opportunity
+        const getPriorityIndex = (opp: OpportunityItem) => {
+          const oppFocusAreas = opp.focus_areas || [];
 
-          if (aMatches !== bMatches) {
-            return bMatches - aMatches;
+          // Find the first matching focus area in the org's priority list
+          for (let i = 0; i < orgFocusAreas.length; i++) {
+            if (oppFocusAreas.includes(orgFocusAreas[i])) {
+              // "Other" should always be sorted last
+              if (orgFocusAreas[i] === "other") {
+                return 9999;
+              }
+              return i;
+            }
           }
+
+          // Check if it has "Other" focus area
+          if (oppFocusAreas.includes("other")) {
+            return 9999;
+          }
+
+          // No match found - put at end (but before "Other")
+          return 9998;
+        };
+
+        const aPriority = getPriorityIndex(a);
+        const bPriority = getPriorityIndex(b);
+
+        // Sort by focus area priority (lower index = higher priority)
+        if (aPriority !== bPriority) {
+          return aPriority - bPriority;
         }
 
-        if (orgFocusAreas.length > 0) {
-          const aScore = calculateFocusAreaMatchScore(
-            orgFocusAreas,
-            (a.focus_areas || []) as FocusAreaId[]
-          );
-          const bScore = calculateFocusAreaMatchScore(
-            orgFocusAreas,
-            (b.focus_areas || []) as FocusAreaId[]
-          );
-          if (aScore !== bScore) return bScore - aScore;
-        }
-
+        // Tiebreaker: sort by deadline (earliest first, null deadlines last)
         const aDeadline = a.deadline ? new Date(a.deadline).getTime() : Infinity;
         const bDeadline = b.deadline ? new Date(b.deadline).getTime() : Infinity;
         return aDeadline - bDeadline;
       })
-    : filteredOpportunities;
+    : [...filteredOpportunities].sort((a, b) => {
+        // For no focus areas, just sort by deadline
+        const aDeadline = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+        const bDeadline = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+        return aDeadline - bDeadline;
+      });
 
   const now = new Date();
 
