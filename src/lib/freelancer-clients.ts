@@ -255,20 +255,27 @@ export async function listFreelancerClients(): Promise<FreelancerClientSummary[]
 
     const clients = data ?? [];
 
-    // Fetch counts for all clients efficiently
-    const clientIds = clients.map(c => c.id);
+    // Fetch all open opportunities (not closed, with future or null deadlines)
+    const today = new Date().toISOString().split('T')[0];
+    const { data: opportunities } = await supabase
+      .from("opportunities")
+      .select("id, focus_area, focus_areas, deadline, status")
+      .neq("status", "closed")
+      .or(`deadline.gte.${today},deadline.is.null`);
 
-    // Count bookmarked opportunities per client (using freelancer_client_id for freelancer workspace)
-    const { data: bookmarkCounts } = await supabase
-      .from("bookmarked_opportunities")
-      .select("freelancer_client_id")
-      .in("freelancer_client_id", clientIds);
-
+    // Count matching opportunities per client based on focus areas
     const opportunityCounts = new Map<string, number>();
-    (bookmarkCounts ?? []).forEach(b => {
-      if (b.freelancer_client_id) {
-        opportunityCounts.set(b.freelancer_client_id, (opportunityCounts.get(b.freelancer_client_id) || 0) + 1);
-      }
+
+    clients.forEach(client => {
+      const clientFocusAreas = Array.isArray(client.focus_areas) ? client.focus_areas : [];
+
+      const matchingCount = (opportunities ?? []).filter(opp => {
+        // Check if opportunity matches any of the client's focus areas
+        const oppFocusAreas = opp.focus_areas || (opp.focus_area ? [opp.focus_area] : []);
+        return oppFocusAreas.some(area => clientFocusAreas.includes(area));
+      }).length;
+
+      opportunityCounts.set(client.id, matchingCount);
     });
 
     return clients.map((row) => ({
@@ -748,11 +755,20 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
       (p) => !["archived", "rejected", "awarded"].includes(p.status?.toLowerCase() || "")
     ).length;
 
-    // Count bookmarked opportunities for this client (using freelancer_client_id for freelancer workspace)
-    const { count: opportunitiesCount } = await supabase
-      .from("bookmarked_opportunities")
-      .select("*", { count: "exact", head: true })
-      .eq("freelancer_client_id", clientId);
+    // Count matching opportunities based on client's focus areas
+    const clientFocusAreas = Array.isArray(client.focus_areas) ? client.focus_areas : [];
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: opportunities } = await supabase
+      .from("opportunities")
+      .select("id, focus_area, focus_areas, deadline, status")
+      .neq("status", "closed")
+      .or(`deadline.gte.${today},deadline.is.null`);
+
+    const matchingOpportunities = (opportunities ?? []).filter(opp => {
+      const oppFocusAreas = opp.focus_areas || (opp.focus_area ? [opp.focus_area] : []);
+      return oppFocusAreas.some(area => clientFocusAreas.includes(area));
+    });
 
     // Map to FreelancerClientDetail
     return {
@@ -760,7 +776,7 @@ export async function getFreelancerClient(clientId: string): Promise<FreelancerC
       name: client.name,
       status: client.status as "active" | "on_hold" | "archived",
       activeProposals: activeProposalsCount,
-      opportunitiesInPipeline: opportunitiesCount || 0,
+      opportunitiesInPipeline: matchingOpportunities.length,
       documentsMissing: (documents ?? []).filter((d) => d.status === "missing").length,
       lastActivityAt: client.last_activity_at || client.created_at,
       annualBudget: client.annual_budget || null,
