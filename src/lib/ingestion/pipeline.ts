@@ -7,6 +7,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { GrantConnector, CanonicalOpportunity, SyncState } from "@/types/connectors";
 import { ComplianceExtractor } from "@/lib/compliance/extractor";
+import { GrantCleanup } from "@/lib/ingestion/cleanup";
 
 type SyncResult = {
   source: string;
@@ -373,7 +374,10 @@ export class GrantIngestionPipeline {
   /**
    * Run all registered connectors
    */
-  async runAll(connectors: GrantConnector[], options = {}): Promise<SyncResult[]> {
+  async runAll(
+    connectors: GrantConnector[],
+    options: { incremental?: boolean; dryRun?: boolean; skipCleanup?: boolean } = {}
+  ): Promise<SyncResult[]> {
     console.log(`[Pipeline] Running ${connectors.length} connectors...`);
 
     const results: SyncResult[] = [];
@@ -384,6 +388,29 @@ export class GrantIngestionPipeline {
     }
 
     console.log(`[Pipeline] All connectors completed`);
+
+    // Run cleanup after all connectors (unless explicitly skipped or in dry-run mode)
+    if (!options.skipCleanup && !options.dryRun) {
+      console.log(`[Pipeline] Running grant cleanup...`);
+      try {
+        const cleanup = new GrantCleanup(this.supabase);
+        const cleanupResult = await cleanup.runCleanup();
+        console.log(
+          `[Pipeline] Cleanup completed: ${cleanupResult.grants_closed} closed, ${cleanupResult.grants_deleted} deleted`
+        );
+        if (cleanupResult.errors.length > 0) {
+          console.error(`[Pipeline] Cleanup had ${cleanupResult.errors.length} errors`);
+        }
+      } catch (error) {
+        console.error(`[Pipeline] Cleanup failed:`, error);
+        // Don't fail the entire sync if cleanup fails
+      }
+    } else if (options.dryRun) {
+      console.log(`[Pipeline] Skipping cleanup (dry-run mode)`);
+    } else {
+      console.log(`[Pipeline] Skipping cleanup (explicitly disabled)`);
+    }
+
     return results;
   }
 }

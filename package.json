@@ -10,7 +10,9 @@
     "seed:db": "node --env-file .env.local scripts/seed-database.mjs",
     "seed:stripe": "node --env-file .env.local scripts/seed-stripe.mjs",
     "seed:users": "node --env-file .env.local scripts/seed-users.mjs",
-    "sync:grants": "tsx --env-file .env.local scripts/sync-grants.ts"
+    "sync:grants": "tsx --env-file .env.local scripts/sync-grants.ts",
+    "cleanup:grants": "tsx scripts/cleanup-grants.ts",
+    "check:grants": "tsx scripts/check-closed-grants.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",

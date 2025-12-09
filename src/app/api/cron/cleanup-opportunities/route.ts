@@ -1,21 +1,27 @@
 // ============================================================================
 // CRON ENDPOINT: CLEANUP OPPORTUNITIES
 // ============================================================================
-// Marks opportunities with past deadlines as closed
+// Automatically manages grant lifecycle:
+// - Marks opportunities with past deadlines as closed
+// - Deletes closed opportunities older than 24 months
 // Should be called daily via Vercel Cron or external scheduler
 // ============================================================================
 
 import { NextResponse } from "next/server";
-import { markExpiredOpportunitiesAsClosed } from "@/lib/connectors/cleanup";
+import { createClient } from "@supabase/supabase-js";
+import { GrantCleanup } from "@/lib/ingestion/cleanup";
+
+export const runtime = "nodejs";
+export const maxDuration = 300; // 5 minutes
 
 /**
- * Cron endpoint to mark expired opportunities as closed
+ * Cron endpoint to cleanup opportunities
  *
  * Configuration in vercel.json:
  * {
  *   "crons": [{
  *     "path": "/api/cron/cleanup-opportunities",
- *     "schedule": "0 2 * * *"  // Daily at 2 AM UTC
+ *     "schedule": "0 3 * * *"  // Daily at 3 AM UTC
  *   }]
  * }
  *
@@ -36,17 +42,32 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("[Cron] Starting opportunity cleanup...");
-    const result = await markExpiredOpportunitiesAsClosed();
+    console.log("[Cron][Cleanup] Starting opportunity cleanup...");
+
+    // Initialize Supabase client with service role
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // Run cleanup using new GrantCleanup class
+    const cleanup = new GrantCleanup(supabase);
+    const result = await cleanup.runCleanup();
+
+    console.log(
+      `[Cron][Cleanup] Completed: ${result.grants_closed} closed, ${result.grants_deleted} deleted`
+    );
 
     return NextResponse.json({
       success: true,
-      message: `Marked ${result.count} opportunities as closed`,
-      count: result.count,
+      message: `Closed ${result.grants_closed} expired grants, deleted ${result.grants_deleted} old grants`,
+      grants_closed: result.grants_closed,
+      grants_deleted: result.grants_deleted,
+      errors: result.errors.length,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("[Cron] Cleanup error:", error);
+    console.error("[Cron][Cleanup] Error:", error);
     return NextResponse.json(
       {
         success: false,
@@ -61,7 +82,8 @@ export async function POST(request: Request) {
 export async function GET() {
   return NextResponse.json({
     message: "Opportunity cleanup cron endpoint. Use POST to trigger cleanup.",
-    schedule: "Daily at 2 AM UTC",
+    description: "Closes expired grants and deletes grants closed for 24+ months",
+    schedule: "Daily at 3 AM UTC",
     endpoint: "/api/cron/cleanup-opportunities",
   });
 }
