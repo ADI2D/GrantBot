@@ -1,0 +1,209 @@
+{
+  "table": "freelancer_proposals",
+  "backedUpAt": "2025-12-26T15:09:17.934Z",
+  "rowCount": 7,
+  "data": [
+    {
+      "id": "p-101",
+      "freelancer_user_id": "19db84e3-5467-4dc5-b908-95da2187a145",
+      "client_id": "impact-circle",
+      "client_name": "Impact Circle Foundation",
+      "title": "STEM Labs Expansion",
+      "status": "In review",
+      "due_date": "2024-12-05",
+      "owner_name": "Nia Rodriguez",
+      "draft_html": "## Executive Summary\n\nImpact Circle Foundation is expanding our STEM labs to reach 600 additional students in Title I middle schools. This proposal outlines our strategy, timeline, and evaluation plan for scaling the program.",
+      "checklist": [
+        {
+          "id": "chk-01",
+          "label": "Executive summary drafted",
+          "completed": true
+        },
+        {
+          "id": "chk-02",
+          "label": "Budget attachment uploaded",
+          "completed": false
+        },
+        {
+          "id": "chk-03",
+          "label": "Letters of support collected",
+          "completed": false
+        },
+        {
+          "id": "chk-04",
+          "label": "Review compliance checklist",
+          "completed": true
+        }
+      ],
+      "sections": [
+        {
+          "id": "sec-01",
+          "title": "Needs Statement",
+          "placeholder": "Describe the challenge and target population."
+        },
+        {
+          "id": "sec-02",
+          "title": "Program Design",
+          "placeholder": "Outline the core activities, timeline, and staffing."
+        },
+        {
+          "id": "sec-03",
+          "title": "Budget Narrative",
+          "placeholder": "Explain how requested funds will be used."
+        },
+        {
+          "id": "sec-04",
+          "title": "Evaluation Plan",
+          "placeholder": "Detail metrics, data collection, and reporting."
+        }
+      ],
+      "ai_prompts": [
+        "Draft a compelling needs statement using recent STEM education statistics.",
+        "Suggest three measurable outcomes for middle school STEM programs.",
+        "Rewrite the budget narrative to emphasize cost efficiency."
+      ],
+      "last_edited_at": "2025-11-03T00:21:24.81+00:00",
+      "submitted_at": null,
+      "created_at": "2025-11-03T03:21:26.338821+00:00",
+      "updated_at": "2025-11-03T03:21:26.338821+00:00"
+    },
+    {
+      "id": "p-402",
+      "freelancer_user_id": "19db84e3-5467-4dc5-b908-95da2187a145",
+      "client_id": "green-spaces",
+      "client_name": "Green Spaces Collective",
+      "title": "Community Garden Fellows",
+      "status": "In review",
+      "due_date": "2024-12-15",
+      "owner_name": "Veronica Patel",
+      "draft_html": "",
+      "checklist": [
+        {
+          "id": "chk-33",
+          "label": "Collect participant testimonials",
+          "completed": false
+        },
+        {
+          "id": "chk-34",
+          "label": "Draft sustainability plan",
+          "completed": false
+        }
+      ],
+      "sections": [
+        {
+          "id": "sec-33",
+          "title": "Program Overview",
+          "placeholder": "Explain fellowship structure."
+        },
+        {
+          "id": "sec-34",
+          "title": "Budget Narrative",
+          "placeholder": "Describe cost per fellow."
+        },
+        {
+          "id": "sec-35",
+          "title": "Impact",
+          "placeholder": "Detail health and community outcomes."
+        }
+      ],
+      "ai_prompts": [
+        "Write a compelling overview for a community garden fellowship.",
+        "List three potential risks and mitigation strategies."
+      ],
+      "last_edited_at": null,
+      "submitted_at": null,
+      "created_at": "2025-11-03T03:21:27.415112+00:00",
+      "updated_at": "2025-11-03T03:21:27.415112+00:00"
+    },
+    {
+      "id": "prop-EXcSia2u0J2I",
+      "freelancer_user_id": "19db84e3-5467-4dc5-b908-95da2187a145",
+      "client_id": "b8c6c695-0968-43fa-814b-658bde8b97d0",
+      "client_name": "University of Saint Mary",
+      "title": "Continuing Human Enabling Enhancing Restoring and Sustaining",
+      "status": "Drafting",
+      "due_date": "2044-08-22",
+      "owner_name": null,
+      "draft_html": "",
+      "checklist": [],
+      "sections": [],
+      "ai_prompts": [],
+      "last_edited_at": null,
+      "submitted_at": null,
+      "created_at": "2025-11-18T16:35:41.265715+00:00",
+      "updated_at": "2025-11-18T16:35:41.265715+00:00"
+    },
+    {
+      "id": "prop-lH02fIsI4OQ5",
+      "freelancer_user_id": "19db84e3-5467-4dc5-b908-95da2187a145",
+      "client_id": "6441347a-9b3b-4101-b724-0568f88a8f81",
+      "client_name": "This is not a veteran's foundation. ",
+      "title": "Test 1 ",
+      "status": "Drafting",
+      "due_date": "2025-11-08",
+      "owner_name": null,
+      "draft_html": "<p></p>",
+      "checklist": [],
+      "sections": [],
+      "ai_prompts": [],
+      "last_edited_at": "2025-11-03T21:17:06.432+00:00",
+      "submitted_at": "2025-11-03T21:14:53.048+00:00",
+      "created_at": "2025-11-03T21:06:55.989082+00:00",
+      "updated_at": "2025-11-03T21:17:06.531508+00:00"
+    },
+    {
+      "id": "prop-YgZ7gLWn98pK",
+      "freelancer_user_id": "19db84e3-5467-4dc5-b908-95da2187a145",
+      "client_id": "6441347a-9b3b-4101-b724-0568f88a8f81",
+      "client_name": "This is not a veteran's foundation. ",
+      "title": "Test Grant Proposal",
+      "status": "Drafting",
+      "due_date": "2025-11-08",
+      "owner_name": null,
+      "draft_html": "",
+      "checklist": [],
+      "sections": [],
+      "ai_prompts": [],
+      "last_edited_at": null,
+      "submitted_at": null,
+      "created_at": "2025-11-04T02:15:55.433122+00:00",
+      "updated_at": "2025-11-04T02:15:55.433122+00:00"
+    },
+    {
+      "id": "prop-OkmiX6zkYTiy",
+      "freelancer_user_id": "19db84e3-5467-4dc5-b908-95da2187a145",
+      "client_id": "8b43c41e-60da-4246-84cc-d409a28b9f1d",
+      "client_name": "Veterans Community Project ",
+      "title": "Hotels to hostels. ",
+      "status": "Drafting",
+      "due_date": "2025-11-08",
+      "owner_name": null,
+      "draft_html": "",
+      "checklist": [],
+      "sections": [],
+      "ai_prompts": [],
+      "last_edited_at": null,
+      "submitted_at": null,
+      "created_at": "2025-11-04T15:33:39.280283+00:00",
+      "updated_at": "2025-11-04T15:33:39.280283+00:00"
+    },
+    {
+      "id": "prop-b7q9dZUlC-vm",
+      "freelancer_user_id": "19db84e3-5467-4dc5-b908-95da2187a145",
+      "client_id": "eede0787-af39-4fe0-a60f-7f7e819ea748",
+      "client_name": "MidAmerica Nazerene College Foundation",
+      "title": "2025 STEM FI test",
+      "status": "Drafting",
+      "due_date": "2025-11-14",
+      "owner_name": null,
+      "draft_html": "",
+      "checklist": [],
+      "sections": [],
+      "ai_prompts": [],
+      "last_edited_at": null,
+      "submitted_at": null,
+      "created_at": "2025-11-07T21:22:38.576078+00:00",
+      "updated_at": "2025-11-07T21:22:38.576078+00:00"
+    }
+  ]
+}

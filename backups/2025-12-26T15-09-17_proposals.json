@@ -1,0 +1,263 @@
+{
+  "table": "proposals",
+  "backedUpAt": "2025-12-26T15:09:17.845Z",
+  "rowCount": 7,
+  "data": [
+    {
+      "id": "0bdc3ad4-8c1a-4e63-9dc8-4fdd8ba4d301",
+      "organization_id": "8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001",
+      "opportunity_id": "b7da0f87-7bf2-42da-9d6d-8a8dd6ca0a11",
+      "owner_name": "Devon Wells",
+      "status": "in_review",
+      "progress": 82,
+      "due_date": "2024-11-08",
+      "checklist_status": "ready",
+      "confidence": 0.87,
+      "autosave_enabled": true,
+      "compliance_summary": [
+        {
+          "items": [
+            {
+              "label": "IRS 501(c)(3) letter uploaded",
+              "status": "complete"
+            },
+            {
+              "label": "Budget within funder range",
+              "status": "complete"
+            },
+            {
+              "label": "Geography served matches criteria",
+              "status": "flag"
+            }
+          ],
+          "section": "Eligibility"
+        },
+        {
+          "items": [
+            {
+              "label": "Latest audited financials",
+              "status": "missing"
+            },
+            {
+              "label": "Board roster & affiliations",
+              "status": "complete"
+            },
+            {
+              "label": "Strategic plan excerpt",
+              "status": "complete"
+            }
+          ],
+          "section": "Attachments"
+        },
+        {
+          "items": [
+            {
+              "label": "Needs statement cites latest data",
+              "status": "complete"
+            },
+            {
+              "label": "Program KPIs align to RFP rubric",
+              "status": "flag"
+            },
+            {
+              "label": "Sustainability plan references funder priorities",
+              "status": "complete"
+            }
+          ],
+          "section": "Narrative"
+        }
+      ],
+      "updated_at": "2025-10-28T15:27:26.376977+00:00",
+      "created_at": "2025-10-28T15:27:26.376977+00:00",
+      "archived": false,
+      "share_token": null,
+      "share_expires_at": null,
+      "deleted_at": null
+    },
+    {
+      "id": "95df8db9-2b22-4c9b-ac1c-cbf0ff0cee02",
+      "organization_id": "8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001",
+      "opportunity_id": "5f0de1ff-70dd-4c15-9af5-9a43f4d1e90c",
+      "owner_name": "Erin Walker",
+      "status": "drafting",
+      "progress": 54,
+      "due_date": "2024-11-20",
+      "checklist_status": "in_progress",
+      "confidence": 0.64,
+      "autosave_enabled": true,
+      "compliance_summary": [],
+      "updated_at": "2025-10-28T15:27:26.376977+00:00",
+      "created_at": "2025-10-28T15:27:26.376977+00:00",
+      "archived": false,
+      "share_token": null,
+      "share_expires_at": null,
+      "deleted_at": null
+    },
+    {
+      "id": "a3c1a0d2-7079-4ba7-9954-9d0a4d3ff503",
+      "organization_id": "8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001",
+      "opportunity_id": "e6b8a0f2-8a64-46ed-95e0-37fab21d3108",
+      "owner_name": "Val Chen",
+      "status": "needs_data",
+      "progress": 28,
+      "due_date": "2024-11-03",
+      "checklist_status": "in_progress",
+      "confidence": 0.4,
+      "autosave_enabled": true,
+      "compliance_summary": [],
+      "updated_at": "2025-10-28T15:27:26.376977+00:00",
+      "created_at": "2025-10-28T15:27:26.376977+00:00",
+      "archived": false,
+      "share_token": null,
+      "share_expires_at": null,
+      "deleted_at": null
+    },
+    {
+      "id": "d39d61da-57ed-40a7-bf32-20568c5f060c",
+      "organization_id": "8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001",
+      "opportunity_id": "b7da0f87-7bf2-42da-9d6d-8a8dd6ca0a11",
+      "owner_name": "alex.m.bach@gmail.com",
+      "status": "drafting",
+      "progress": 0,
+      "due_date": null,
+      "checklist_status": "in_progress",
+      "confidence": 0.6,
+      "autosave_enabled": true,
+      "compliance_summary": [],
+      "updated_at": "2025-11-01T01:31:21.880102+00:00",
+      "created_at": "2025-11-01T01:31:21.880102+00:00",
+      "archived": false,
+      "share_token": null,
+      "share_expires_at": null,
+      "deleted_at": null
+    },
+    {
+      "id": "ac2584f6-bb57-486e-9cfd-65b95c79ac65",
+      "organization_id": "8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001",
+      "opportunity_id": "e6b8a0f2-8a64-46ed-95e0-37fab21d3108",
+      "owner_name": "alex.m.bach@gmail.com",
+      "status": "drafting",
+      "progress": 0,
+      "due_date": null,
+      "checklist_status": "in_progress",
+      "confidence": 0.6,
+      "autosave_enabled": true,
+      "compliance_summary": [],
+      "updated_at": "2025-11-01T01:47:18.312805+00:00",
+      "created_at": "2025-11-01T01:47:18.312805+00:00",
+      "archived": false,
+      "share_token": null,
+      "share_expires_at": null,
+      "deleted_at": "2025-11-02T03:16:33.266+00:00"
+    },
+    {
+      "id": "87994855-dc24-4171-8060-5fdcc932df63",
+      "organization_id": "8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001",
+      "opportunity_id": "e6b8a0f2-8a64-46ed-95e0-37fab21d3108",
+      "owner_name": "alex.m.bach@gmail.com",
+      "status": "drafting",
+      "progress": 0,
+      "due_date": null,
+      "checklist_status": "in_progress",
+      "confidence": 0.6,
+      "autosave_enabled": true,
+      "compliance_summary": [],
+      "updated_at": "2025-11-01T01:46:54.871801+00:00",
+      "created_at": "2025-11-01T01:46:54.871801+00:00",
+      "archived": true,
+      "share_token": null,
+      "share_expires_at": null,
+      "deleted_at": null
+    },
+    {
+      "id": "07fd972d-982f-4dc6-90dd-fb7a06a9d5e7",
+      "organization_id": "8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001",
+      "opportunity_id": "7b5d2aa9-c0ca-401a-993c-ebc392461e80",
+      "owner_name": "alex.m.bach@gmail.com",
+      "status": "drafting",
+      "progress": 0,
+      "due_date": null,
+      "checklist_status": "in_progress",
+      "confidence": 0.6,
+      "autosave_enabled": true,
+      "compliance_summary": [
+        {
+          "items": [
+            {
+              "label": "Verify 501(c)(3) tax-exempt status",
+              "status": "missing",
+              "riskLevel": "high",
+              "requirementType": "eligibility",
+              "suggestedAction": "Upload IRS 501(c)(3) determination letter"
+            },
+            {
+              "label": "Confirm budget within funder range",
+              "status": "missing",
+              "riskLevel": "high",
+              "requirementType": "eligibility"
+            },
+            {
+              "label": "Verify geographic service area matches criteria",
+              "status": "missing",
+              "riskLevel": "high",
+              "requirementType": "eligibility"
+            }
+          ],
+          "section": "Eligibility Requirements"
+        },
+        {
+          "items": [
+            {
+              "label": "Prepare most recent audited financial statements",
+              "status": "missing",
+              "riskLevel": "medium",
+              "requirementType": "document"
+            },
+            {
+              "label": "Gather IRS Form 990 tax return",
+              "status": "missing",
+              "riskLevel": "medium",
+              "requirementType": "document"
+            },
+            {
+              "label": "Prepare current board roster with affiliations",
+              "status": "missing",
+              "riskLevel": "medium",
+              "requirementType": "document"
+            }
+          ],
+          "section": "Required Documents"
+        },
+        {
+          "items": [
+            {
+              "label": "Include recent data and citations in needs statement",
+              "status": "missing",
+              "riskLevel": "medium",
+              "requirementType": "narrative"
+            },
+            {
+              "label": "Define clear, measurable program outcomes",
+              "status": "missing",
+              "riskLevel": "medium",
+              "requirementType": "narrative"
+            },
+            {
+              "label": "Develop sustainability strategy",
+              "status": "missing",
+              "riskLevel": "medium",
+              "requirementType": "narrative"
+            }
+          ],
+          "section": "Narrative Requirements"
+        }
+      ],
+      "updated_at": "2025-11-18T16:25:15.427+00:00",
+      "created_at": "2025-11-18T16:25:15.004142+00:00",
+      "archived": false,
+      "share_token": null,
+      "share_expires_at": null,
+      "deleted_at": null
+    }
+  ]
+}

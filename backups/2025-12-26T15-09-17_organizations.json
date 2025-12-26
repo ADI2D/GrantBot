@@ -1,0 +1,94 @@
+{
+  "table": "organizations",
+  "backedUpAt": "2025-12-26T15:09:18.011Z",
+  "rowCount": 2,
+  "data": [
+    {
+      "id": "8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001",
+      "name": "Community Harvest Cooperative",
+      "mission": "Deliver wraparound food security and workforce programs for families below 200% of the federal poverty line.",
+      "impact_summary": "Served 1,200 households with fresh produce deliveries and placed 85 residents into culinary jobs last year.",
+      "differentiator": "Integrated food hub with mobile pantry + workforce training led by lived-experience mentors.",
+      "annual_budget": 750000,
+      "onboarding_completion": 0.72,
+      "created_by": null,
+      "created_at": "2025-10-28T15:27:26.376977+00:00",
+      "document_metadata": [
+        {
+          "title": "IRS 990 FY23",
+          "status": "Ready"
+        },
+        {
+          "title": "Audited Financials FY23",
+          "status": "Missing"
+        },
+        {
+          "url": "https://wwwrchacbyepnvbqhgnb.supabase.co/storage/v1/object/public/org-documents/8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001/1761943008121_Mid_America_Nazarene_University_-_Full_Filing_-_Nonprofit_Explorer_-_2023_ProPublica.pdf",
+          "title": "Mid America Nazarene University - Full Filing - Nonprofit Explorer - 2023 ProPublica",
+          "status": "Ready",
+          "fileName": "Mid America Nazarene University - Full Filing - Nonprofit Explorer - 2023 ProPublica.pdf",
+          "filePath": "8d8d0b4b-8fdc-4d27-92d8-0f4d31e6a001/1761943008121_Mid_America_Nazarene_University_-_Full_Filing_-_Nonprofit_Explorer_-_2023_ProPublica.pdf",
+          "fileSize": 722618,
+          "mimeType": "application/pdf",
+          "uploadedAt": "2025-10-31T20:36:48.692Z",
+          "uploadedBy": "alex.m.bach@gmail.com"
+        }
+      ],
+      "plan_id": "growth",
+      "stripe_customer_id": null,
+      "stripe_subscription_id": null,
+      "opportunity_view_mode": "all",
+      "focus_areas": [],
+      "ein": null,
+      "founded_year": null,
+      "staff_size": null,
+      "geographic_scope": null,
+      "website": null,
+      "programs": [],
+      "impact_metrics": [],
+      "target_demographics": [],
+      "past_funders": []
+    },
+    {
+      "id": "c9634d01-978e-40e6-b257-a6711db5b0da",
+      "name": "Cleveland University-Kansas City",
+      "mission": "",
+      "impact_summary": "",
+      "differentiator": "",
+      "annual_budget": 22000000,
+      "onboarding_completion": 100,
+      "created_by": "7a5eeda2-7da2-4adc-81a9-6c38aa00d2bb",
+      "created_at": "2025-10-28T17:27:33.527177+00:00",
+      "document_metadata": [
+        {
+          "id": "vt3bkoyq6",
+          "url": "blob:http://localhost:3000/980752cd-0f2f-4db2-86fc-e06e41c54d6e",
+          "name": "Cleveland University Kansas City - Full Filing - Nonprofit Explorer - ProPublica.pdf",
+          "size": 2657049,
+          "type": "application/pdf",
+          "uploadedAt": "2025-11-10T00:11:23.489Z"
+        }
+      ],
+      "plan_id": "growth",
+      "stripe_customer_id": null,
+      "stripe_subscription_id": null,
+      "opportunity_view_mode": "all",
+      "focus_areas": [
+        "research-science",
+        "education",
+        "health"
+      ],
+      "ein": "44-6000294",
+      "founded_year": 1922,
+      "staff_size": "large",
+      "geographic_scope": "national",
+      "website": "https://cleveland.edu",
+      "programs": [],
+      "impact_metrics": [],
+      "target_demographics": [
+        "higher education students"
+      ],
+      "past_funders": []
+    }
+  ]
+}

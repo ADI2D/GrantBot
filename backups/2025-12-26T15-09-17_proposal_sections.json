@@ -1,0 +1,207 @@
+{
+  "table": "proposal_sections",
+  "backedUpAt": "2025-12-26T15:09:18.186Z",
+  "rowCount": 25,
+  "data": [
+    {
+      "id": "b14ef167-b832-4c56-b78d-c3431014e70b",
+      "proposal_id": "0bdc3ad4-8c1a-4e63-9dc8-4fdd8ba4d301",
+      "title": "Needs Statement",
+      "token_count": 480,
+      "content": "Blue Ridge County families face compounding economic shocks. Over 42% of households served by Community Harvest Cooperative report lacking reliable access to healthy food...",
+      "updated_at": "2025-10-28T15:27:26.376977+00:00"
+    },
+    {
+      "id": "8b8595a3-6c63-4e9d-9eab-f3f45ef3980e",
+      "proposal_id": "0bdc3ad4-8c1a-4e63-9dc8-4fdd8ba4d301",
+      "title": "Program Design",
+      "token_count": 630,
+      "content": "Our integrated food hub combines mobile pantry routes with workforce development...",
+      "updated_at": "2025-10-28T15:27:26.376977+00:00"
+    },
+    {
+      "id": "c7a3fe59-65a7-4301-a76d-4e487e1c8f13",
+      "proposal_id": "0bdc3ad4-8c1a-4e63-9dc8-4fdd8ba4d301",
+      "title": "Budget Narrative",
+      "token_count": 310,
+      "content": "Each $1,000 invested funds two weeks of deliveries and paid internships...",
+      "updated_at": "2025-10-28T15:27:26.376977+00:00"
+    },
+    {
+      "id": "3aa57aa8-4115-478a-a0ab-4679a458e1fb",
+      "proposal_id": "0bdc3ad4-8c1a-4e63-9dc8-4fdd8ba4d301",
+      "title": "Evaluation Plan",
+      "token_count": 290,
+      "content": "We will track food security scores, employment retention, and emergency response times...",
+      "updated_at": "2025-10-28T15:27:26.376977+00:00"
+    },
+    {
+      "id": "0591cf39-4dd0-4fc4-b407-5e0aad66368d",
+      "proposal_id": "0bdc3ad4-8c1a-4e63-9dc8-4fdd8ba4d301",
+      "title": "Organizational Capacity",
+      "token_count": 220,
+      "content": "Our leadership team blends lived experience with grant compliance expertise...",
+      "updated_at": "2025-10-28T15:27:26.376977+00:00"
+    },
+    {
+      "id": "2619e586-6b57-4659-bb82-0fa2e519b4ce",
+      "proposal_id": "d39d61da-57ed-40a7-bf32-20568c5f060c",
+      "title": "Needs Statement",
+      "token_count": 480,
+      "content": "Community Harvest Cooperative is applying to Blue Ridge Community Resilience Fund to tackle critical community needs. Replace this paragraph with a concise summary of the populations served and the urgency of the problem.",
+      "updated_at": "2025-11-01T01:31:21.972087+00:00"
+    },
+    {
+      "id": "b04a3b11-b5e2-4674-87e8-29daeb4ae014",
+      "proposal_id": "d39d61da-57ed-40a7-bf32-20568c5f060c",
+      "title": "Program Design",
+      "token_count": 630,
+      "content": "Describe how Community Harvest Cooperative's program works, the services provided, and how the approach aligns with funder priorities. Include delivery methods, partnerships, and capacity.",
+      "updated_at": "2025-11-01T01:31:21.972087+00:00"
+    },
+    {
+      "id": "33a11c99-b50e-45f0-b973-18c2bd21db68",
+      "proposal_id": "d39d61da-57ed-40a7-bf32-20568c5f060c",
+      "title": "Budget Narrative",
+      "token_count": 310,
+      "content": "Explain key budget line items, their rationale, and how requested funds will be allocated. Highlight cost per impact and sustainability considerations.",
+      "updated_at": "2025-11-01T01:31:21.972087+00:00"
+    },
+    {
+      "id": "b3d48624-e497-4ac8-ab4c-17be0142ecc1",
+      "proposal_id": "d39d61da-57ed-40a7-bf32-20568c5f060c",
+      "title": "Organizational Capacity",
+      "token_count": 220,
+      "content": "Summarize Community Harvest Cooperative's leadership, track record, and infrastructure. Reference key staff, governance, and previous funding successes.",
+      "updated_at": "2025-11-01T01:31:21.972087+00:00"
+    },
+    {
+      "id": "0c62a5f8-b0e0-4dc2-bfcc-3676084ef129",
+      "proposal_id": "07fd972d-982f-4dc6-90dd-fb7a06a9d5e7",
+      "title": "Needs Statement",
+      "token_count": 480,
+      "content": "Community Harvest Cooperative is applying to BRAIN Initiative: New Technologies and Novel Approaches for Recording and Modulation in the Nervous System (R01 Clinical Trial Not Allowed) to tackle critical community needs. Replace this paragraph with a concise summary of the populations served and the urgency of the problem.",
+      "updated_at": "2025-11-18T16:25:15.11662+00:00"
+    },
+    {
+      "id": "e7bc52c3-ae6b-4dd2-b4d5-eb6176483967",
+      "proposal_id": "07fd972d-982f-4dc6-90dd-fb7a06a9d5e7",
+      "title": "Program Design",
+      "token_count": 630,
+      "content": "Describe how Community Harvest Cooperative's program works, the services provided, and how the approach aligns with funder priorities. Include delivery methods, partnerships, and capacity.",
+      "updated_at": "2025-11-18T16:25:15.11662+00:00"
+    },
+    {
+      "id": "da1d4618-eef9-41c2-b2cb-257aca8e6e96",
+      "proposal_id": "07fd972d-982f-4dc6-90dd-fb7a06a9d5e7",
+      "title": "Budget Narrative",
+      "token_count": 310,
+      "content": "Explain key budget line items, their rationale, and how requested funds will be allocated. Highlight cost per impact and sustainability considerations.",
+      "updated_at": "2025-11-18T16:25:15.11662+00:00"
+    },
+    {
+      "id": "66386f59-77d5-4ab7-b236-f8f94a35bee8",
+      "proposal_id": "07fd972d-982f-4dc6-90dd-fb7a06a9d5e7",
+      "title": "Evaluation Plan",
+      "token_count": 290,
+      "content": "Outline the metrics, data collection methods, and timelines used to assess program success. Mention baseline data, outcome targets, and learning loops.",
+      "updated_at": "2025-11-18T16:25:15.11662+00:00"
+    },
+    {
+      "id": "e7757a57-3607-4b10-8ad2-5094be6e7bb2",
+      "proposal_id": "07fd972d-982f-4dc6-90dd-fb7a06a9d5e7",
+      "title": "Organizational Capacity",
+      "token_count": 220,
+      "content": "Summarize Community Harvest Cooperative's leadership, track record, and infrastructure. Reference key staff, governance, and previous funding successes.",
+      "updated_at": "2025-11-18T16:25:15.11662+00:00"
+    },
+    {
+      "id": "1ed309b9-66dd-43ba-8393-c2c3254457e1",
+      "proposal_id": "d39d61da-57ed-40a7-bf32-20568c5f060c",
+      "title": "Evaluation Plan",
+      "token_count": 290,
+      "content": "Outline the metrics, data collection methods, and timelines used to assess program success. Mention baseline data, outcome targets, and learning loops. does this add on to the 310",
+      "updated_at": "2025-11-01T01:33:50.53+00:00"
+    },
+    {
+      "id": "a04c106c-6a81-431f-a3bf-f08bdb8dd686",
+      "proposal_id": "87994855-dc24-4171-8060-5fdcc932df63",
+      "title": "Needs Statement",
+      "token_count": 480,
+      "content": "Community Harvest Cooperative is applying to Hope Foundation Rapid Relief to tackle critical community needs. Replace this paragraph with a concise summary of the populations served and the urgency of the problem.",
+      "updated_at": "2025-11-01T01:46:54.957176+00:00"
+    },
+    {
+      "id": "5bd65620-5329-48a9-a8b9-c25fee557b4b",
+      "proposal_id": "87994855-dc24-4171-8060-5fdcc932df63",
+      "title": "Program Design",
+      "token_count": 630,
+      "content": "Describe how Community Harvest Cooperative's program works, the services provided, and how the approach aligns with funder priorities. Include delivery methods, partnerships, and capacity.",
+      "updated_at": "2025-11-01T01:46:54.957176+00:00"
+    },
+    {
+      "id": "973ef8bb-6c72-46cc-8b1e-94fa558b1fb7",
+      "proposal_id": "87994855-dc24-4171-8060-5fdcc932df63",
+      "title": "Budget Narrative",
+      "token_count": 310,
+      "content": "Explain key budget line items, their rationale, and how requested funds will be allocated. Highlight cost per impact and sustainability considerations.",
+      "updated_at": "2025-11-01T01:46:54.957176+00:00"
+    },
+    {
+      "id": "57f8d8be-6a71-46ed-88fb-a2e6f6eca7ae",
+      "proposal_id": "87994855-dc24-4171-8060-5fdcc932df63",
+      "title": "Evaluation Plan",
+      "token_count": 290,
+      "content": "Outline the metrics, data collection methods, and timelines used to assess program success. Mention baseline data, outcome targets, and learning loops.",
+      "updated_at": "2025-11-01T01:46:54.957176+00:00"
+    },
+    {
+      "id": "4e5f5cae-bf04-4a57-b8de-0758d9b6ece6",
+      "proposal_id": "87994855-dc24-4171-8060-5fdcc932df63",
+      "title": "Organizational Capacity",
+      "token_count": 220,
+      "content": "Summarize Community Harvest Cooperative's leadership, track record, and infrastructure. Reference key staff, governance, and previous funding successes.",
+      "updated_at": "2025-11-01T01:46:54.957176+00:00"
+    },
+    {
+      "id": "6c3c3365-72b2-4425-83c1-d3c5af371b89",
+      "proposal_id": "ac2584f6-bb57-486e-9cfd-65b95c79ac65",
+      "title": "Needs Statement",
+      "token_count": 480,
+      "content": "Community Harvest Cooperative is applying to Hope Foundation Rapid Relief to tackle critical community needs. Replace this paragraph with a concise summary of the populations served and the urgency of the problem.",
+      "updated_at": "2025-11-01T01:47:18.383535+00:00"
+    },
+    {
+      "id": "592b93a0-35b3-4b44-962b-2ce385e8b889",
+      "proposal_id": "ac2584f6-bb57-486e-9cfd-65b95c79ac65",
+      "title": "Program Design",
+      "token_count": 630,
+      "content": "Describe how Community Harvest Cooperative's program works, the services provided, and how the approach aligns with funder priorities. Include delivery methods, partnerships, and capacity.",
+      "updated_at": "2025-11-01T01:47:18.383535+00:00"
+    },
+    {
+      "id": "207cf1dc-2e38-4a12-a247-9fb564017af5",
+      "proposal_id": "ac2584f6-bb57-486e-9cfd-65b95c79ac65",
+      "title": "Budget Narrative",
+      "token_count": 310,
+      "content": "Explain key budget line items, their rationale, and how requested funds will be allocated. Highlight cost per impact and sustainability considerations.",
+      "updated_at": "2025-11-01T01:47:18.383535+00:00"
+    },
+    {
+      "id": "66d81fd5-2a16-4794-bd0d-65347446e2ae",
+      "proposal_id": "ac2584f6-bb57-486e-9cfd-65b95c79ac65",
+      "title": "Evaluation Plan",
+      "token_count": 290,
+      "content": "Outline the metrics, data collection methods, and timelines used to assess program success. Mention baseline data, outcome targets, and learning loops.",
+      "updated_at": "2025-11-01T01:47:18.383535+00:00"
+    },
+    {
+      "id": "755fb059-cbb0-4e29-87e2-fb3808a50bf5",
+      "proposal_id": "ac2584f6-bb57-486e-9cfd-65b95c79ac65",
+      "title": "Organizational Capacity",
+      "token_count": 220,
+      "content": "Summarize Community Harvest Cooperative's leadership, track record, and infrastructure. Reference key staff, governance, and previous funding successes.",
+      "updated_at": "2025-11-01T01:47:18.383535+00:00"
+    }
+  ]
+}
