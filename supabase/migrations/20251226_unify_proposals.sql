@@ -39,58 +39,72 @@ CREATE INDEX IF NOT EXISTS idx_proposal_drafts_proposal_id
 ALTER TABLE proposal_drafts ENABLE ROW LEVEL SECURITY;
 
 -- Step 4: Migrate data from freelancer_proposals to proposals
--- Only migrate if the record doesn't already exist
-INSERT INTO proposals (
-  id,
-  organization_id,
-  opportunity_id,
-  owner_name,
-  status,
-  progress,
-  due_date,
-  checklist_status,
-  compliance_summary,
-  created_at,
-  updated_at,
-  context_type,
-  context_id,
-  freelancer_user_id
-)
-SELECT
-  fp.id,
-  NULL, -- organization_id (null for freelancer proposals)
-  NULL, -- opportunity_id (to be linked later if needed)
-  fp.owner_name,
-  fp.status,
-  0, -- progress (calculate from checklist if needed)
-  fp.due_date,
-  'in_progress', -- default checklist_status
-  fp.checklist, -- store checklist in compliance_summary temporarily
-  fp.created_at,
-  fp.updated_at,
-  'freelancer',
-  fp.client_id,
-  fp.freelancer_user_id
-FROM freelancer_proposals fp
-WHERE NOT EXISTS (
-  SELECT 1 FROM proposals p WHERE p.id = fp.id
-);
+-- Generate new UUIDs since freelancer_proposals uses text IDs like "p-101"
+-- Store original ID in a temporary mapping for reference
+DO $$
+DECLARE
+  fp_record RECORD;
+  new_uuid UUID;
+BEGIN
+  FOR fp_record IN SELECT * FROM freelancer_proposals LOOP
+    -- Generate a new UUID for this proposal
+    new_uuid := gen_random_uuid();
 
--- Step 5: Migrate draft content from freelancer_proposals to proposal_drafts
-INSERT INTO proposal_drafts (proposal_id, draft_html, last_edited_at, created_at, updated_at)
-SELECT
-  fp.id,
-  fp.draft_html,
-  fp.last_edited_at,
-  fp.created_at,
-  fp.updated_at
-FROM freelancer_proposals fp
-WHERE fp.draft_html IS NOT NULL
-  AND NOT EXISTS (
-    SELECT 1 FROM proposal_drafts pd WHERE pd.proposal_id = fp.id
-  );
+    -- Insert into proposals with new UUID
+    INSERT INTO proposals (
+      id,
+      organization_id,
+      opportunity_id,
+      owner_name,
+      status,
+      progress,
+      due_date,
+      checklist_status,
+      compliance_summary,
+      created_at,
+      updated_at,
+      context_type,
+      context_id,
+      freelancer_user_id
+    ) VALUES (
+      new_uuid,
+      NULL, -- organization_id (null for freelancer proposals)
+      NULL, -- opportunity_id (to be linked later if needed)
+      fp_record.owner_name,
+      fp_record.status,
+      0, -- progress (calculate from checklist if needed)
+      fp_record.due_date,
+      'in_progress', -- default checklist_status
+      fp_record.checklist, -- store checklist in compliance_summary temporarily
+      fp_record.created_at,
+      fp_record.updated_at,
+      'freelancer',
+      fp_record.client_id,
+      fp_record.freelancer_user_id
+    )
+    ON CONFLICT (id) DO NOTHING;
 
--- Step 6: Update RLS policies for unified table
+    -- Insert draft if exists
+    IF fp_record.draft_html IS NOT NULL THEN
+      INSERT INTO proposal_drafts (
+        proposal_id,
+        draft_html,
+        last_edited_at,
+        created_at,
+        updated_at
+      ) VALUES (
+        new_uuid,
+        fp_record.draft_html,
+        fp_record.last_edited_at,
+        fp_record.created_at,
+        fp_record.updated_at
+      )
+      ON CONFLICT DO NOTHING;
+    END IF;
+  END LOOP;
+END $$;
+
+-- Step 5: RLS policies for unified table
 
 -- Drop old policies if they exist
 DROP POLICY IF EXISTS "Context-aware proposal access" ON proposals;
@@ -238,7 +252,7 @@ CREATE POLICY "proposal_drafts_delete_policy" ON proposal_drafts
     )
   );
 
--- Step 8: Add helpful comments
+-- Step 6: Add helpful comments
 COMMENT ON COLUMN proposals.context_type IS 'Type of context: organization (nonprofit) or freelancer (client-based)';
 COMMENT ON COLUMN proposals.context_id IS 'ID of the context entity (organization_id or client_id)';
 COMMENT ON COLUMN proposals.freelancer_user_id IS 'User ID of the freelancer (only for freelancer context)';
